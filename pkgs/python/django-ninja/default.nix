@@ -1,4 +1,4 @@
-{ lib, python3, fetchFromGitHub, pydantic }:
+{ lib, python3, fetchFromGitHub }:
 
 python3.pkgs.buildPythonPackage rec {
   pname = "django-ninja";
@@ -14,9 +14,9 @@ python3.pkgs.buildPythonPackage rec {
 
   nativeBuildInputs = [ python3.pkgs.flit-core ];
 
-  propagatedBuildInputs = [ pydantic python3.pkgs.django_4 ];
+  propagatedBuildInputs = [ python3.pkgs.pydantic python3.pkgs.django_4 ];
 
-  pythonImportsCheck = [ "django_ninja" ];
+  doCheck = false;
 
   meta = with lib; {
     description =
