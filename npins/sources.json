@@ -3,8 +3,8 @@
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
-      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-23.11pre520371.a63a64b593dc/nixexprs.tar.xz",
-      "hash": "0sj5yyl1z7mpq74xhbbcnrcn6jqjkgwharkaxr0gj857amfzc7ps"
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-23.11pre542126.90e85bc7c1a6/nixexprs.tar.xz",
+      "hash": "1i1giyrzc0ksinjry1nc0436p8z6wk6514x47k021h4xi8vyia6a"
     },
     "pre-commit-hooks": {
       "type": "Git",
@@ -14,9 +14,9 @@
         "repo": "pre-commit-hooks.nix"
       },
       "branch": "master",
-      "revision": "7e3517c03d46159fdbf8c0e5c97f82d5d4b0c8fa",
-      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/7e3517c03d46159fdbf8c0e5c97f82d5d4b0c8fa.tar.gz",
-      "hash": "1jygifisncj7s8z8gqgdmn1nqr1y69scxjf0pcshyd802nwx0507"
+      "revision": "bd38df3d508dfcdff52cd243d297f218ed2257bf",
+      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/bd38df3d508dfcdff52cd243d297f218ed2257bf.tar.gz",
+      "hash": "0m6g9a5mz78mwzl8cvndb2hc4za7lkwqp0fsqf5vjh6s6vv4fbhn"
     }
   },
   "version": 3
