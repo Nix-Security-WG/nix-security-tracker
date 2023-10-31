@@ -31,16 +31,17 @@ let
   };
 
   pyEnv = python3.withPackages (ps:
-    (with local.pythonPackages;
-      [
-        # Local Python packages
-        pyngo
-      ]) ++ (with ps; [
-        # Nix python packages
-        django-types
-        django_4
-        requests
-      ]));
+    (with local.pythonPackages; [
+      # Local Python packages
+      pyngo
+      django-ninja
+    ]) ++ (with ps; [
+      # Nix python packages
+      django-types
+      django_4
+      ipython
+      requests
+    ]));
 
 in pkgs.mkShell {
   packages = [ pyEnv ] ++ (with pkgs; [ commitizen ]);
