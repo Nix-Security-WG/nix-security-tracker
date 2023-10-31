@@ -1,2 +1,4 @@
 .direnv
 .pre-commit-config.yaml
+__pycache__
+db.sqlite3
