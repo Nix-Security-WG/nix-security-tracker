@@ -20,8 +20,8 @@ class CveRecord(models.Model):
     """Class representing a CVE record."""
 
     class RecordState(models.TextChoices):
-        PUBLISHED = "P", _("PUBLISHED")
-        REJECTED = "R", _("REJECTED")
+        PUBLISHED = "PUBLISHED", _("PUBLISHED")
+        REJECTED = "REJECTED", _("REJECTED")
 
     state = models.CharField(
         max_length=text_length(RecordState),
@@ -42,6 +42,8 @@ class CveRecord(models.Model):
     date_updated = models.DateTimeField(null=True, default=None)
     date_reserved = models.DateTimeField(null=True, default=None)
     date_published = models.DateTimeField(null=True, default=None)
+
+    local_timestamp = models.DateTimeField(auto_now_add=True)
 
 
 class Product(models.Model):
@@ -91,10 +93,10 @@ class ProblemType(models.Model):
     """Class representing a problem type."""
 
     cwe_id = models.CharField(
-        max_length=9, validators=[RegexValidator("^CWE-[1-9][0-9]*$")]
+        max_length=9, validators=[RegexValidator("^CWE-[1-9][0-9]*$")], null=True
     )
     description = models.ManyToManyField(Description)
-    _type = models.CharField(max_length=128)
+    _type = models.CharField(max_length=128, null=True)
     references = models.ManyToManyField(Reference)
 
 
@@ -126,21 +128,61 @@ class Credit(models.Model):
     """Class representing a credit information related to a CVE record."""
 
     class Type(models.TextChoices):
-        FINDER = "F", _("finder")
-        REPORTER = "R", _("reporter")
-        ANALYST = "A", _("analyst")
-        COORDINATOR = "C", _("coordinator")
-        REMEDIATION_DEVELOPER = "RD", _("remediation developer")
-        REMEDIATION_REVIEWER = "RR", _("remediation reviewer")
-        REMEDIATION_VERIFIER = "RV", _("remediation_verifier")
-        TOOL = "T", _("tool")
-        SPONSOR = "S", _("sponsor")
-        OTHER = "O", _("other")
+        FINDER = "finder", _("finder")
+        REPORTER = "reporter", _("reporter")
+        ANALYST = "analyst", _("analyst")
+        COORDINATOR = "coordinator", _("coordinator")
+        REMEDIATION_DEVELOPER = "remediation developer", _("remediation developer")
+        REMEDIATION_REVIEWER = "remediation reviewer", _("remediation reviewer")
+        REMEDIATION_VERIFIER = "remediation verifier", _("remediation_verifier")
+        TOOL = "tool", _("tool")
+        SPONSOR = "sponsor", _("sponsor")
+        OTHER = "other", _("other")
 
+    _type = models.CharField(
+        max_length=text_length(Type), choices=Type.choices, default=Type.FINDER
+    )
     user = models.ForeignKey(
         Organization, null=True, default=None, on_delete=models.SET_NULL
     )
     description = models.ForeignKey(Description, on_delete=models.CASCADE)
+
+
+class Platform(models.Model):
+    name = models.CharField(max_length=1024)
+
+
+class Version(models.Model):
+    class Status(models.TextChoices):
+        AFFECTED = "affected", _("affected")
+        UNAFFECTED = "unaffected", _("unaffected")
+        UNKNOWN = "unknown", _("unknown")
+
+    status = models.CharField(
+        max_length=text_length(Status), choices=Status.choices, default=Status.UNKNOWN
+    )
+    version_type = models.CharField(max_length=128, null=True)
+    version = models.CharField(max_length=1024, null=True)
+    less_than = models.CharField(max_length=1024, null=True)
+    less_equal = models.CharField(max_length=1024, null=True)
+
+
+class AffectedProduct(models.Model):
+    class Status(models.TextChoices):
+        AFFECTED = "affected", _("affected")
+        UNAFFECTED = "unaffected", _("unaffected")
+        UNKNOWN = "unknown", _("unknown")
+
+    vendor = models.CharField(max_length=512, null=True)
+    product = models.CharField(max_length=2048, null=True)
+    collection_url = models.CharField(max_length=2048, null=True, default=None)
+    package_name = models.CharField(max_length=2048, null=True, default=None)
+    platforms = models.ManyToManyField(Platform)
+    repo = models.CharField(max_length=2048, null=True, default=None)
+    default_status = models.CharField(
+        max_length=text_length(Status), choices=Status.choices, default=Status.UNKNOWN
+    )
+    versions = models.ManyToManyField(Version)
 
 
 class Container(models.Model):
@@ -152,12 +194,15 @@ class Container(models.Model):
 
     _type = models.CharField(max_length=3, choices=Type.choices, default=Type.CNA)
 
+    cve = models.ForeignKey(CveRecord, on_delete=models.CASCADE)
+
     provider = models.ForeignKey(Organization, on_delete=models.CASCADE)
     title = models.CharField(max_length=256, null=True, default=None)
     descriptions = models.ManyToManyField(Description)
     date_assigned = models.DateTimeField(null=True, default=None)
     date_public = models.DateTimeField(null=True, default=None)
 
+    affected = models.ManyToManyField(AffectedProduct)
     problem_types = models.ManyToManyField(ProblemType)
     references = models.ManyToManyField(Reference)
     metrics = models.ManyToManyField(Metric)
@@ -167,29 +212,12 @@ class Container(models.Model):
     workarounds = models.ManyToManyField(
         Description, related_name="container_workarounds"
     )
+    solutions = models.ManyToManyField(Description, related_name="container_solutions")
     exploits = models.ManyToManyField(Description, related_name="container_exploits")
     timeline = models.ManyToManyField(Event)
     tags = models.ManyToManyField(Tag)
     credits = models.ManyToManyField(Credit)
     source = models.JSONField(default=dict)
-
-
-class Platform(models.Model):
-    name = models.CharField(max_length=1024)
-
-
-class AffectedProduct(models.Model):
-    vendor = models.CharField(max_length=512)
-    product = models.CharField(max_length=2048)
-    collection_url = models.CharField(max_length=2048, null=True, default=None)
-    package_name = models.CharField(max_length=2048, null=True, default=None)
-    platforms = models.ManyToManyField(Platform)
-    repo = models.CharField(max_length=2048, null=True, default=None)
-    default_status = models.CharField(
-        max_length=1,
-        choices=[("A", "Affected"), ("N", "Unaffected"), ("U", "Unknown")],
-        default="U",
-    )
 
 
 class Cpe(models.Model):

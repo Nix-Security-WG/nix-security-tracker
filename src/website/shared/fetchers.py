@@ -1,0 +1,229 @@
+import json
+import re
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from requests import get
+from shared import models
+
+
+def mkOrganization(
+    uuid: Optional[str], short_name: Optional[str] = None
+) -> Optional[models.Organization]:
+    if uuid is None:
+        return None
+
+    org, _ = models.Organization.objects.get_or_create(uuid=uuid)
+
+    if org.short_name is None:
+        org.short_name = short_name
+        org.save()
+
+    return org
+
+
+def mkDate(date: Optional[str]) -> Optional[datetime]:
+    if date is None:
+        return None
+
+    return datetime.fromisoformat(date)
+
+
+def mkMedia(data: Dict[str, str]) -> models.SupportingMedia:
+    ctx: Dict[str, Any] = dict()
+    ctx["_type"] = data["type"]
+    ctx["base64"] = data["base64"]
+    ctx["value"] = data["value"]
+
+    return models.SupportingMedia.objects.create(**ctx)
+
+
+def mkDescription(data: Dict[str, Any]) -> models.Description:
+    ctx: Dict[str, Any] = dict()
+    ctx["lang"] = data["lang"]
+    ctx["value"] = data["value"]
+
+    obj = models.Description.objects.create(**ctx)
+    obj.media.set(map(mkMedia, data.get("supportingMedia", [])))
+
+    return obj
+
+
+def mkTag(data: Dict[str, Any]) -> models.Tag:
+    obj, _ = models.Tag.objects.get_or_create(value=data["value"])
+
+    return obj
+
+
+def mkReference(data: Dict[str, Any]) -> models.Reference:
+    ctx: Dict[str, Any] = dict()
+    ctx["url"] = data["url"]
+    ctx["name"] = data.get("name", "")
+
+    obj = models.Reference.objects.create(**ctx)
+    obj.tags.set(map(mkTag, data.get("tags", [])))
+
+    return obj
+
+
+def mkProblemType(data: Dict[str, Any]) -> models.ProblemType:
+    ctx: Dict[str, Any] = dict()
+    ctx["cwe_id"] = data.get("cweId")
+    ctx["_type"] = data.get("type")
+
+    obj = models.ProblemType.objects.create(**ctx)
+    obj.description.set(
+        [mkDescription({"lang": data["lang"], "value": data["description"]})]
+    )
+    obj.references.set(map(mkReference, data.get("references", [])))
+
+    return obj
+
+
+def mkMetric(data: Dict[str, Any]) -> models.Metric:
+    ctx: Dict[str, Any] = dict()
+    ctx["format"] = "cvssV3_1"
+    ctx["content"] = data.get("cvssV3_1", {})
+
+    obj = models.Metric.objects.create(**ctx)
+    obj.scenarios.set(map(mkDescription, data.get("scenarios", [])))
+
+    return obj
+
+
+def mkEvent(data: Dict[str, Any]) -> models.Event:
+    ctx: Dict[str, Any] = dict()
+    ctx["time"] = mkDate(data["time"])
+    ctx["description"] = mkDescription(data)
+
+    return models.Event.objects.create(**ctx)
+
+
+def mkCredit(data: Dict[str, Any]) -> models.Credit:
+    ctx: Dict[str, Any] = dict()
+    ctx["_type"] = data.get("type", "finder")
+    ctx["user"] = mkOrganization(uuid=data.get("user"))
+    ctx["description"] = mkDescription(data)
+
+    return models.Credit.objects.create(**ctx)
+
+
+def mkPlatform(name: str) -> models.Platform:
+    obj, _ = models.Platform.objects.get_or_create(name=name)
+
+    return obj
+
+
+def mkVersion(data: Dict[str, Any]) -> models.Version:
+    ctx: Dict[str, Any] = dict()
+    ctx["version"] = data.get("version")
+    ctx["status"] = data.get("status", models.Version.Status.UNKNOWN)
+    ctx["version_type"] = data.get("versionType")
+    ctx["less_than"] = data.get("lessThan")
+    ctx["less_equal"] = data.get("lessThanOrEqual")
+
+    return models.Version.objects.create(**ctx)
+
+
+def mkAffectedProduct(data: Dict[str, Any]) -> models.AffectedProduct:
+    ctx: Dict[str, Any] = dict()
+    ctx["vendor"] = data.get("vendor")
+    ctx["product"] = data.get("product")
+    ctx["collection_url"] = data.get("collectionURL")
+    ctx["package_name"] = data.get("packageName")
+    ctx["repo"] = data.get("repo")
+    ctx["default_status"] = data.get(
+        "defaultStatus", models.AffectedProduct.Status.UNKNOWN
+    )
+
+    obj = models.AffectedProduct.objects.create(**ctx)
+    obj.platforms.set(map(mkPlatform, data.get("platforms", [])))
+    obj.versions.set(map(mkVersion, data.get("versions", [])))
+
+    return obj
+
+
+def mkCveRecord(data: Dict[str, Any]) -> models.CveRecord:
+    ctx: Dict[str, Any] = dict()
+    ctx["cve_id"] = data["cveId"]
+    ctx["state"] = data["state"]
+    ctx["assigner"] = mkOrganization(
+        uuid=data.get("assignerOrgId"), short_name=data.get("assignerShortName")
+    )
+    ctx["requester"] = mkOrganization(uuid=data.get("requesterUserId"))
+    ctx["date_reserved"] = mkDate(data.get("dateReserved"))
+    ctx["date_updated"] = mkDate(data.get("dateUpdated"))
+    ctx["date_published"] = mkDate(data.get("datePublished"))
+    ctx["serial"] = data.get("serial", 1)
+
+    return models.CveRecord.objects.create(**ctx)
+
+
+def mkContainer(
+    data: Dict[str, Any], _type: str, cve: models.CveRecord
+) -> models.Container:
+    ctx: Dict[str, Any] = {"_type": _type, "cve": cve}
+    ctx["provider"] = mkOrganization(
+        uuid=data["providerMetadata"].get("orgId"),
+        short_name=data["providerMetadata"].get("shortName"),
+    )
+    ctx["title"] = data.get("title", "")
+
+    if _type == models.Container.Type.CNA:
+        ctx["date_assigned"] = mkDate(data.get("dateAssigned"))
+
+    ctx["date_public"] = mkDate(data.get("datePublic"))
+    ctx["source"] = data.get("source", dict())
+
+    obj = models.Container.objects.create(**ctx)
+    obj.descriptions.set(map(mkDescription, data.get("descriptions", [])))
+
+    obj.affected.set(map(mkAffectedProduct, data.get("affected", [])))
+    # Map problem types from the terrible definition to our models
+    problems = [
+        desc
+        for problem in data.get("problemTypes", [])
+        for desc in problem.get("description", [])
+    ]
+    obj.problem_types.set(map(mkProblemType, problems))
+    obj.references.set(map(mkReference, data.get("references", [])))
+    obj.metrics.set(map(mkMetric, data.get("metrics", [])))
+    obj.configurations.set(map(mkDescription, data.get("configurations", [])))
+    obj.workarounds.set(map(mkDescription, data.get("workarounds", [])))
+    obj.solutions.set(map(mkDescription, data.get("solutions", [])))
+    obj.exploits.set(map(mkDescription, data.get("exploits", [])))
+    obj.timeline.set(map(mkEvent, data.get("timeline", [])))
+    obj.tags.set(map(mkTag, data.get("tags", [])))
+    obj.credits.set(map(mkCredit, data.get("credits", [])))
+
+    return obj
+
+
+def fetch_cve_gh(cve_id: str) -> Optional[models.CveRecord]:
+    """Fetch a cve from the cvelistV5 github repository."""
+
+    m = re.fullmatch(
+        r"^CVE-(?P<year>[0-9]{4})-(?P<prefix>[0-9]{1,15})[0-9]{3}$", cve_id
+    )
+
+    if m is None:
+        raise ValueError("Not a correct CVE Id")
+
+    r = get(
+        "https://raw.githubusercontent.com/CVEProject/cvelistV5/main/cves/"
+        f"{m.group('year')}/{m.group('prefix')}xxx/{cve_id}.json"
+    )
+
+    if r.status_code != 200:
+        raise RuntimeError(f"Error during GET request: {r.status_code}\n{r.text}")
+
+    data = json.loads(r.text)
+
+    cve = mkCveRecord(data["cveMetadata"])
+
+    mkContainer(data["containers"]["cna"], _type=models.Container.Type.CNA, cve=cve)
+
+    for adp in data["containers"].get("adp", []):
+        mkContainer(adp, _type=models.Container.Type.ADP, cve=cve)
+
+    return cve
