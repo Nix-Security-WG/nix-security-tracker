@@ -37,9 +37,12 @@ let
       django-ninja
     ]) ++ (with ps; [
       # Nix python packages
+      django-allauth
       django-types
       django_4
+      djangorestframework
       ipython
+      pygithub
       requests
     ]));
 
@@ -48,5 +51,8 @@ in pkgs.mkShell {
 
   shellHook = ''
     ${pre-commit-check.shellHook}
+
+    mkdir -p .credentials
+    export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
   '';
 }

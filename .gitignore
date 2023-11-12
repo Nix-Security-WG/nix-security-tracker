@@ -2,3 +2,4 @@
 .pre-commit-config.yaml
 __pycache__
 db.sqlite3
+.credentials
