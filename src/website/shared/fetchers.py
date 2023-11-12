@@ -131,6 +131,30 @@ def mkVersion(data: Dict[str, Any]) -> models.Version:
     return models.Version.objects.create(**ctx)
 
 
+def mkCpe(name: str) -> models.Cpe:
+    obj, _ = models.Cpe.objects.get_or_create(name=name)
+
+    return obj
+
+
+def mkModule(name: str) -> models.Module:
+    obj, _ = models.Module.objects.get_or_create(name=name)
+
+    return obj
+
+
+def mkProgramFile(name: str) -> models.ProgramFile:
+    obj, _ = models.ProgramFile.objects.get_or_create(name=name)
+
+    return obj
+
+
+def mkProgramRoutine(name: str) -> models.ProgramRoutine:
+    obj, _ = models.ProgramRoutine.objects.get_or_create(name=name)
+
+    return obj
+
+
 def mkAffectedProduct(data: Dict[str, Any]) -> models.AffectedProduct:
     ctx: Dict[str, Any] = dict()
     ctx["vendor"] = data.get("vendor")
@@ -145,6 +169,10 @@ def mkAffectedProduct(data: Dict[str, Any]) -> models.AffectedProduct:
     obj = models.AffectedProduct.objects.create(**ctx)
     obj.platforms.set(map(mkPlatform, data.get("platforms", [])))
     obj.versions.set(map(mkVersion, data.get("versions", [])))
+    obj.cpes.set(map(mkCpe, data.get("cpes", [])))
+    obj.modules.set(map(mkModule, data.get("modules", [])))
+    obj.program_files.set(map(mkProgramFile, data.get("programFiles", [])))
+    obj.program_routines.set(map(mkProgramRoutine, data.get("programRoutines", [])))
 
     return obj
 

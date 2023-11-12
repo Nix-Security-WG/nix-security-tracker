@@ -167,6 +167,35 @@ class Version(models.Model):
     less_equal = models.CharField(max_length=1024, null=True)
 
 
+class Cpe(models.Model):
+    name = models.CharField(
+        max_length=2048,
+        null=True,
+        default=None,
+        validators=[
+            RegexValidator(
+                "([c][pP][eE]:/[AHOaho]?(:[A-Za-z0-9._\\-~%]*){0,6})|(cpe:2\\.3:[aho*\\"
+                "-](:(((\\?*|\\*?)([a-zA-Z0-9\\-._]|(\\\\[\\\\*?!\"#$%&'()+,/:;<=>@\\["
+                "\\]\\^`{|}~]))+(\\?*|\\*?))|[*\\-])){5}(:(([a-zA-Z]{2,3}(-([a-zA-Z]{2}"
+                '|[0-9]{3}))?)|[*\\-]))(:(((\\?*|\\*?)([a-zA-Z0-9\\-._]|(\\\\[\\\\*?!"'
+                "#$%&'()+,/:;<=>@\\[\\]\\^`{|}~]))+(\\?*|\\*?))|[*\\-])){4})"
+            )
+        ],
+    )
+
+
+class Module(models.Model):
+    name = models.CharField(max_length=4096)
+
+
+class ProgramFile(models.Model):
+    name = models.CharField(max_length=1024)
+
+
+class ProgramRoutine(models.Model):
+    name = models.CharField(max_length=4096)
+
+
 class AffectedProduct(models.Model):
     class Status(models.TextChoices):
         AFFECTED = "affected", _("affected")
@@ -183,6 +212,10 @@ class AffectedProduct(models.Model):
         max_length=text_length(Status), choices=Status.choices, default=Status.UNKNOWN
     )
     versions = models.ManyToManyField(Version)
+    cpes = models.ManyToManyField(Cpe)
+    modules = models.ManyToManyField(Module)
+    program_files = models.ManyToManyField(ProgramFile)
+    program_routines = models.ManyToManyField(ProgramRoutine)
 
 
 class Container(models.Model):
@@ -218,55 +251,6 @@ class Container(models.Model):
     tags = models.ManyToManyField(Tag)
     credits = models.ManyToManyField(Credit)
     source = models.JSONField(default=dict)
-
-
-class Cpe(models.Model):
-    name = models.CharField(
-        max_length=2048,
-        null=True,
-        default=None,
-        validators=[
-            RegexValidator(
-                "([c][pP][eE]:/[AHOaho]?(:[A-Za-z0-9._\\-~%]*){0,6})|(cpe:2\\.3:[aho*\\"
-                "-](:(((\\?*|\\*?)([a-zA-Z0-9\\-._]|(\\\\[\\\\*?!\"#$%&'()+,/:;<=>@\\["
-                "\\]\\^`{|}~]))+(\\?*|\\*?))|[*\\-])){5}(:(([a-zA-Z]{2,3}(-([a-zA-Z]{2}"
-                '|[0-9]{3}))?)|[*\\-]))(:(((\\?*|\\*?)([a-zA-Z0-9\\-._]|(\\\\[\\\\*?!"'
-                "#$%&'()+,/:;<=>@\\[\\]\\^`{|}~]))+(\\?*|\\*?))|[*\\-])){4})"
-            )
-        ],
-    )
-
-    # Reverse relations
-    _product = models.ForeignKey(
-        AffectedProduct, related_name="cpes", on_delete=models.CASCADE
-    )
-
-
-class Module(models.Model):
-    name = models.CharField(max_length=4096)
-
-    # Reverse relations
-    _product = models.ForeignKey(
-        AffectedProduct, related_name="modules", on_delete=models.CASCADE
-    )
-
-
-class ProgramFile(models.Model):
-    name = models.CharField(max_length=1024)
-
-    # Reverse relations
-    _product = models.ForeignKey(
-        AffectedProduct, related_name="program_files", on_delete=models.CASCADE
-    )
-
-
-class ProgramRoutine(models.Model):
-    name = models.CharField(max_length=4096)
-
-    # Reverse relations
-    _product = models.ForeignKey(
-        AffectedProduct, related_name="program_routines", on_delete=models.CASCADE
-    )
 
 
 ###
