@@ -10,17 +10,33 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from os import environ as env
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def get_secret(name: str, encoding: str = "utf-8") -> str:
+    credentials_dir = env.get("CREDENTIALS_DIRECTORY")
+
+    if credentials_dir is None:
+        raise RuntimeError("No credentials directory available.")
+
+    try:
+        with open(f"{credentials_dir}/{name}", encoding=encoding) as f:
+            secret = f.read()
+    except FileNotFoundError:
+        raise RuntimeError(f"No secret named {name} found in {credentials_dir}.")
+
+    return secret
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-9#x&_cy+lf#09&23+v6*8o##x!@a$#84chcxl-n^a9l!s6)yu%"
+SECRET_KEY = get_secret("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,6 +53,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # AllAuth config
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.github",
+    "rest_framework",
     "shared",
     "webview",
 ]
@@ -49,6 +71,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Allauth account middleware
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "tracker.urls"
@@ -97,10 +121,38 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+SOCIALACCOUNT_PROVIDERS = {
+    "github": {
+        "SCOPE": [
+            "read:user",
+            "read:org",
+        ],
+        "APPS": [
+            {
+                "client_id": get_secret("GH_CLIENT_ID"),
+                "secret": get_secret("GH_SECRET"),
+                "key": "",
+            }
+        ],
+    }
+}
+
+SITE_ID = 1
+
+ACCOUNT_EMAIL_VERIFICATION = "none"
+
+LOGIN_REDIRECT_URL = "webview:home"
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en-gb"
 
 TIME_ZONE = "UTC"
 
