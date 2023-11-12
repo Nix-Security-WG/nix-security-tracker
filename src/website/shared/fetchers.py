@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from django.utils.timezone import make_aware
 from requests import get
 from shared import models
 
@@ -26,7 +27,12 @@ def mkDate(date: Optional[str]) -> Optional[datetime]:
     if date is None:
         return None
 
-    return datetime.fromisoformat(date)
+    time = datetime.fromisoformat(date)
+
+    if time.tzinfo is None:
+        return make_aware(time)
+
+    return time
 
 
 def mkMedia(data: Dict[str, str]) -> models.SupportingMedia:
@@ -49,8 +55,8 @@ def mkDescription(data: Dict[str, Any]) -> models.Description:
     return obj
 
 
-def mkTag(data: Dict[str, Any]) -> models.Tag:
-    obj, _ = models.Tag.objects.get_or_create(value=data["value"])
+def mkTag(name: str) -> models.Tag:
+    obj, _ = models.Tag.objects.get_or_create(value=name)
 
     return obj
 
@@ -199,6 +205,17 @@ def mkContainer(
     return obj
 
 
+def mkCve(data: Dict[str, Any]) -> models.CveRecord:
+    cve = mkCveRecord(data["cveMetadata"])
+
+    mkContainer(data["containers"]["cna"], _type=models.Container.Type.CNA, cve=cve)
+
+    for adp in data["containers"].get("adp", []):
+        mkContainer(adp, _type=models.Container.Type.ADP, cve=cve)
+
+    return cve
+
+
 def fetch_cve_gh(cve_id: str) -> Optional[models.CveRecord]:
     """Fetch a cve from the cvelistV5 github repository."""
 
@@ -219,11 +236,4 @@ def fetch_cve_gh(cve_id: str) -> Optional[models.CveRecord]:
 
     data = json.loads(r.text)
 
-    cve = mkCveRecord(data["cveMetadata"])
-
-    mkContainer(data["containers"]["cna"], _type=models.Container.Type.CNA, cve=cve)
-
-    for adp in data["containers"].get("adp", []):
-        mkContainer(adp, _type=models.Container.Type.ADP, cve=cve)
-
-    return cve
+    return mkCve(data)
