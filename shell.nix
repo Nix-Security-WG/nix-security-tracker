@@ -21,11 +21,11 @@ let
       black.enable = true;
       pyright.enable = true;
 
-      # HTML setup
-      html-tidy.enable = true;
-
       # Global setup
-      prettier.enable = true;
+      prettier = {
+        enable = true;
+        excludes = [ "\\.min.css$" "\\.html$" ];
+      };
       commitizen.enable = true;
     };
   };

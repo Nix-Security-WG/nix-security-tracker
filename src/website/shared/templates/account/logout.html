@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Out{% endblock %}
+
+{% block auth %}{% endblock %}
+
+{% block content %}
+<h1 class="title">Sign Out</h1>
+<hr />
+
+<div class="has-text-centered">
+  <b>Are you sure you want to sign out ?</b>
+</div>
+
+<form class="pt-5" method="post">
+  {% csrf_token %}
+  <div class="has-text-centered">
+    <button class="button is-link" type="submit">Sign Out</button>
+  </div>
+</form>
+{% endblock content %}

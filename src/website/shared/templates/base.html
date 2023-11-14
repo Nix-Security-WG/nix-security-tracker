@@ -1,0 +1,142 @@
+{% load static socialaccount %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>{% block title %}Nix Security Tracker{% endblock %}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {# Favicon #}
+    <!-- <link rel="shortcut icon" type="image/png" href="{% static 'images/kadenios.png' %}"> -->
+
+    {# CSS #}
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{% static 'css/bulma.min.css' %}"
+    />
+    <link rel="stylesheet" type="text/css" href="{% static 'css/nst.css' %}" />
+    <link
+      rel="stylesheet"
+      href="{% static 'vendor/fontawesome/css/fontawesome.min.css' %}"
+    />
+    <link
+      rel="stylesheet"
+      href="{% static 'vendor/fontawesome/css/brands.min.css' %}"
+    />
+    <link
+      rel="stylesheet"
+      href="{% static 'vendor/fontawesome/css/solid.min.css' %}"
+    />
+
+    <!-- <script src="{% static 'js/main.js' %}"></script> -->
+
+    {% block extra_head %}{% endblock extra_head %}
+  </head>
+
+  <body>
+    {# Scrool to top #}
+    <button
+      id="scroll-button"
+      class="button is-rounded is-large is-hidden has-tooltip"
+      data-tooltip="Scroll up"
+    >
+      <span class="icon is-large has-text-primary">
+        <i class="fas fa-2x fa-chevron-circle-up"></i>
+      </span>
+    </button>
+
+    {# Navbar #}
+    <nav class="navbar is-dark">
+      <div class="navbar-brand">
+        <a class="navbar-item is-size-4" href="{% url 'webview:home' %}">
+          <b>Nix Security Tracker</b>
+        </a>
+
+        <a
+          role="button"
+          class="navbar-burger"
+          aria-label="menu"
+          aria-expanded="false"
+          data-target="navbar-menu"
+        >
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+
+      <div id="navbar-menu" class="navbar-menu">
+        <div class="navbar-start"></div>
+      </div>
+
+      <div class="navbar-end">
+        {% if user.is_staff %}
+        <div
+          class="navbar-item has-tooltip-light has-tooltip-bottom"
+          data-tooltip="Settings"
+        >
+          <a class="" href="">
+            <span class="icon is-size-3">
+              <i class="fas fa-cog"></i>
+            </span>
+          </a>
+        </div>
+        {% endif %} {% block auth %} {% if user.is_authenticated %}
+        <div class="navbar-item">
+          <a class="button is-light" href="{% url 'account_logout' %}">
+            <span class="icon is-size-5">
+              <i class="fas fa-sign-out-alt"></i>
+            </span>
+            <span>Logout</span>
+          </a>
+        </div>
+
+        {% else %}
+
+        <div class="navbar-item">
+          <a class="button is-light" href="{% provider_login_url 'github' %}">
+            <span class="icon is-size-5">
+              <i class="fa-brands fa-github"></i>
+            </span>
+            <span>Login with GitHub</span>
+          </a>
+        </div>
+        {% endif %} {% endblock %}
+      </div>
+    </nav>
+
+    {% block layout %}
+    <div id="layout" class="mt-5">
+      <div class="columns is-centered">
+        <div class="column">
+          <section class="section pt-0">
+            <div id="content" class="box">
+              {% block content %}{% endblock content %}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+    {% endblock layout %}
+
+    <footer class="footer">
+      <p class="has-text-centered">
+        Nix Security Tracker is part of a project funded by the
+        <a href="https://sovereigntechfund.de/en/">Sovereign Tech Fund</a>.
+      </p>
+
+      <a
+        class="tag is-medium is-dark is-pulled-right px-1"
+        href="https://github.com/Tom-Hubrecht/nix-security-tracker"
+      >
+        <span class="icon is-size-4 mx-0">
+          <i class="fa-brands fa-github my-1"></i>
+        </span>
+      </a>
+    </footer>
+    {% block custom_js %}{% endblock %}
+  </body>
+</html>

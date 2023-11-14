@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block auth %}{% endblock %}
+
+{% block content %}
+{% if process == "connect" %}
+<h1 class="title">Connect {{ provider.name }}</h1>
+<hr>
+
+<div class="has-text-centered">
+  <b>You are about to connect a new third-party account from {{ provider.name }}.</b>
+</div>
+{% else %}
+<h1 class="title">Sign In Via {{ provider.name }}</h1>
+<hr />
+
+<div class="has-text-centered">
+  <b>You are about to sign in using a third-party account from {{ provider.name }}.</b>
+</div>
+{% endif %}
+
+<form class="pt-5" method="post">
+  {% csrf_token %}
+  <div class="has-text-centered">
+    <button class="button is-link" type="submit">Continue</button>
+  </div>
+</form>
+{% endblock content %}

@@ -25,7 +25,7 @@ def get_secret(name: str, encoding: str = "utf-8") -> str:
 
     try:
         with open(f"{credentials_dir}/{name}", encoding=encoding) as f:
-            secret = f.read()
+            secret = f.read().removesuffix("\n")
     except FileNotFoundError:
         raise RuntimeError(f"No secret named {name} found in {credentials_dir}.")
 
@@ -80,7 +80,7 @@ ROOT_URLCONF = "tracker.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "shared/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
