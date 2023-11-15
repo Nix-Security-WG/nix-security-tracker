@@ -1,2 +1,5 @@
 *.json
 dist-newstyle
+CVE
+cves.zip
+.direnv

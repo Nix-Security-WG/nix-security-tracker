@@ -55,6 +55,16 @@ type Author = Object
 type Manufacture = Object
 type Supplier = Object
 type License = Object
+type Metadata = Object
+type Hash = Object
+type SWID = Object
+type Pedigree = Object
+type Reference = Object
+type Evidence = Object
+type ReleaseNote = Object
+type ModelCard = Object
+type Data = Object
+type Properties = Object
 
 data MetaData = MetaData
   { _metadata_timestamp :: Maybe Text
