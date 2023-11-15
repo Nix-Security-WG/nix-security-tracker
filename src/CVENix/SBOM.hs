@@ -21,7 +21,6 @@ import Data.List (findIndex, isPrefixOf)
 import Data.Aeson.Types (Parser)
 
 
-type Component = Object
 type Service = Object
 type SBOMReference = Object
 type SBOMDependency = Object
@@ -73,4 +72,28 @@ data Component = Component
   { _component_type :: Text
   , _component_mime_type :: Maybe Text
   , _component_bom_ref :: Maybe Text
+  , _component_supplier :: Maybe Supplier
+  , _component_author :: Maybe Text
+  , _component_publisher :: Maybe Text
+  , _component_group :: Maybe Text
+  , _component_name :: Maybe Text
+  , _component_version :: Maybe Text
+  , _component_description :: Maybe Text
+  , _component_scope :: Maybe Text
+  , _component_hashes :: Maybe [Hash]
+  , _component_licenses :: Maybe [License]
+  , _component_copyright :: Maybe Text
+  , _component_cpe :: Maybe Text
+  , _component_purl :: Maybe Text
+  , _component_swid :: Maybe SWID
+  , _component_modified :: Maybe Bool
+  , _component_pedigree :: Maybe Pedigree
+  , _component_externalReferences :: Maybe Reference
+  , _component_components :: Maybe [Component]
+  , _component_evidence :: Maybe Evidence
+  , _component_releaseNotes :: Maybe ReleaseNote
+  , _component_modelCard :: Maybe ModelCard
+  , _component_data :: Maybe [Data]
+  , _component_properties :: Maybe [Properties]
+  , _component_signature :: Maybe [Signature]
   } deriving (Show, Generic)

@@ -15,29 +15,37 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic, Rep)
 import Type.Reflection (Typeable, typeRep)
+import System.Directory
+import Data.Maybe
 
 import Data.Char (isLower, isPunctuation, isUpper, toLower)
 import Data.List (findIndex, isPrefixOf)
 import Data.Aeson.Types (Parser)
 
 
-exampleParse :: FilePath -> IO ()
-exampleParse fp = do
-    file <- decodeFileStrict fp :: IO (Maybe CVE)
-    case file of
-      Nothing -> pure ()
-      Just cve -> do
-          let cveID = _cvemetadata_cveId $ _cve_cveMetadata cve
-          putStrLn $ "CVE: " <> T.unpack cveID
-          putStrLn "Affected Products: "
-          flip mapM_ (_cna_affected $ _container_cna $ _cve_containers cve) $ \x -> do
-              let prod = _product_packageName x
-                  cpes = _product_cpes x
-                  versions = _product_versions x
-              putStrLn $ show prod
-              putStrLn $ show versions
-              putStrLn $ show cpes
-              putStrLn ""
+exampleParse :: IO ()
+exampleParse = do
+    files <- listDirectory "CVE/cves/2023"
+    print $ length files
+    flip mapM_ files $ \catE -> do
+        let prefix = "CVE/cves/2023/" <> catE <> "/"
+        dir <- listDirectory prefix
+        flip mapM_ dir $ \x -> do
+          print $ catE <> "/" <> x
+          file <- decodeFileStrict $ prefix <> x
+          print $ getCVEIDs file
+          putStrLn ""
+
+
+  where
+      getCVEIDs p = case p of
+                      Nothing -> Nothing
+                      Just cve -> do
+                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
+                          case unwrappedContainer of
+                            Nothing -> Nothing
+                            Just cc -> Just $ map (\a -> (_product_packageName a, _product_product a)) cc
+
 
 
 data CVE = CVE
@@ -45,18 +53,19 @@ data CVE = CVE
   , _cve_dataVersion :: Text
   , _cve_cveMetadata :: CVEMetadata
   , _cve_containers :: Container
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 
 data CVEMetadata = CVEMetadata
   { _cvemetadata_cveId :: Text
   , _cvemetadata_assignerOrgId :: Text
   , _cvemetadata_assignerShortName :: Maybe Text
-  , _cvemetadata_reqeusterUserId :: Maybe Text
-  , _cvemetadata_cveDateUpdated :: Maybe Text
+  , _cvemetadata_requesterUserId :: Maybe Text
   , _cvemetadata_serial :: Maybe Int
   , _cvemetadata_dateReserved :: Maybe Text
   , _cvemetadata_datePublished :: Maybe Text
+  , _cvemetadata_dateRejected :: Maybe Text
+  , _cvemetadata_dateUpdated :: Maybe Text
   , _cvemetadata_state :: Maybe Text
   } deriving (Show, Eq, Ord, Generic)
 
@@ -64,17 +73,17 @@ data CVEMetadata = CVEMetadata
 data Container = Container
   { _container_cna :: CNA
   , _container_adp :: Maybe ADP
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data CNA = CNA
   { _cna_providerMetadata :: ProviderMetadata
   , _cna_dateAssigned :: Maybe Text
   , _cna_datePublic :: Maybe Text
   , _cna_title :: Maybe Text
-  , _cna_descriptions :: [Description]
-  , _cna_affected :: [Product]
+  , _cna_descriptions :: Maybe [Description]
+  , _cna_affected :: Maybe [Product]
   , _cna_problemTypes :: Maybe [ProblemType]
-  , _cna_references :: [Reference]
+  , _cna_references :: Maybe [Reference]
   , _cna_impacts :: Maybe [Impact]
   , _cna_metrics :: Maybe [Metric]
   , _cna_configurations :: Maybe [Description]
@@ -86,7 +95,8 @@ data CNA = CNA
   , _cna_source :: Maybe Object
   , _cna_tags :: Maybe [Object]
   , _cna_taxonomyMappings :: Maybe [TaxonomyMapping]
-  } deriving (Show, Generic)
+  , _cna_rejectedReasons :: Maybe [Description]
+  } deriving (Show, Eq, Ord, Generic)
 
 data ADP = ADP
   { _adp_providerMetadata :: ProviderMetadata
@@ -108,28 +118,28 @@ data ADP = ADP
   , _adp_source :: Maybe Object
   , _adp_tags :: Maybe [Object]
   , _adp_taxonomyMappings :: Maybe [TaxonomyMapping]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data ProgramRoutine = ProgramRoutine
-  { _programroutine_name :: Text } deriving (Show, Generic)
+  { _programroutine_name :: Text } deriving (Show, Eq, Ord, Generic)
 
 data ProviderMetadata = ProviderMetadata
   { _providermetadata_orgId :: Text
   , _providermetadata_shortName :: Maybe Text
   , _providermetadata_dateUpdated :: Maybe Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Description = Description
   { _description_lang :: Text
   , _description_value :: Text
   , _description_supportingMedia :: Maybe [Object]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data SupportingMedia = SupportingMedia
   { _supportingmedia_type :: Text
   , _supportingmedia_base64 :: Bool
   , _supportingmedia_value :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 
 data Product = Product
@@ -145,7 +155,7 @@ data Product = Product
   , _product_repo :: Maybe Text
   , _product_defaultStatus :: Maybe Text
   , _product_versions :: Maybe [Version]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Version = Version
   { _version_version :: Maybe Text
@@ -154,34 +164,34 @@ data Version = Version
   , _version_lessThan :: Maybe Text
   , _version_lessThanOrEqual :: Maybe Text
   , _version_changes :: Maybe [Change]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Change = Change
   { _change_at :: Text
   , _change_status :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 type Affected = Product
 
-data ProblemType = ProblemType { _problemtype_descriptions :: [ProblemDescription] } deriving (Show, Generic)
+data ProblemType = ProblemType { _problemtype_descriptions :: [ProblemDescription] } deriving (Show, Eq, Ord, Generic)
 data ProblemDescription = ProblemDescription
   { _problemdescription_lang :: Text
   , _problemdescription_description :: Text
   , _problemdescription_cweId :: Maybe Text
   , _problemdescription_type :: Maybe Text
   , _problemdescription_references :: Maybe [Reference]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Reference = Reference
   { _reference_url :: Text
   , _reference_name :: Maybe Text
   , _reference_tags :: Maybe [Text]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Impact = Impact
   { _impact_capecid :: Maybe Text
   , _impact_descriptions :: [Description]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Metric = Metric
   { _metric_format :: Maybe Text
@@ -190,12 +200,12 @@ data Metric = Metric
   , _metric_cvssV3_0 :: Maybe CVSS30
   , _metric_cvssV2_0 :: Maybe Object
   , _metric_other :: Maybe Object
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Scenario = Scenario
   { _scenario_lang :: Text
   , _scenario_value :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data CVSS31 = CVSS31
     { _cvss31_version :: Text
@@ -228,7 +238,7 @@ data CVSS31 = CVSS31
     , _cvss31_modifiedAvailabilityImpact :: Maybe Text
     , _cvss31_environmentalScore :: Maybe Text
     , _cvss31_environmentalSeverity :: Maybe Text
-    } deriving (Show, Generic)
+    } deriving (Show, Eq, Ord, Generic)
 
 data CVSS30 = CVSS30
     { _cvss30_version :: Text
@@ -261,7 +271,7 @@ data CVSS30 = CVSS30
     , _cvss30_modifiedAvailabilityImpact :: Maybe Text
     , _cvss30_environmentalScore :: Maybe Text
     , _cvss30_environmentalSeverity :: Maybe Text
-    } deriving (Show, Generic)
+    } deriving (Show, Eq, Ord, Generic)
 
 data CVSS20 = CVSS0
     { _cvss20_version :: Text
@@ -283,32 +293,32 @@ data CVSS20 = CVSS0
     , _cvss20_integrityRequirement :: Maybe Text
     , _cvss20_availabilityRequirement :: Maybe Text
     , _cvss20_environmentalScore :: Maybe Text
-    } deriving (Show, Generic)
+    } deriving (Show, Eq, Ord, Generic)
 
 data TimeLine = TimeLine
   { _timeline_time :: Text
   , _timeline_lang :: Text
   , _timeline_value :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data Credit = Credit
   { _credit_lang :: Text
   , _credit_value :: Text
   , _credit_user :: Maybe Text
   , _credit_type :: Maybe Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data TaxonomyMapping = TaxonomyMapping
   { _taxonomymapping_taxonomyName :: Text
   , _taxonomymapping_taxonomyVersion :: Maybe Text
   , _taxonomymapping_taxonomyRelations :: [TaxonomyRelation]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 data TaxonomyRelation = TaxonomyRelation
   { _taxonomyrelation_taxonomyId :: Text
   , _taxonomyrelation_relationshipName :: Text
   , _taxonomyrelation_relationshipValue :: Text
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Ord, Generic)
 
 instance FromJSON CVE where
     parseJSON = parseJsonStripType
