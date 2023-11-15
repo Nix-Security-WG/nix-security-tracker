@@ -22,7 +22,6 @@ import Data.Char (isLower, isPunctuation, isUpper, toLower)
 import Data.List (findIndex, isPrefixOf, nub)
 import Data.Aeson.Types (Parser)
 import Control.Concurrent
-import Control.Concurrent.Async
 import Control.Monad
 import Data.Time.Clock
 
