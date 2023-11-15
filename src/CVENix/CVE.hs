@@ -19,34 +19,43 @@ import System.Directory
 import Data.Maybe
 
 import Data.Char (isLower, isPunctuation, isUpper, toLower)
-import Data.List (findIndex, isPrefixOf)
+import Data.List (findIndex, isPrefixOf, nub)
 import Data.Aeson.Types (Parser)
+import Control.Concurrent
+import Control.Concurrent.Async
+import Control.Monad
+import Data.Time.Clock
 
 
 exampleParse :: IO ()
 exampleParse = do
-    files <- listDirectory "CVE/cves/2023"
-    print $ length files
-    flip mapM_ files $ \catE -> do
-        let prefix = "CVE/cves/2023/" <> catE <> "/"
+    files' <- listDirectory "CVE/cves/"
+    let files = filter (\x -> not (x == "delta.json" || x == "deltaLog.json")) files'
+    thing <- flip mapM files $ \version -> do
+        let prefix = "CVE/cves/" <> version <> "/"
         dir <- listDirectory prefix
-        flip mapM_ dir $ \x -> do
-          print $ catE <> "/" <> x
-          file <- decodeFileStrict $ prefix <> x
-          print $ getCVEIDs file
-          putStrLn ""
-
-
+        flip mapM dir $ \group -> do
+          let prefix' = prefix <> group <> "/"
+          dir' <- listDirectory prefix'
+          flip mapM dir' $ \x -> do
+            pure $ prefix' <> x
+    let thing' = concat $ concat thing
+    print $ length thing'
+    putStrLn $ "[JSON] Parsing " <> (show $ length thing') <> " files"
+    curTime <- getCurrentTime
+    l <- flip mapM thing' $ \x -> do
+      file <- decodeFileStrict x :: IO (Maybe CVE)
+      pure $ getCVEIDs file
+    putStrLn $ "[JSON] Done parsing"
+    curTime' <- getCurrentTime
+    putStrLn $ "[JSON] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
+    putStrLn $ (show $ length $ concat l)
   where
       getCVEIDs p = case p of
-                      Nothing -> Nothing
+                      Nothing -> []
                       Just cve -> do
-                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
-                          case unwrappedContainer of
-                            Nothing -> Nothing
-                            Just cc -> Just $ map (\a -> (_product_packageName a, _product_product a)) cc
-
-
+                          let unwrappedContainer = _cvemetadata_cveId $ _cve_cveMetadata cve
+                          [unwrappedContainer]
 
 data CVE = CVE
   { _cve_dataType :: Text
@@ -108,13 +117,13 @@ data ADP = ADP
   , _adp_problemTypes :: Maybe [ProblemType]
   , _adp_references :: [Reference]
   , _adp_impacts :: Maybe [Impact]
-  , _adp_metrics :: Maybe [Metric] -- Maybe [Metrics]
-  , _adp_configurations :: Maybe [Description] -- Maybe [Configurations]
-  , _adp_workarounds :: Maybe [Description] --Maybe [Workarounds]
-  , _adp_solutions :: Maybe [Description] --Maybe [Solutions]
-  , _adp_exploits :: Maybe [Description] -- Maybe [Exploits]
-  , _adp_timeline :: Maybe [TimeLine] --Maybe [Timeline]
-  , _adp_credits :: Maybe [Credit] --Maybe [Credits]
+  , _adp_metrics :: Maybe [Metric]
+  , _adp_configurations :: Maybe [Description]
+  , _adp_workarounds :: Maybe [Description]
+  , _adp_solutions :: Maybe [Description]
+  , _adp_exploits :: Maybe [Description]
+  , _adp_timeline :: Maybe [TimeLine]
+  , _adp_credits :: Maybe [Credit]
   , _adp_source :: Maybe Object
   , _adp_tags :: Maybe [Object]
   , _adp_taxonomyMappings :: Maybe [TaxonomyMapping]

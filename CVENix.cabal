@@ -26,10 +26,12 @@ library
                       text,
                       bytestring,
                       lens,
-                      directory
+                      directory,
+                      time
 
     hs-source-dirs:   src
     default-language: Haskell2010
+    ghc-options: -threaded -O2
 
 executable CVENix
     import:           warnings
@@ -42,3 +44,4 @@ executable CVENix
 
     hs-source-dirs:   exe
     default-language: Haskell2010
+    ghc-options: -threaded -O2

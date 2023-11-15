@@ -23,6 +23,6 @@
     devShells = supportedSystems (system: let
       pkgs = inputs.nixpkgs.legacyPackages."${system}";
       hsPkgs = haskellPackages pkgs;
-    in { default = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ]; }; });
+    in { default = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid ]; }; });
     };
 }
