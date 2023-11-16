@@ -36,3 +36,17 @@ stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
         if typeName `isPrefixOf` fieldName
             then drop (length typeName) fieldName
             else fieldName
+
+
+stripType' :: Options
+stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
+  where
+    stripTypeNamePrefix :: String -> String
+    stripTypeNamePrefix = replaceUnderScores . drop 1 . dropWhile (\x -> x /= '_') . drop 1 . namingWrong
+
+    namingWrong :: String -> String
+    namingWrong a = if head a /= '_' then error ("Naming is wrong for " <> a) else a
+
+    replaceUnderScores :: String -> String
+    replaceUnderScores a = flip map a $ \x -> if x == '_' then '-' else x
+

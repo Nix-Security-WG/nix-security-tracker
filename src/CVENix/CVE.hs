@@ -11,43 +11,13 @@ module CVENix.CVE where
 
 import CVENix.Utils
 
+import Data.Aeson.TH
 import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Directory
 import GHC.Generics (Generic)
 import Data.Time.Clock
-
-
-exampleParse :: IO ()
-exampleParse = do
-    files' <- listDirectory "CVE/cves/"
-    let files = filter (\x -> not (x == "delta.json" || x == "deltaLog.json")) files'
-    thing <- flip mapM files $ \version -> do
-        let prefix = "CVE/cves/" <> version <> "/"
-        dir <- listDirectory prefix
-        flip mapM dir $ \group -> do
-          let prefix' = prefix <> group <> "/"
-          dir' <- listDirectory prefix'
-          flip mapM dir' $ \x -> do
-            pure $ prefix' <> x
-    let thing' = concat $ concat thing
-    print $ length thing'
-    putStrLn $ "[JSON] Parsing " <> (show $ length thing') <> " files"
-    curTime <- getCurrentTime
-    l <- flip mapM thing' $ \x -> do
-      file <- decodeFileStrict x :: IO (Maybe CVE)
-      pure $ getCVEIDs file
-    putStrLn $ "[JSON] Done parsing"
-    curTime' <- getCurrentTime
-    putStrLn $ "[JSON] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
-    putStrLn $ (show $ length $ concat l)
-  where
-      getCVEIDs p = case p of
-                      Nothing -> []
-                      Just cve -> do
-                          let unwrappedContainer = _cvemetadata_cveId $ _cve_cveMetadata cve
-                          [unwrappedContainer]
 
 data CVE = CVE
   { _cve_dataType :: Text
@@ -321,102 +291,31 @@ data TaxonomyRelation = TaxonomyRelation
   , _taxonomyrelation_relationshipValue :: Text
   } deriving (Show, Eq, Ord, Generic)
 
-instance FromJSON CVE where
-    parseJSON = parseJsonStripType
-instance ToJSON CVE
 
-instance FromJSON CVEMetadata where
-    parseJSON = parseJsonStripType
-instance ToJSON CVEMetadata
-
-instance FromJSON Container where
-    parseJSON = parseJsonStripType
-instance ToJSON Container
-
-instance FromJSON CNA where
-    parseJSON = parseJsonStripType
-instance ToJSON CNA
-
-instance FromJSON ProviderMetadata where
-    parseJSON = parseJsonStripType
-instance ToJSON ProviderMetadata
-
-instance FromJSON Description where
-    parseJSON = parseJsonStripType
-instance ToJSON Description
-
-instance FromJSON SupportingMedia where
-    parseJSON = parseJsonStripType
-instance ToJSON SupportingMedia
-
-instance FromJSON Product where
-    parseJSON = parseJsonStripType
-instance ToJSON Product
-
-instance FromJSON Version where
-    parseJSON = parseJsonStripType
-instance ToJSON Version
-
-instance FromJSON Change where
-    parseJSON = parseJsonStripType
-instance ToJSON Change
-
-instance FromJSON ProblemType where
-    parseJSON = parseJsonStripType
-instance ToJSON ProblemType
-
-instance FromJSON ProblemDescription where
-    parseJSON = parseJsonStripType
-instance ToJSON ProblemDescription
-
-instance FromJSON Reference where
-    parseJSON = parseJsonStripType
-instance ToJSON Reference
-
-instance FromJSON Impact where
-    parseJSON = parseJsonStripType
-instance ToJSON Impact
-
-instance FromJSON Metric where
-    parseJSON = parseJsonStripType
-instance ToJSON Metric
-
-instance FromJSON Scenario where
-    parseJSON = parseJsonStripType
-instance ToJSON Scenario
-
-instance FromJSON CVSS31 where
-    parseJSON = parseJsonStripType
-instance ToJSON CVSS31
-
-instance FromJSON CVSS30 where
-    parseJSON = parseJsonStripType
-instance ToJSON CVSS30
-
-instance FromJSON CVSS20 where
-    parseJSON = parseJsonStripType
-instance ToJSON CVSS20
-
-instance FromJSON TimeLine where
-    parseJSON = parseJsonStripType
-instance ToJSON TimeLine
-
-instance FromJSON Credit where
-    parseJSON = parseJsonStripType
-instance ToJSON Credit
-
-instance FromJSON TaxonomyMapping where
-    parseJSON = parseJsonStripType
-instance ToJSON TaxonomyMapping
-
-instance FromJSON TaxonomyRelation where
-    parseJSON = parseJsonStripType
-instance ToJSON TaxonomyRelation
-
-instance FromJSON ADP where
-    parseJSON = parseJsonStripType
-instance ToJSON ADP
-
-instance FromJSON ProgramRoutine where
-    parseJSON = parseJsonStripType
-instance ToJSON ProgramRoutine
+mconcat <$> sequence (deriveJSON stripType' <$>
+    [ ''CVE
+    , ''CVEMetadata
+    , ''Container
+    , ''CNA
+    , ''ADP
+    , ''ProviderMetadata
+    , ''Description
+    , ''SupportingMedia
+    , ''Product
+    , ''Version
+    , ''Change
+    , ''ProblemType
+    , ''ProblemDescription
+    , ''Reference
+    , ''Impact
+    , ''Metric
+    , ''Scenario
+    , ''CVSS31
+    , ''CVSS30
+    , ''CVSS20
+    , ''TimeLine
+    , ''Credit
+    , ''TaxonomyMapping
+    , ''TaxonomyRelation
+    , ''ProgramRoutine
+    ])
