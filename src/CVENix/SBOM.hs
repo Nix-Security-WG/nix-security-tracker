@@ -9,6 +9,9 @@
 
 module CVENix.SBOM where
 
+import CVENix.Utils
+import Data.Aeson.TH
+
 import GHC.Generics
 import Data.Aeson
 import Data.Text (Text)
@@ -35,29 +38,19 @@ data SBOM = SBOM
   { _sbom_bomFormat :: Text
   , _sbom_specVersion :: Text
   , _sbom_serialNumber :: Maybe Text
-  , _sbom_version :: Maybe Text
-  , _sbom_metadata :: Maybe Metadata
+  , _sbom_version :: Int
+  , _sbom_metadata :: Maybe MetaData
   , _sbom_components :: Maybe [Component]
   , _sbom_services :: Maybe [Service]
   , _sbom_externalReferences :: Maybe [SBOMReference]
   , _sbom_dependencies :: Maybe [SBOMDependency]
-  , _sbom_compositions :: Maybe [Composition]
-  , _sbom_vulnerabilities :: Maybe [Vulnerability]
-  , _sbom_annotations :: Maybe [Annotation]
-  , _sbom_formulation :: Maybe [Formulation]
-  , _sbom_properties :: Maybe [Property]
-  , _sbom_signature :: Maybe Signature
   } deriving (Show, Generic)
 
 type LifeCycle = Object
 type Tool = Object
 type Author = Object
 type Manufacture = Object
-type Supplier = Object
-type License = Object
 type Metadata = Object
-type Hash = Object
-type SWID = Object
 type Pedigree = Object
 type Reference = Object
 type Evidence = Object
@@ -107,3 +100,61 @@ data Component = Component
   , _component_properties :: Maybe [Properties]
   , _component_signature :: Maybe [Signature]
   } deriving (Show, Generic)
+
+data Supplier = Supplier
+  { _supplier_name :: Maybe Text
+  , _supplier_url :: Maybe Text
+  , _supplier_contact :: Maybe Contact
+  } deriving (Show, Generic)
+
+data Contact = Contact
+  { _contact_name :: Maybe Text
+  , _contact_email :: Maybe Text
+  , _contact_phone :: Maybe Text
+  } deriving (Show, Generic)
+
+data Hash = Hash
+ { _hash_alg :: Text
+ , _hash_content :: Text
+ } deriving (Show, Generic)
+
+data License = License
+ { _license_license :: Maybe LicenseData
+ , _license_expression :: Maybe Text
+ } deriving (Show, Generic)
+
+data LicenseData = LicenseData
+  { _licensedata_id :: Maybe Text
+  , _licensedata_name :: Maybe Text
+  , _licensedata_text :: Maybe [SBOMText]
+  , _licensedata_url :: Maybe Text
+  } deriving (Show, Generic)
+
+data SBOMText = SBOMText
+  { _sbomtext_contentType :: Maybe Text
+  , _sbomtext_encoding :: Maybe Text
+  , _sbomtext_content :: Text
+  } deriving (Show, Generic)
+
+data SWID = SWID
+  { _swid_tagId :: Text
+  , _swid_name :: Text
+  , _swid_version :: Maybe Text
+  , _swid_tagVersion :: Maybe Text
+  , _swid_patch :: Maybe Text
+  , _swid_text :: Maybe SBOMText
+  , _swid_url :: Maybe Text
+  } deriving (Show, Generic)
+
+mconcat <$> sequence (deriveJSON stripType' <$>
+    [ ''SBOM
+    , ''MetaData
+    , ''Component
+    , ''Supplier
+    , ''Contact
+    , ''Hash
+    , ''License
+    , ''LicenseData
+    , ''SBOMText
+    , ''SWID
+    ])

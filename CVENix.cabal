@@ -20,7 +20,8 @@ library
     import:           warnings
     exposed-modules:  CVENix.CVE,
                       CVENix.SBOM,
-                      CVENix.Utils
+                      CVENix.Utils,
+                      CVENix.Examples
 
     build-depends:    base ^>=4.17.2.0,
                       aeson,

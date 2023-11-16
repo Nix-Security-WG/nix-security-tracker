@@ -1,7 +1,8 @@
 module Main where
 
-import CVENix.CVE
+import CVENix.Examples
 
 main :: IO ()
 main = do
-    exampleParse
+    exampleParseSBOM
+    exampleParseCVE
