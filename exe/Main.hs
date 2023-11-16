@@ -9,4 +9,4 @@ main :: IO ()
 main = do
     args <- getArgs
     exampleParseSBOM $ head args
-    exampleParseCVE
+    () <$ exampleParseCVE
