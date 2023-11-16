@@ -20,14 +20,14 @@ exampleParseCVE = do
             pure $ prefix' <> x
     let thing' = concat $ concat thing
     print $ length thing'
-    putStrLn $ "[JSON] Parsing " <> (show $ length thing') <> " files"
+    putStrLn $ "[CVE] Parsing " <> (show $ length thing') <> " files"
     curTime <- getCurrentTime
     l <- flip mapM thing' $ \x -> do
       file <- decodeFileStrict x :: IO (Maybe CVE)
       pure $ getCVEIDs file
-    putStrLn $ "[JSON] Done parsing"
+    putStrLn $ "[CVE] Done parsing"
     curTime' <- getCurrentTime
-    putStrLn $ "[JSON] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
+    putStrLn $ "[CVE] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
     putStrLn $ (show $ length $ concat l)
   where
       getCVEIDs p = case p of
