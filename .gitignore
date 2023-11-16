@@ -6,3 +6,4 @@ cves.zip
 /sbom.cdx.json
 /sbom.spdx.json
 /sbom.csv
+cabal.project.local*
