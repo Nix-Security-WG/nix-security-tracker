@@ -23,7 +23,6 @@ import Data.Char (isLower, isPunctuation, isUpper, toLower)
 import Data.List (findIndex, isPrefixOf)
 import Data.Aeson.Types (Parser)
 
-
 type Service = Object
 type SBOMReference = Object
 type SBOMDependency = Object
@@ -38,7 +37,7 @@ data SBOM = SBOM
   { _sbom_bomFormat :: Text
   , _sbom_specVersion :: Text
   , _sbom_serialNumber :: Maybe Text
-  , _sbom_version :: Int
+  , _sbom_version :: Integer
   , _sbom_metadata :: Maybe MetaData
   , _sbom_components :: Maybe [Component]
   , _sbom_services :: Maybe [Service]

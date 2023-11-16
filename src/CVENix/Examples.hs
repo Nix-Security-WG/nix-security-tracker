@@ -36,7 +36,7 @@ exampleParseCVE = do
                           let unwrappedContainer = _cvemetadata_cveId $ _cve_cveMetadata cve
                           [unwrappedContainer]
 
-exampleParseSBOM :: IO ()
-exampleParseSBOM = do
-    file <- decodeFileStrict "sbom.cdx.json" :: IO (Maybe SBOM)
+exampleParseSBOM :: String -> IO ()
+exampleParseSBOM fp = do
+    file <- decodeFileStrict fp :: IO (Maybe SBOM)
     print file

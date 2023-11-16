@@ -1,5 +1,9 @@
-To get into the proper env
+To get started running the process:
 
-```bash
-nix-shell -p "haskellPackages.ghcWithPackages (p: with p; [ haskell-src-exts ghci text network cabal-install cassava split aeson lens ])"
+```
+nix develop
+export PATH=~/.local/bin:$PATH
+cabal install
+
+./scan.sh /nix/var/nix/profiles/system
 ```

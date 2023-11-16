@@ -3,4 +3,7 @@ dist-newstyle
 CVE
 cves.zip
 .direnv
+/sbom.cdx.json
+/sbom.spdx.json
+/sbom.csv
 cabal.project.local*
