@@ -30,7 +30,7 @@
     in {
       default = hsPkgs.shellFor {
         packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid ];
-        propagatedBuildInputs = [ inputs.sbomnix.packages.x86_64-linux.sbomnix ];
+        propagatedBuildInputs = [ inputs.sbomnix.packages."${system}".sbomnix ];
       };
       CVENix = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid ]; };
     });
