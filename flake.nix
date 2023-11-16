@@ -1,6 +1,10 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    sbomnix = {
+      url = "github:tiiuae/sbomnix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -23,6 +27,12 @@
     devShells = supportedSystems (system: let
       pkgs = inputs.nixpkgs.legacyPackages."${system}";
       hsPkgs = haskellPackages pkgs;
-    in { default = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid ]; }; });
-    };
+    in {
+      default = hsPkgs.shellFor {
+        packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid ];
+        propagatedBuildInputs = [ inputs.sbomnix.packages.x86_64-linux.sbomnix ];
+      };
+      CVENix = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid ]; };
+    });
+  };
 }
