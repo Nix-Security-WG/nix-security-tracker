@@ -9,6 +9,7 @@
 
 module CVENix.SBOM where
 
+import CVENix.Utils
 import GHC.Generics
 import Data.Aeson
 import Data.Text (Text)
@@ -20,6 +21,9 @@ import Data.Char (isLower, isPunctuation, isUpper, toLower)
 import Data.List (findIndex, isPrefixOf)
 import Data.Aeson.Types (Parser)
 
+parseSbom :: String -> IO (Maybe SBOM)
+parseSbom filename = do
+  decodeFileStrict filename :: IO (Maybe SBOM)
 
 type Service = Object
 type SBOMReference = Object
@@ -35,7 +39,7 @@ data SBOM = SBOM
   { _sbom_bomFormat :: Text
   , _sbom_specVersion :: Text
   , _sbom_serialNumber :: Maybe Text
-  , _sbom_version :: Maybe Text
+  , _sbom_version :: Maybe Integer
   , _sbom_metadata :: Maybe Metadata
   , _sbom_components :: Maybe [Component]
   , _sbom_services :: Maybe [Service]
@@ -107,3 +111,8 @@ data Component = Component
   , _component_properties :: Maybe [Properties]
   , _component_signature :: Maybe [Signature]
   } deriving (Show, Generic)
+
+instance FromJSON SBOM where
+    parseJSON = parseJsonStripType
+instance FromJSON Component where
+    parseJSON = parseJsonStripType
