@@ -39,4 +39,15 @@ exampleParseCVE = do
 exampleParseSBOM :: String -> IO ()
 exampleParseSBOM fp = do
     file <- decodeFileStrict fp :: IO (Maybe SBOM)
-    print file
+    case file of
+      Nothing -> putStrLn "[SBOM] Failed to parse"
+      Just f -> do
+          putStrLn "Known Deps:"
+          case _sbom_metadata f of
+            Nothing -> putStrLn "No known deps?"
+            Just s -> print s
+
+  where
+      getDeps a = case a of
+                  Nothing -> Nothing
+                  Just d -> Just $ map (_sbomdependency_ref) d

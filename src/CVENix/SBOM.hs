@@ -23,9 +23,6 @@ import Data.Char (isLower, isPunctuation, isUpper, toLower)
 import Data.List (findIndex, isPrefixOf)
 import Data.Aeson.Types (Parser)
 
-type Service = Object
-type SBOMReference = Object
-type SBOMDependency = Object
 type Composition = Object
 type Vulnerability = Object
 type Annotation = Object
@@ -45,13 +42,46 @@ data SBOM = SBOM
   , _sbom_dependencies :: Maybe [SBOMDependency]
   } deriving (Show, Generic)
 
+data SBOMReference = SBOMReference
+  { _sbomreference_url :: Text
+  , _sbomreference_comment :: Maybe Text
+  , _sbomreference_type :: Text
+  } deriving (Show, Generic)
+
+data SBOMDependency = SBOMDependency
+  { _sbomdependency_ref :: Text
+  , _sbomdependency_dependsOn :: Maybe [Text]
+  } deriving (Show, Generic)
+
+data Service = Service
+  { _service_bom_ref :: Maybe Text
+  , _service_proivder :: Maybe Provider
+  , _service_group :: Maybe Text
+  , _service_name :: Text
+  , _service_version :: Maybe Text
+  , _service_description :: Maybe Text
+  , _service_endpoints :: Maybe Text
+  , _service_authenticated :: Maybe Bool
+  , _service_x_trust_boundary :: Maybe Bool
+  , _service_data :: Maybe [SBOMData]
+  , _service_license :: Maybe [License]
+  , _service_externalReferences :: Maybe [Reference]
+  , _service_services :: Maybe [Service]
+  } deriving (Show, Generic)
+
+data SBOMData = ServiceData
+  { _servicedata_flow :: Text
+  , _servicedata_classification :: Text
+  } deriving (Show, Generic)
+
+type Provider = Supplier
+
 type LifeCycle = Object
 type Tool = Object
 type Author = Object
 type Manufacture = Object
-type Metadata = Object
 type Pedigree = Object
-type Reference = Object
+type Reference = SBOMReference
 type Evidence = Object
 type ReleaseNote = Object
 type ModelCard = Object
@@ -156,4 +186,8 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''LicenseData
     , ''SBOMText
     , ''SWID
+    , ''SBOMDependency
+    , ''SBOMReference
+    , ''Service
+    , ''SBOMData
     ])

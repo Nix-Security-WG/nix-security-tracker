@@ -26,7 +26,6 @@ data CVE = CVE
   , _cve_containers :: Container
   } deriving (Show, Eq, Ord, Generic)
 
-
 data CVEMetadata = CVEMetadata
   { _cvemetadata_cveId :: Text
   , _cvemetadata_assignerOrgId :: Text
