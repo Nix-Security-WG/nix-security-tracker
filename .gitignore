@@ -3,3 +3,4 @@ dist-newstyle
 CVE
 cves.zip
 .direnv
+cabal.project.local*

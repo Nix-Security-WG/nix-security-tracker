@@ -9,20 +9,13 @@
 
 module CVENix.CVE where
 
-import GHC.Generics
+import CVENix.Utils
+
 import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC.Generics (Generic, Rep)
-import Type.Reflection (Typeable, typeRep)
 import System.Directory
-import Data.Maybe
-
-import Data.Char (isLower, isPunctuation, isUpper, toLower)
-import Data.List (findIndex, isPrefixOf, nub)
-import Data.Aeson.Types (Parser)
-import Control.Concurrent
-import Control.Monad
+import GHC.Generics (Generic)
 import Data.Time.Clock
 
 
@@ -427,23 +420,3 @@ instance ToJSON ADP
 instance FromJSON ProgramRoutine where
     parseJSON = parseJsonStripType
 instance ToJSON ProgramRoutine
-
-
-parseJsonStripType
-    :: forall a .
-       (Typeable a, Generic a, GFromJSON Zero (Rep a))
-    => Value
-    -> Parser a
-parseJsonStripType = genericParseJSON (stripType @a)
-
-stripType :: forall a . Typeable a => Options
-stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
-  where
-    typeName :: String
-    typeName = "_" <> (map toLower $ show $ typeRep @a) <> "_"
-
-    stripTypeNamePrefix :: String -> String
-    stripTypeNamePrefix fieldName =
-        if typeName `isPrefixOf` fieldName
-            then drop (length typeName) fieldName
-            else fieldName
