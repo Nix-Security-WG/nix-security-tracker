@@ -27,9 +27,13 @@ exampleParseCVE = do
     l <- flip mapM thing' $ \x -> do
       file <- decodeFileStrict x :: IO (Maybe CVE)
       pure $ getCVEIDs file
+    l2 <- flip mapM thing' $ \x -> do
+      file <- decodeFileStrict x
+      pure $ getCPEIDs file
     putStrLn $ "[CVE] Done parsing"
     curTime' <- getCurrentTime
     putStrLn $ "[CVE] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
+    print $ filter (\a -> _cpe_vendor a /= "microsoft") $ catMaybes $ map parseCPE (concat $ concat $ l2)
     pure $ catMaybes $ concat $ l
   where
       getCVEIDs p = case p of
@@ -39,4 +43,10 @@ exampleParseCVE = do
                           case unwrappedContainer of
                             Nothing -> []
                             Just a -> map (_product_packageName) a
-
+      getCPEIDs p = case p of
+                      Nothing -> []
+                      Just cve -> do
+                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
+                          case unwrappedContainer of
+                            Nothing -> []
+                            Just a -> catMaybes $ map (_product_cpes) a

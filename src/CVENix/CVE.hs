@@ -5,6 +5,8 @@
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 module CVENix.CVE where
@@ -15,6 +17,7 @@ import Data.Aeson.TH
 import Data.Aeson
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import qualified Data.Text as T
 
 data CVE = CVE
   { _cve_dataType :: Text
@@ -286,6 +289,28 @@ data TaxonomyRelation = TaxonomyRelation
   , _taxonomyrelation_relationshipName :: Text
   , _taxonomyrelation_relationshipValue :: Text
   } deriving (Show, Eq, Ord, Generic)
+
+data CPE = CPE
+  { _cpe_cpeVersion :: Text
+  , _cpe_part :: Text
+  , _cpe_vendor :: Text
+  , _cpe_product :: Text
+  , _cpe_version :: Text
+  , _cpe_update :: Text
+  , _cpe_edition :: Text
+  , _cpe_lang :: Text
+  , _cpe_sw_edition :: Text
+  , _cpe_tgt_sw :: Text
+  , _cpe_tgt_hw :: Text
+  , _cpe_extra :: Text
+  } deriving (Show, Generic)
+
+parseCPE :: Text -> Maybe CPE
+parseCPE = parse . T.splitOn ":"
+  where
+      parse = \case
+        [_, cpe_version, part, vendor, product', version, update, edition, language, sw_ed, tgt_sw, tgt_hw, extra] -> Just $ CPE cpe_version part vendor product' version update edition language sw_ed tgt_sw tgt_hw extra
+        _ -> Nothing
 
 
 mconcat <$> sequence (deriveJSON stripType' <$>
