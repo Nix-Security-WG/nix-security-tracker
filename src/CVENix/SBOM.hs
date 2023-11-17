@@ -191,3 +191,7 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''Service
     , ''SBOMData
     ])
+
+parseSBOM :: String -> IO (Maybe SBOM)
+parseSBOM fp = do
+    decodeFileStrict fp :: IO (Maybe SBOM)

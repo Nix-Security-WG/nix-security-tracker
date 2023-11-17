@@ -21,6 +21,7 @@ library
     exposed-modules:  CVENix.CVE,
                       CVENix.SBOM,
                       CVENix.Utils,
+                      CVENix.Matching,
                       CVENix.Examples
 
     build-depends:    base ^>=4.17.2.0,
