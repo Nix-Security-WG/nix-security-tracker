@@ -9,14 +9,6 @@
 module CVENix.Utils where
 
 import Data.Aeson
-import Data.Text (Text)
-import qualified Data.Text as T
-import GHC.Generics (Generic, Rep)
-import Type.Reflection (Typeable, typeRep)
-
-import Data.Char (isLower, isPunctuation, isUpper, toLower)
-import Data.List (findIndex, isPrefixOf, nub)
-import Data.Aeson.Types (Parser)
 
 stripType :: Options
 stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
