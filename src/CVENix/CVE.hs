@@ -14,10 +14,7 @@ import CVENix.Utils
 import Data.Aeson.TH
 import Data.Aeson
 import Data.Text (Text)
-import qualified Data.Text as T
-import System.Directory
 import GHC.Generics (Generic)
-import Data.Time.Clock
 
 data CVE = CVE
   { _cve_dataType :: Text

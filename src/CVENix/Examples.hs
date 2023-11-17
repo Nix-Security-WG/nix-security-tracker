@@ -3,12 +3,9 @@ module CVENix.Examples where
 
 import Data.Aeson
 import CVENix.CVE
-import CVENix.SBOM
 import System.Directory
 import Data.Time.Clock
 import Data.Maybe
-import Data.List (filter)
-import qualified Data.Text as T
 import Data.Text (Text)
 
 exampleParseCVE :: IO [Text]
