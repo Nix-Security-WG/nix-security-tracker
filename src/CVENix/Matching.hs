@@ -13,13 +13,6 @@ data Match = Match
   , _match_advisory :: Advisory
   }
 
-instance Show Match where
-  show m =
-    let pname = _match_pname m
-        drv = _match_drv m
-        cveId = _advisory_cveId $ _match_advisory m
-    in show pname ++ "\t" ++ show drv ++ "\t" ++ show cveId
-
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
     putStrLn "Matched advisories:"
@@ -29,7 +22,16 @@ match sbom cves = do
           let d = getDeps $ Just s
           case d of
             Nothing -> pure ()
-            Just a' -> mapM_ print $ matchNames a' cves
+            Just a' ->
+              let
+                pretty :: Match -> String
+                pretty m =
+                  let pname = _match_pname m
+                      drv = _match_drv m
+                      cveId = _advisory_cveId $ _match_advisory m
+                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show cveId
+              in
+                mapM_ putStrLn $ map pretty $ matchNames a' cves
 
   where
       getDeps a = case a of
