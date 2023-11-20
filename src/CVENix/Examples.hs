@@ -9,7 +9,12 @@ import Data.Time.Clock
 import Data.Maybe
 import Data.Text (Text)
 
-exampleParseCVE :: IO [Text]
+data Advisory = Advisory
+  { _advisory_cveId :: Text
+  , _advisory_productName :: Maybe Text
+  } deriving Show
+
+exampleParseCVE :: IO [Advisory]
 exampleParseCVE = do
     files' <- listDirectory "CVE/cves/"
     let files = filter (\x -> not (x == "delta.json" || x == "deltaLog.json")) files'
@@ -27,7 +32,7 @@ exampleParseCVE = do
     curTime <- getCurrentTime
     l <- flip mapM thing' $ \x -> do
       file <- decodeFileStrict x :: IO (Maybe CVE)
-      pure $ getCVEIDs file
+      pure $ asAdvisories file
     l2 <- flip mapM thing' $ \x -> do
       file <- decodeFileStrict x
       pure $ getCPEIDs file
@@ -35,15 +40,20 @@ exampleParseCVE = do
     curTime' <- getCurrentTime
     putStrLn $ "[CVE] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
     print $ filter (\a -> _cpe_vendor a /= "microsoft") $ catMaybes $ map parseCPE (concat $ concat $ l2)
-    pure $ catMaybes $ concat $ l
+    pure $ concat $ l
   where
-      getCVEIDs p = case p of
+      asAdvisories :: Maybe CVE -> [Advisory]
+      asAdvisories p = case p of
                       Nothing -> []
                       Just cve -> do
-                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
+                          let
+                            cveId = _cvemetadata_cveId $ _cve_cveMetadata cve
+                            unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
                           case unwrappedContainer of
                             Nothing -> []
-                            Just a -> map (_product_packageName) a
+                            Just a ->
+                              let names = mapMaybe (_product_packageName) a
+                              in map (\n -> Advisory {_advisory_cveId = cveId, _advisory_productName = Just n}) names
       getCPEIDs p = case p of
                       Nothing -> []
                       Just cve -> do
