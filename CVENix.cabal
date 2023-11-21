@@ -22,7 +22,8 @@ library
                       CVENix.SBOM,
                       CVENix.Utils,
                       CVENix.Matching,
-                      CVENix.Examples
+                      CVENix.Examples,
+                      CVENix.Types
 
     build-depends:    base ^>=4.17.2.0,
                       aeson,

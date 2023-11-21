@@ -1,17 +1,15 @@
+{-# LANGUAGE OverloadedStrings #-}
 module CVENix.Matching where
 
 import CVENix.SBOM
 import CVENix.Examples
+import CVENix.Types
+import CVENix.CVE
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Map as Map
 import qualified Data.Text as T
 
-data Match = Match
-  { _match_pname :: Text
-  , _match_drv :: Text
-  , _match_advisory :: Advisory
-  }
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -29,11 +27,18 @@ match sbom cves = do
                   let pname = _match_pname m
                       drv = _match_drv m
                       cveId = _advisory_cveId $ _match_advisory m
-                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show cveId
+                      versions = map (\x -> VersionData (_version_version x) (maybeVuln x)) <$> (_advisory_versions $ _match_advisory m)
+                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show cveId <> "\n" <> show versions
               in
                 mapM_ putStrLn $ map pretty $ matchNames a' cves
 
   where
+      maybeVuln a = if isJust $ _version_lessThan a then
+                        (\x -> "lessThan " <> x) <$> _version_lessThan a
+                    else if isJust $ _version_lessThanOrEqual a then
+                        (\x -> "lessThanOrEqual " <> x) <$> _version_lessThanOrEqual a
+                    else Nothing
+
       getDeps a = case a of
                   Nothing -> Nothing
                   Just d -> Just $ do

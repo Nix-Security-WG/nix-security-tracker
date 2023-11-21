@@ -8,11 +8,8 @@ import System.Directory
 import Data.Time.Clock
 import Data.Maybe
 import Data.Text (Text)
+import CVENix.Types
 
-data Advisory = Advisory
-  { _advisory_cveId :: Text
-  , _advisory_productName :: Maybe Text
-  } deriving Show
 
 exampleParseCVE :: IO [Advisory]
 exampleParseCVE = do
@@ -33,13 +30,9 @@ exampleParseCVE = do
     l <- flip mapM thing' $ \x -> do
       file <- decodeFileStrict x :: IO (Maybe CVE)
       pure $ asAdvisories file
-    l2 <- flip mapM thing' $ \x -> do
-      file <- decodeFileStrict x
-      pure $ getCPEIDs file
     putStrLn $ "[CVE] Done parsing"
     curTime' <- getCurrentTime
     putStrLn $ "[CVE] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
-    print $ filter (\a -> _cpe_vendor a /= "microsoft") $ catMaybes $ map parseCPE (concat $ concat $ l2)
     pure $ concat $ l
   where
       asAdvisories :: Maybe CVE -> [Advisory]
@@ -52,8 +45,8 @@ exampleParseCVE = do
                           case unwrappedContainer of
                             Nothing -> []
                             Just a ->
-                              let names = mapMaybe (_product_packageName) a
-                              in map (\n -> Advisory {_advisory_cveId = cveId, _advisory_productName = Just n}) names
+                              let names = map (\x -> (_product_packageName x, _product_versions x)) a
+                              in map (\(n, v) -> Advisory cveId n v) names
       getCPEIDs p = case p of
                       Nothing -> []
                       Just cve -> do
@@ -61,3 +54,10 @@ exampleParseCVE = do
                           case unwrappedContainer of
                             Nothing -> []
                             Just a -> catMaybes $ map (_product_cpes) a
+      getVersions p = case p of
+                        Nothing -> []
+                        Just cve -> do
+                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
+                          case unwrappedContainer of
+                            Nothing -> []
+                            Just a -> catMaybes $ map (_product_versions) a
