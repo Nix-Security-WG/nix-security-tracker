@@ -62,5 +62,5 @@ match sbom cves = do
                   in
                     concat $ map
                         (\package ->
-                            map (\matched_advisory -> Match { _match_pname = fst package, _match_drv = snd package, _match_advisory = matched_advisory }) (Set.toList $ SetMultimap.lookup (fst package) advisoriesByProductName))
+                            map (\matched_advisory -> Match (fst package) (snd package) matched_advisory) (Set.toList $ SetMultimap.lookup (fst package) advisoriesByProductName))
                         inventory
