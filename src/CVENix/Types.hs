@@ -4,7 +4,8 @@ import Data.Text (Text)
 import CVENix.CVE
 
 data Advisory = Advisory
-  { _advisory_cveId :: Text
+  -- id is for example CVE is, later maybe GHSA etc
+  { _advisory_id :: Text
   , _advisory_productName :: Maybe Text
   , _advisory_versions :: Maybe [Version]
   } deriving (Show, Eq, Ord)

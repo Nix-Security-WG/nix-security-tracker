@@ -44,8 +44,23 @@ exampleParseCVE = do
                             unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
                           case unwrappedContainer of
                             Nothing -> []
-                            Just a ->
-                              let names = map (\x -> (_product_packageName x, _product_versions x)) a
+                            Just affected ->
+                              let
+                                maybeHead :: [a] -> Maybe a
+                                maybeHead list = case list of
+                                  [] -> Nothing
+                                  other -> Just $ head other
+                                firstJust :: Maybe a -> Maybe a -> Maybe a
+                                firstJust a b = case a of
+                                  Just _ -> a
+                                  _ -> b
+                                -- in theory different products / package collections may have different version
+                                -- ranges, but in practice probably just one, so collect a fallback for when
+                                -- it is not specified for some product:
+                                mainVersions :: Maybe [Version]
+                                mainVersions = maybeHead $ mapMaybe _product_versions affected
+                                -- TODO use the 'product' field if the 'packageName' field is empty
+                                names = map (\a -> (_product_packageName a, firstJust (_product_versions a) mainVersions)) affected
                               in map (\(n, v) -> Advisory cveId n v) names
       getCPEIDs p = case p of
                       Nothing -> []

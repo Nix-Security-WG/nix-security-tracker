@@ -1,13 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module CVENix.Matching where
 
+import Debug.Trace
+
 import CVENix.SBOM
 import CVENix.Examples
 import CVENix.Types
 import CVENix.CVE
 import Data.Maybe
 import Data.Text (Text)
-import qualified Data.Map as Map
+import qualified Data.MultiMap as MultiMap
 import qualified Data.Text as T
 
 
@@ -26,9 +28,10 @@ match sbom cves = do
                 pretty m =
                   let pname = _match_pname m
                       drv = _match_drv m
-                      cveId = _advisory_cveId $ _match_advisory m
-                      versions = map (\x -> VersionData (_version_version x) (maybeVuln x)) <$> (_advisory_versions $ _match_advisory m)
-                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show cveId <> "\n" <> show versions
+                      advisoryId = _advisory_id $ _match_advisory m
+                      --versions = map (\x -> VersionData (_version_version x) (maybeVuln x)) <$> (_advisory_versions $ _match_advisory m)
+                      versions = _advisory_versions $ _match_advisory m
+                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show versions
               in
                 mapM_ putStrLn $ map pretty $ matchNames a' cves
 
@@ -48,16 +51,13 @@ match sbom cves = do
       matchNames :: [(Text, Text)] -> [Advisory] -> [Match]
       matchNames inventory advisories =
                   let
-                    advisoriesByProductName :: Map.Map Text Advisory
+                    advisoriesByProductName :: MultiMap.MultiMap Text Advisory
                     advisoriesByProductName =
-                      Map.fromList $ mapMaybe (\a -> case (_advisory_productName a) of
+                      MultiMap.fromList $ mapMaybe (\a -> case (_advisory_productName a) of
                                                     Just p -> Just (p, a)
                                                     Nothing -> Nothing) advisories
                   in
-                    mapMaybe
-                        (\package -> case (Map.lookup (fst package) advisoriesByProductName) of
-                          Just advisory -> Just (Match { _match_pname = fst package, _match_drv = snd package, _match_advisory = advisory })
-                          Nothing -> Nothing
-                        )
+                    concat $ map
+                        (\package ->
+                            map (\matched_advisory -> Match { _match_pname = fst package, _match_drv = snd package, _match_advisory = matched_advisory }) (MultiMap.lookup (fst package) advisoriesByProductName))
                         inventory
-
