@@ -59,9 +59,8 @@ exampleParseCVE = do
                                 -- it is not specified for some product:
                                 mainVersions :: Maybe [Version]
                                 mainVersions = maybeHead $ mapMaybe _product_versions affected
-                                -- TODO use the 'product' field if the 'packageName' field is empty
                                 names = map (\a -> (_product_packageName a, firstJust (_product_versions a) mainVersions)) affected
-                              in map (\(n, v) -> Advisory cveId n v) names
+                              in [ Advisory cveId $ map (\(n, v) -> AdvisoryProduct n v) names ]
       getCPEIDs p = case p of
                       Nothing -> []
                       Just cve -> do

@@ -29,14 +29,14 @@
       hsPkgs = haskellPackages pkgs;
     in {
       default = hsPkgs.shellFor {
-        packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid multimap ];
+        packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ];
         propagatedBuildInputs = [ inputs.sbomnix.packages."${system}".sbomnix ];
         shellHook = ''
           # To find freshly-`cabal install`ed executables
           export PATH=~/.local/bin:$PATH
         '';
       };
-      CVENix = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid multimap ]; };
+      CVENix = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ]; };
     });
   };
 }

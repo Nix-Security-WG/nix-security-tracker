@@ -6,8 +6,12 @@ import CVENix.CVE
 data Advisory = Advisory
   -- id is for example CVE is, later maybe GHSA etc
   { _advisory_id :: Text
-  , _advisory_productName :: Maybe Text
-  , _advisory_versions :: Maybe [Version]
+  , _advisory_products :: [AdvisoryProduct]
+  } deriving (Show, Eq, Ord)
+
+data AdvisoryProduct = AdvisoryProduct
+  { _advisory_product_productName :: Maybe Text
+  , _advisory_product_versions :: Maybe [Version]
   } deriving (Show, Eq, Ord)
 
 data Match = Match

@@ -8,10 +8,10 @@ import CVENix.Examples
 import CVENix.Types
 import CVENix.CVE
 import Data.Maybe
+import qualified Data.Set as Set
 import Data.Text (Text)
-import qualified Data.MultiMap as MultiMap
+import qualified Data.Multimap.Set as SetMultimap
 import qualified Data.Text as T
-
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -30,8 +30,7 @@ match sbom cves = do
                       drv = _match_drv m
                       advisoryId = _advisory_id $ _match_advisory m
                       --versions = map (\x -> VersionData (_version_version x) (maybeVuln x)) <$> (_advisory_versions $ _match_advisory m)
-                      versions = _advisory_versions $ _match_advisory m
-                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show versions
+                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" -- <> show versions
               in
                 mapM_ putStrLn $ map pretty $ matchNames a' cves
 
@@ -51,13 +50,14 @@ match sbom cves = do
       matchNames :: [(Text, Text)] -> [Advisory] -> [Match]
       matchNames inventory advisories =
                   let
-                    advisoriesByProductName :: MultiMap.MultiMap Text Advisory
+                    advisoriesByProductName :: SetMultimap.SetMultimap Text Advisory
                     advisoriesByProductName =
-                      MultiMap.fromList $ mapMaybe (\a -> case (_advisory_productName a) of
-                                                    Just p -> Just (p, a)
-                                                    Nothing -> Nothing) advisories
+                      SetMultimap.fromList $ concat $ map (\a -> mapMaybe
+                                                          (\ap -> case (_advisory_product_productName ap) of
+                                                                  Just p -> Just (p, a)
+                                                                  Nothing -> Nothing) $ _advisory_products a) advisories
                   in
                     concat $ map
                         (\package ->
-                            map (\matched_advisory -> Match { _match_pname = fst package, _match_drv = snd package, _match_advisory = matched_advisory }) (MultiMap.lookup (fst package) advisoriesByProductName))
+                            map (\matched_advisory -> Match { _match_pname = fst package, _match_drv = snd package, _match_advisory = matched_advisory }) (Set.toList $ SetMultimap.lookup (fst package) advisoriesByProductName))
                         inventory
