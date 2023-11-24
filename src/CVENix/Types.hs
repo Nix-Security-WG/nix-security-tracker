@@ -43,4 +43,5 @@ data SemVer = SemVer
 data VersionData = VersionData
   { _versiondata_semver :: Maybe Text
   , _versiondata_vuln :: Maybe Text
+  , _versiondata_status :: Maybe Text
   } deriving (Show, Eq, Ord)

@@ -29,8 +29,10 @@ match sbom cves = do
                   let pname = _match_pname m
                       drv = _match_drv m
                       advisoryId = _advisory_id $ _match_advisory m
-                      --versions = map (\x -> VersionData (_version_version x) (maybeVuln x)) <$> (_advisory_versions $ _match_advisory m)
-                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" -- <> show versions
+                      versionSpec = (mapMaybe _advisory_product_versions $ _advisory_products $ _match_advisory m)
+                      -- TODO deduplicate somehow?
+                      versions = map (\x -> VersionData (_version_version x) (maybeVuln x) (_version_status x)) <$> versionSpec
+                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show versions <> "\n"
               in
                 mapM_ putStrLn $ map pretty $ matchNames a' cves
 
@@ -39,7 +41,8 @@ match sbom cves = do
                         (\x -> "lessThan " <> x) <$> _version_lessThan a
                     else if isJust $ _version_lessThanOrEqual a then
                         (\x -> "lessThanOrEqual " <> x) <$> _version_lessThanOrEqual a
-                    else Nothing
+                    else
+                        Just "exactly"
 
       getDeps a = case a of
                   Nothing -> Nothing
