@@ -128,8 +128,8 @@ data Product = Product
   } deriving (Show, Eq, Ord, Generic)
 
 data Version = Version
-  { _version_version :: Maybe Text
-  , _version_status :: Maybe Text
+  { _version_version :: Text
+  , _version_status :: Text
   , _version_type :: Maybe Text
   , _version_lessThan :: Maybe Text
   , _version_lessThanOrEqual :: Maybe Text

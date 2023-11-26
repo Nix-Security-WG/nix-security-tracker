@@ -11,13 +11,15 @@ data Advisory = Advisory
 
 data AdvisoryProduct = AdvisoryProduct
   { _advisory_product_productName :: Maybe Text
+  , _advisory_product_defaultStatus :: Maybe Text
   , _advisory_product_versions :: Maybe [Version]
   } deriving (Show, Eq, Ord)
 
 data Match = Match
   { _match_pname :: Text
+  , _match_version :: Text
   , _match_drv :: Text
-  , _match_advisory :: Advisory
+  , _match_advisory :: (Advisory, AdvisoryProduct)
   } deriving (Show, Eq, Ord)
 
 newtype Derivation = Derivation { unDerivation :: Text } deriving (Show, Eq, Ord)
@@ -41,7 +43,7 @@ data SemVer = SemVer
   } deriving (Show, Eq, Ord)
 
 data VersionData = VersionData
-  { _versiondata_semver :: Maybe Text
+  { _versiondata_semver :: Text
   , _versiondata_vuln :: Maybe Text
-  , _versiondata_status :: Maybe Text
+  , _versiondata_status :: Text
   } deriving (Show, Eq, Ord)

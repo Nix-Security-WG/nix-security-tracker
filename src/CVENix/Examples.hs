@@ -59,8 +59,8 @@ exampleParseCVE = do
                                 -- it is not specified for some product:
                                 mainVersions :: Maybe [Version]
                                 mainVersions = maybeHead $ mapMaybe _product_versions affected
-                                names = map (\a -> (_product_packageName a, firstJust (_product_versions a) mainVersions)) affected
-                              in [ Advisory cveId $ map (\(n, v) -> AdvisoryProduct n v) names ]
+                                names = map (\a -> (_product_packageName a, _product_defaultStatus a, firstJust (_product_versions a) mainVersions)) affected
+                              in [ Advisory cveId $ map (\(n, ds, v) -> AdvisoryProduct n ds v) names ]
       getCPEIDs p = case p of
                       Nothing -> []
                       Just cve -> do
