@@ -1,10 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module CVENix.Matching where
 
-import Debug.Trace
-
 import CVENix.SBOM
-import CVENix.Examples
 import CVENix.Types
 import CVENix.CVE
 import Data.Maybe
@@ -48,9 +45,17 @@ match sbom cves = do
                   Nothing -> Nothing
                   Just d -> Just $ do
                       let deps = map (_sbomdependency_ref) d
-                          stripDeps = T.takeWhile (\x -> x /= '-') . T.drop 1 . T.dropWhile (\x -> x /= '-')
-                      map (\x -> (stripDeps x, x)) deps
-      matchNames :: [(Text, Text)] -> [Advisory] -> [Match]
+                          split :: Text -> (Text, Text, Text)
+                          split path =
+                            let name = T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
+                                -- TODO correctly handle names like 'source-highlight-3.1.9', 'xorg-server', etc
+                                pname = T.takeWhile (\x -> x /= '-') name
+                                -- TODO correctly handle (skip?) names that don't contain a version
+                                version = T.reverse . T.drop 4 . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                            in
+                              (pname, version, path)
+                      map split deps
+      matchNames :: [(Text, Text, Text)] -> [Advisory] -> [Match]
       matchNames inventory advisories =
                   let
                     advisoriesByProductName :: SetMultimap.SetMultimap Text Advisory
@@ -62,5 +67,6 @@ match sbom cves = do
                   in
                     concat $ map
                         (\package ->
-                            map (\matched_advisory -> Match (fst package) (snd package) matched_advisory) (Set.toList $ SetMultimap.lookup (fst package) advisoriesByProductName))
+                            let (pname, _, path) = package
+                            in map (\matched_advisory -> Match pname path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName))
                         inventory
