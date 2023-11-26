@@ -6,6 +6,7 @@ import CVENix.Types
 import CVENix.CVE
 import Data.Maybe
 import qualified Data.Set as Set
+import Data.Char (isDigit)
 import Data.Text (Text)
 import qualified Data.Multimap.Set as SetMultimap
 import qualified Data.Text as T
@@ -70,17 +71,21 @@ match sbom cves = do
                   Nothing -> Nothing
                   Just d -> Just $ do
                       let deps = map (_sbomdependency_ref) d
-                          split :: Text -> (Text, Text, Text)
+                          split :: Text -> (Text, Maybe Text, Text)
                           split path =
-                            let name = T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
-                                -- TODO correctly handle names like 'source-highlight-3.1.9', 'xorg-server', etc
-                                pname = T.takeWhile (\x -> x /= '-') name
-                                -- TODO correctly handle (skip?) names that don't contain a version
-                                version = T.reverse . T.drop 4 . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                            let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
+                                lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                                version =
+                                  if T.length lastSegment == 0 then Nothing
+                                  else if isDigit (T.head lastSegment) then Just lastSegment
+                                  else Nothing
+                                pname = case version of
+                                  Nothing -> name
+                                  Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
                             in
                               (pname, version, path)
                       map split deps
-      matchNames :: [(Text, Text, Text)] -> [Advisory] -> [Match]
+      matchNames :: [(Text, Maybe Text, Text)] -> [Advisory] -> [Match]
       matchNames inventory advisories =
                   let
                     advisoriesByProductName :: SetMultimap.SetMultimap Text (Advisory, AdvisoryProduct)
@@ -93,5 +98,9 @@ match sbom cves = do
                     concat $ map
                         (\package ->
                             let (pname, version, path) = package
-                            in map (\matched_advisory -> Match pname version path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName))
+                            in
+                              case version of
+                                Nothing -> []
+                                Just v -> map (\matched_advisory -> Match pname v path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName)
+                        )
                         inventory
