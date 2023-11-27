@@ -1,18 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 module CVENix.Matching where
 
 import CVENix.SBOM
 import CVENix.Types
 import CVENix.CVE
+
 import Data.Maybe
 import qualified Data.Set as Set
 import Data.Char (isDigit)
 import Data.Text (Text)
 import qualified Data.Multimap.Set as SetMultimap
+import Data.Multimap.Set (SetMultimap)
 import qualified Data.Text as T
-import Network.Http.Client
-import OpenSSL
-import CVENix.Utils
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -23,52 +23,53 @@ match sbom cves = do
           let d = getDeps $ Just s
           case d of
             Nothing -> pure ()
-            Just a' ->
-              let
-                pretty :: Match -> String
-                pretty m =
-                  let pname = _match_pname m
-                      drv = _match_drv m
-                      advisoryId = _advisory_id $ fst $ _match_advisory m
-                      versionSpec = _advisory_product_versions $ snd $ _match_advisory m
-                      -- TODO deduplicate if needed?
-                      versions = map (\x -> VersionData (_version_version x) (maybeVuln x) (_version_status x)) <$> versionSpec
-                  in show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show versions <> "\n"
-              in
+            Just a' -> do
                 mapM_ putStrLn $ map pretty $ filter isVersionAffected $ matchNames a' cves
 
   where
+      pretty :: Match -> String
+      pretty m = do
+          let pname = _match_pname m
+              drv = _match_drv m
+              advisoryId = _advisory_id $ fst $ _match_advisory m
+              versionSpec = _advisory_product_versions $ snd $ _match_advisory m
+              -- TODO deduplicate if needed?
+              versions = map (\x -> VersionData (_version_version x) (maybeVuln x) (_version_status x)) <$> versionSpec
+              prettyVersions = case versions of
+                Nothing -> [VersionData "Unknown" Nothing "Unknown"]
+                Just a -> a
+          show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show prettyVersions <> "\n"
+
       isVersionAffected :: Match -> Bool
-      isVersionAffected match =
+      isVersionAffected match' =
         let
-          product = snd $ _match_advisory match
-          defaultStatus = case (_advisory_product_defaultStatus $ product) of
-            Just s -> s
-            Nothing -> "unknown"
+          product' = snd $ _match_advisory match'
+
+          defaultStatus :: Text
+          defaultStatus = maybe "unknown" id (_advisory_product_defaultStatus product')
+
           versions :: [Version]
-          versions =
-              case (_advisory_product_versions $ product) of
-                Just vs -> vs
-                Nothing -> []
+          versions = maybe [] id (_advisory_product_versions product')
+
           matches :: Version -> Bool
           matches v =
-            if _version_version v == _match_version match then True
+            if _version_version v == _match_version match' then True
             -- TODO take into account 'lessThan'/'lessThanOrEqual' if present
             else False
+
           getStatus :: [Version] -> Text
           getStatus [] = defaultStatus
           getStatus (v:vs) =
             if (matches v)
               then _version_status v
               else getStatus vs
-          isAffected versions = getStatus versions == "affected"
-        in isAffected versions
+        in getStatus versions == "affected"
+
       maybeVuln a = if isJust $ _version_lessThan a then
-                        (\x -> "lessThan " <> x) <$> _version_lessThan a
+                        LessThan <$> _version_lessThan a
                     else if isJust $ _version_lessThanOrEqual a then
-                        (\x -> "lessThanOrEqual " <> x) <$> _version_lessThanOrEqual a
-                    else
-                        Just "exactly"
+                        LessThanOrEqual <$> _version_lessThanOrEqual a
+                    else Just Exact
 
       getDeps a = case a of
                   Nothing -> Nothing
@@ -88,17 +89,18 @@ match sbom cves = do
                             in
                               (pname, version, path)
                       map split deps
+
       matchNames :: [(Text, Maybe Text, Text)] -> [Advisory] -> [Match]
       matchNames inventory advisories =
                   let
-                    advisoriesByProductName :: SetMultimap.SetMultimap Text (Advisory, AdvisoryProduct)
+                    advisoriesByProductName :: SetMultimap Text (Advisory, AdvisoryProduct)
                     advisoriesByProductName =
                       SetMultimap.fromList $ concat $ map (\a -> mapMaybe
                                                           (\ap -> case (_advisory_product_productName ap) of
                                                                   Just p -> Just (p, (a, ap))
                                                                   Nothing -> Nothing) $ _advisory_products a) advisories
                   in
-                    concat $ map
+                    concatMap
                         (\package ->
                             let (pname, version, path) = package
                             in
@@ -107,9 +109,3 @@ match sbom cves = do
                                 Just v -> map (\matched_advisory -> Match pname v path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName)
                         )
                         inventory
-
-
-example :: IO ()
-example = do
-  x' <- get' "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2019-1010218" simpleHandler'
-  print x'

@@ -44,6 +44,12 @@ data SemVer = SemVer
 
 data VersionData = VersionData
   { _versiondata_semver :: Text
-  , _versiondata_vuln :: Maybe Text
+  , _versiondata_vuln :: Maybe VersionVuln
   , _versiondata_status :: Text
   } deriving (Show, Eq, Ord)
+
+data VersionVuln
+  = LessThan Text
+  | LessThanOrEqual Text
+  | Exact
+  deriving (Show, Eq, Ord)

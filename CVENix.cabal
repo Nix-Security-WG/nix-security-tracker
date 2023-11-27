@@ -23,7 +23,8 @@ library
                       CVENix.Utils,
                       CVENix.Matching,
                       CVENix.Examples,
-                      CVENix.Types
+                      CVENix.Types,
+                      CVENix.NVD
 
     build-depends:    base ^>=4.17.2.0,
                       aeson,
