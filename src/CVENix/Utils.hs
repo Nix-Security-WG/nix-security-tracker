@@ -9,6 +9,10 @@
 module CVENix.Utils where
 
 import Data.Aeson
+import Network.Http.Client
+import OpenSSL
+import System.IO.Streams (InputStream)
+import Data.ByteString (ByteString)
 
 stripType :: Options
 stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
@@ -31,3 +35,5 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
     replaceUnderScores :: String -> String
     replaceUnderScores a = flip map a $ \x -> if x == '_' then '-' else x
 
+get' :: URL -> (Response -> InputStream ByteString -> IO a) -> IO a
+get' a b = withOpenSSL $ get a b

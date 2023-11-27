@@ -10,6 +10,9 @@ import Data.Char (isDigit)
 import Data.Text (Text)
 import qualified Data.Multimap.Set as SetMultimap
 import qualified Data.Text as T
+import Network.Http.Client
+import OpenSSL
+import CVENix.Utils
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -104,3 +107,9 @@ match sbom cves = do
                                 Just v -> map (\matched_advisory -> Match pname v path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName)
                         )
                         inventory
+
+
+example :: IO ()
+example = do
+  x' <- get' "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2019-1010218" simpleHandler'
+  print x'
