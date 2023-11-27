@@ -5,6 +5,7 @@ module CVENix.Matching where
 import CVENix.SBOM
 import CVENix.Types
 import CVENix.CVE
+import CVENix.NVD
 
 import Data.Maybe
 import qualified Data.Set as Set
@@ -13,6 +14,7 @@ import Data.Text (Text)
 import qualified Data.Multimap.Set as SetMultimap
 import Data.Multimap.Set (SetMultimap)
 import qualified Data.Text as T
+import Control.Concurrent
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -24,10 +26,11 @@ match sbom cves = do
           case d of
             Nothing -> pure ()
             Just a' -> do
-                mapM_ putStrLn $ map pretty $ filter isVersionAffected $ matchNames a' cves
+                run <- mapM (pretty) $ filter isVersionAffected $ matchNames a' cves
+                print run
 
   where
-      pretty :: Match -> String
+      pretty :: Match -> IO String
       pretty m = do
           let pname = _match_pname m
               drv = _match_drv m
@@ -35,10 +38,19 @@ match sbom cves = do
               versionSpec = _advisory_product_versions $ snd $ _match_advisory m
               -- TODO deduplicate if needed?
               versions = map (\x -> VersionData (_version_version x) (maybeVuln x) (_version_status x)) <$> versionSpec
-              prettyVersions = case versions of
-                Nothing -> [VersionData "Unknown" Nothing "Unknown"]
-                Just a -> a
-          show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show prettyVersions <> "\n"
+          prettyVersions <- case versions of
+            Nothing -> do
+                putStrLn "Running"
+                putStrLn $ show advisoryId
+                putStrLn "Waiting 8 seconds...."
+                let second = 1000000
+                threadDelay $ second * 8
+                result <- cveSearch advisoryId
+                if _nvdresponse_resultsPerPage result == _nvdresponse_totalResults result then
+                    pure $ "We're good"
+                else pure $ "More Results than per-page"
+            Just a -> pure $ show a
+          pure $ show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show prettyVersions <> "\n"
 
       isVersionAffected :: Match -> Bool
       isVersionAffected match' =

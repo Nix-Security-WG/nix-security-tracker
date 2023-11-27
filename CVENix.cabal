@@ -37,7 +37,8 @@ library
                       multi-containers,
                       http-streams,
                       HsOpenSSL,
-                      io-streams
+                      io-streams,
+                      network-uri
 
 
     hs-source-dirs:   src

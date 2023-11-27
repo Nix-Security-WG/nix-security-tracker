@@ -1,24 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns #-}
 module CVENix.NVD where
 
 import CVENix.Utils
 
 import qualified Data.Text as T
 import Data.Text(Text)
-import Data.ByteString
 import qualified Data.Text.Encoding as TE
 import Data.Aeson
 import Data.Aeson.TH
 import GHC.Generics (Generic)
-
-
 import Network.Http.Client
 import OpenSSL
 import System.IO.Streams (InputStream)
 import Data.ByteString (ByteString)
-
+import Data.Map (fromList)
 
 data NVDResponse = NVDResponse
   { _nvdresponse_resultsPerPage :: Int
@@ -41,3 +39,9 @@ keywordSearch t = get' ("https://services.nvd.nist.gov/rest/json/cves/2.0?keywor
 
 cveSearch :: Text -> IO NVDResponse
 cveSearch t = get' ("https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" <> TE.encodeUtf8 t) jsonHandler
+
+cveSearch' :: Text -> IO ()
+cveSearch' t = getWithHeaders' (fromList [("apiKey", "null")]) ("https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" <> TE.encodeUtf8 t) debugHandler
+
+
+
