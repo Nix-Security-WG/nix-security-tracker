@@ -17,6 +17,7 @@ import OpenSSL
 import System.IO.Streams (InputStream)
 import Data.ByteString (ByteString)
 import Data.Map (fromList)
+import System.Environment.Blank
 
 data NVDResponse = NVDResponse
   { _nvdresponse_resultsPerPage :: Int
@@ -35,13 +36,23 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     [ ''NVDResponse ])
 
 keywordSearch :: Text -> IO NVDResponse
-keywordSearch t = get' ("https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=" <> TE.encodeUtf8 t) jsonHandler
+keywordSearch t = do
+    let url = "https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=" <> TE.encodeUtf8 t
+    withApiKey (get' url jsonHandler) $ \key ->
+        getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler
 
 cveSearch :: Text -> IO NVDResponse
-cveSearch t = get' ("https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" <> TE.encodeUtf8 t) jsonHandler
+cveSearch t = do
+    let url = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" <> TE.encodeUtf8 t
+    withApiKey (get' url jsonHandler) $ \key ->
+        getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler
 
-cveSearch' :: Text -> IO ()
-cveSearch' t = getWithHeaders' (fromList [("apiKey", "null")]) ("https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" <> TE.encodeUtf8 t) debugHandler
-
-
-
+withApiKey
+    :: IO a
+    -> (ByteString -> IO a)
+    -> IO a
+withApiKey f1 f = do
+    apiKey <- getEnv "NVD_API_KEY"
+    case apiKey of
+      Nothing -> f1
+      Just apiKey' -> f (TE.encodeUtf8 $ T.pack $ apiKey')
