@@ -1,7 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 module CVENix.Types where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import CVENix.CVE
+import qualified Data.Text.Read as TR
 
 data Advisory = Advisory
   -- id is for example CVE is, later maybe GHSA etc
@@ -37,9 +40,9 @@ data InternalData = InternalData
   } deriving (Show, Eq, Ord)
 
 data SemVer = SemVer
-  { _semver_major :: Text
-  , _semver_minor :: Text
-  , _semver_patch :: Maybe Text
+  { _semver_major :: Int
+  , _semver_minor :: Int
+  , _semver_patch :: Maybe Int
   } deriving (Show, Eq, Ord)
 
 data VersionData = VersionData
@@ -53,3 +56,25 @@ data VersionVuln
   | LessThanOrEqual Text
   | Exact
   deriving (Show, Eq, Ord)
+
+splitSemVer :: Text -> Maybe SemVer
+splitSemVer v = do
+    let t = T.splitOn "." v
+    case t of
+      [major, minor] -> do
+          let maj = getInt major
+              min = getInt minor
+          case (maj, min) of
+            (Just a, Just b) -> Just $ SemVer a b Nothing
+            _ -> Nothing
+      [major, minor, patch] -> do
+          let maj = getInt major
+              min = getInt minor
+          case (maj, min) of
+            (Just a, Just b) -> Just $ SemVer a b (getInt patch)
+            _ -> Nothing
+      _ -> Nothing
+    where
+        getInt a = case TR.decimal a of
+                     Left _ -> Nothing
+                     Right b -> Just $ fst b

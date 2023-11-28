@@ -41,27 +41,34 @@ match sbom cves = do
           let pname = _match_pname m
           case elem pname acc of
             True -> do
-                putStrLn $ "[NVD] Already seen " <> T.unpack pname
                 pure acc
             False -> do
               response <- keywordSearch pname
               putStrLn $ T.unpack pname
-              let configs = map (_nvdcve_configurations . _nvdwrapper_cve) $ _nvdresponse_vulnerabilities response
-              let versions = flip map configs $ \case
-                    Nothing -> []
+              let configs = map (\x -> (_nvdcve_id $ _nvdwrapper_cve x, _nvdcve_configurations $ _nvdwrapper_cve x)) $ _nvdresponse_vulnerabilities response
+              let versions = flip map configs $ uncurry $ \cveId -> \case
+                    Nothing -> ("Fail", [])
                     Just conf ->
-                        catMaybes $ map (_cpematch_versionEndIncluding) (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
+                        (cveId, catMaybes $ map (_cpematch_versionEndIncluding) (concat (map _node_cpeMatch (concat (map _configuration_nodes conf)))))
               print $ _match_version m
               putStrLn "Vulnerable versions: "
-              let vulns = flip map (concat versions) $ \x -> do
-                    if x == _match_version m then
-                      (x, True)
-                    else
-                      (x, False)
-              print $ if (length $ filter (\(_, y) -> y == True) vulns) == 0 then
-                "Not vulnerable!"
-              else "Vulnerable!"
-
+              let vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
+                    let nvdVer = splitSemVer x
+                        matchVer = splitSemVer (_match_version m)
+                    case (nvdVer, matchVer) of
+                      (Nothing, Nothing) -> (matchVer, cveId, False)
+                      (Just nvd, Just l) -> do
+                        if _semver_major nvd > _semver_major l && _semver_minor nvd > _semver_minor l && nvd /= l then
+                          (matchVer, cveId, True)
+                        else
+                          (matchVer, cveId, False)
+                      _ -> (matchVer, cveId, False)
+              flip mapM_ vulns $ \(x, cveId, y) -> do
+                  if y == True then do
+                    putStrLn $ "CVEID: " <> T.unpack cveId
+                    print x
+                    putStrLn $ "Vulnerable!"
+                  else pure ()
               putStrLn ""
               pure $ acc <> [pname]
 
