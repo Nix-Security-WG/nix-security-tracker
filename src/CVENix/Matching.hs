@@ -16,6 +16,9 @@ import qualified Data.Multimap.Set as SetMultimap
 import Data.Multimap.Set (SetMultimap)
 import qualified Data.Text as T
 import Control.Concurrent
+import Data.List
+import Control.Monad
+import Data.Foldable
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -27,10 +30,25 @@ match sbom cves = do
           case d of
             Nothing -> pure ()
             Just a' -> do
-                run <- mapM (pretty) $ filter isVersionAffected $ matchNames a' cves
-                mapM_ putStrLn run
+                --run <- mapM (pretty) $ filter isVersionAffected $ matchNames a' cves
+                --mapM_ putStrLn run
+                foldM_ (fetchFromNVD) ([] :: [Text]) $ nub $ filter isVersionAffected $ matchNames a' cves
 
   where
+
+      fetchFromNVD :: [Text] -> Match -> IO [Text]
+      fetchFromNVD acc m = do
+          let pname = _match_pname m
+          case elem pname acc of
+            True -> do
+                putStrLn $ "[NVD] Already seen " <> T.unpack pname
+                pure acc
+            False -> do
+              response <- keywordSearch pname
+              putStrLn $ T.unpack pname
+              putStrLn $ show $ map (_nvdcve_id . _nvdwrapper_cve) $ _nvdresponse_vulnerabilities response
+              pure $ acc <> [pname]
+
       pretty :: Match -> IO String
       pretty m = do
           let pname = _match_pname m
