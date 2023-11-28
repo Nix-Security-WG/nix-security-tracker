@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module CVENix.Utils where
 
@@ -14,6 +15,7 @@ import Network.Http.Client
 import System.IO.Streams (InputStream)
 import Data.ByteString (ByteString)
 
+import OpenSSL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Control.Exception
@@ -49,7 +51,7 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
 
 
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a
-getWithHeaders' headers r' handler = getWithHeaders 0 r' handler headers
+getWithHeaders' headers r' handler = withOpenSSL $ getWithHeaders 0 r' handler headers
 
 -- Everything here is from http-streams source code but modified slightly for our uses, some of these are identical because they aren't exposed
 

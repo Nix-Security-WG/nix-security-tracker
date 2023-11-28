@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module CVENix.Matching where
 
 import CVENix.SBOM
@@ -27,7 +28,7 @@ match sbom cves = do
             Nothing -> pure ()
             Just a' -> do
                 run <- mapM (pretty) $ filter isVersionAffected $ matchNames a' cves
-                print run
+                mapM_ putStrLn run
 
   where
       pretty :: Match -> IO String
@@ -43,12 +44,8 @@ match sbom cves = do
                 putStrLn "Running"
                 putStrLn $ show advisoryId
                 putStrLn "Waiting 8 seconds...."
-                let second = 1000000
-                threadDelay $ second * 8
                 result <- cveSearch advisoryId
-                if _nvdresponse_resultsPerPage result == _nvdresponse_totalResults result then
-                    pure $ "We're good"
-                else pure $ "More Results than per-page"
+                pure $ show $ _nvdresponse_totalResults result
             Just a -> pure $ show a
           pure $ show pname ++ "\t" ++ show drv ++ "\t" ++ show advisoryId <> "\n" <> show prettyVersions <> "\n"
 
