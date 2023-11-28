@@ -58,7 +58,7 @@ match sbom cves = do
                     case (nvdVer, matchVer) of
                       (Nothing, Nothing) -> (matchVer, cveId, False)
                       (Just nvd, Just l) -> do
-                        if _semver_major nvd > _semver_major l && _semver_minor nvd > _semver_minor l && nvd /= l then
+                        if _semver_major nvd >= _semver_major l && _semver_minor nvd >= _semver_minor l && nvd /= l then
                           (matchVer, cveId, True)
                         else
                           (matchVer, cveId, False)
