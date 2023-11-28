@@ -7,3 +7,5 @@ cves.zip
 /sbom.spdx.json
 /sbom.csv
 cabal.project.local*
+TAGS
+tags
