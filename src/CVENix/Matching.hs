@@ -46,7 +46,23 @@ match sbom cves = do
             False -> do
               response <- keywordSearch pname
               putStrLn $ T.unpack pname
-              putStrLn $ show $ map (_nvdcve_id . _nvdwrapper_cve) $ _nvdresponse_vulnerabilities response
+              let configs = map (_nvdcve_configurations . _nvdwrapper_cve) $ _nvdresponse_vulnerabilities response
+              let versions = flip map configs $ \case
+                    Nothing -> []
+                    Just conf ->
+                        catMaybes $ map (_cpematch_versionEndIncluding) (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
+              print $ _match_version m
+              putStrLn "Vulnerable versions: "
+              let vulns = flip map (concat versions) $ \x -> do
+                    if x == _match_version m then
+                      (x, True)
+                    else
+                      (x, False)
+              print $ if (length $ filter (\(_, y) -> y == True) vulns) == 0 then
+                "Not vulnerable!"
+              else "Vulnerable!"
+
+              putStrLn ""
               pure $ acc <> [pname]
 
       pretty :: Match -> IO String

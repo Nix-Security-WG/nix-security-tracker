@@ -19,6 +19,7 @@ import Data.ByteString (ByteString)
 import Data.Map (fromList)
 import System.Environment.Blank
 import Control.Concurrent
+import Data.Map(Map, size, fromList, toList)
 
 data NVDResponse = NVDResponse
   { _nvdresponse_resultsPerPage :: Int
@@ -123,16 +124,20 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     ])
 
 keywordSearch :: Text -> IO NVDResponse
-keywordSearch t = do
-    let url = "https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=" <> TE.encodeUtf8 t
-    withApiKey (get' url jsonHandler) $ \key ->
-        getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler
+keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 
 cveSearch :: Text -> IO NVDResponse
-cveSearch t = do
-    let url = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=" <> TE.encodeUtf8 t
+cveSearch t = nvdApi $ fromList [("cveId", t)]
+
+nvdApi :: Map Text Text -> IO NVDResponse
+nvdApi r = if size r == 0 then error "Pass a map that isn't empty" else do
+    let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
+        url = baseUrl <> (convertToApi $ toList r)
     withApiKey (get' url jsonHandler) $ \key ->
         getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler
+  where
+      convertToApi :: [(Text, Text)] -> ByteString
+      convertToApi = TE.encodeUtf8 . T.intercalate "&" . map (\(x, y) -> x <> "=" <> y)
 
 withApiKey
     :: IO a

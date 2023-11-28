@@ -49,11 +49,11 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
     replaceUnderScores :: String -> String
     replaceUnderScores a = flip map a $ \x -> if x == '_' then '-' else x
 
-
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a
 getWithHeaders' headers r' handler = withOpenSSL $ getWithHeaders 0 r' handler headers
 
--- Everything here is from http-streams source code but modified slightly for our uses, some of these are identical because they aren't exposed
+-- Everything here is from http-streams source code but modified slightly for our uses,
+-- some of these are identical because they aren't exposed
 
 getWithHeaders
     :: Int
