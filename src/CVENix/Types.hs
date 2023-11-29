@@ -57,6 +57,11 @@ data VersionVuln
   | Exact
   deriving (Show, Eq, Ord)
 
+prettySemVer :: SemVer -> String
+prettySemVer (SemVer major minor c) = (show major) <> "." <> (show minor) <> case c of
+                                                         Nothing -> ""
+                                                         Just d -> "." <> (show d)
+
 splitSemVer :: Text -> Maybe SemVer
 splitSemVer v = do
     let t = T.splitOn "." v

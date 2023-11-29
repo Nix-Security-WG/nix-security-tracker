@@ -30,6 +30,91 @@ match sbom cves = do
           case d of
             Nothing -> pure ()
             Just a' -> do
+                foldM_ (getFromNVD) ([] :: [Text]) a'
+
+
+
+    where
+      getDeps :: Maybe [SBOMDependency] -> Maybe [(Text, Maybe Text, Text)]
+      getDeps a = case a of
+                  Nothing -> Nothing
+                  Just d -> Just $ do
+                      let deps = map (_sbomdependency_ref) d
+                          split :: Text -> (Text, Maybe Text, Text)
+                          split path =
+                            let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
+                                lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                                version =
+                                  if T.length lastSegment == 0 then Nothing
+                                  else if isDigit (T.head lastSegment) then Just lastSegment
+                                  else Nothing
+                                pname = case version of
+                                  Nothing -> name
+                                  Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
+                            in
+                              (pname, version, path)
+                      map split deps
+
+      getFromNVD :: [Text] -> (Text, Maybe Text, Text) -> IO [Text]
+      getFromNVD acc (pname, version, path) = do
+          case elem pname acc of
+            True -> pure acc
+            False -> do
+              let second = 1000000
+              threadDelay $ second * 3
+              nvd <- keywordSearch pname
+              putStrLn $ T.unpack pname
+
+              let configs = map (\x -> (_nvdcve_id $ _nvdwrapper_cve x, _nvdcve_configurations $ _nvdwrapper_cve x)) $
+                                _nvdresponse_vulnerabilities nvd
+                  (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
+                    Nothing -> ("Fail", [])
+                    Just conf -> do
+                        let cpeMatch = (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
+                        (cveId, cpeMatch)
+
+                  vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
+                    let nvdVer = _cpematch_versionEndIncluding x
+                        nvdCPE = (\x -> pname == _cpe_product x) <$> (parseCPE $ _cpematch_criteria x)
+                    case nvdCPE of
+                      (Just False) -> Nothing
+                      (Just True) -> case nvdVer of
+                        Nothing -> Nothing
+                        Just ver -> do
+                          let ver' = splitSemVer ver
+                              localver = splitSemVer <$> version
+                          case (ver', localver) of
+                            (Just v, Just (Just lv)) -> do
+                                if _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv then
+                                    Just (cveId, lv, v)
+                                else Nothing
+                            (_, _) -> Nothing
+                      _ -> Nothing
+
+              flip mapM_ vulns $ \case
+                Just (cveId, localver, nvdver) -> do
+                    putStrLn $ T.unpack cveId
+                    putStrLn $ "VULN"
+                    putStrLn $ show localver
+                Nothing -> pure ()
+              pure $ acc <> [pname]
+
+
+
+
+
+
+
+match' :: SBOM -> [Advisory] -> IO ()
+match' sbom cves = do
+    putStrLn "Matched advisories:"
+    case _sbom_dependencies sbom of
+      Nothing -> putStrLn "No known deps?"
+      Just s -> do
+          let d = getDeps $ Just s
+          case d of
+            Nothing -> pure ()
+            Just a' -> do
                 --run <- mapM (pretty) $ filter isVersionAffected $ matchNames a' cves
                 --mapM_ putStrLn run
                 foldM_ (fetchFromNVD) ([] :: [Text]) $ nub $ filter isVersionAffected $ matchNames a' cves
@@ -66,7 +151,7 @@ match sbom cves = do
               flip mapM_ vulns $ \(x, cveId, y) -> do
                   if y == True then do
                     putStrLn $ "CVEID: " <> T.unpack cveId
-                    print x
+                    print $ prettySemVer <$> x
                     putStrLn $ "Vulnerable!"
                   else pure ()
               putStrLn ""
