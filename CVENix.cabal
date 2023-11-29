@@ -38,7 +38,8 @@ library
                       http-streams,
                       HsOpenSSL,
                       io-streams,
-                      network-uri
+                      network-uri,
+                      unix
 
 
     hs-source-dirs:   src

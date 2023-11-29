@@ -27,6 +27,8 @@ import Network.URI
 import Network.Http.Inconvenience
 import Data.IORef
 import Data.Map (Map, toList)
+import System.IO.Streams.Attoparsec (parseFromStream)
+import Control.Concurrent
 
 stripType :: Options
 stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }

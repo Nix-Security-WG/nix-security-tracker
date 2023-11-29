@@ -19,6 +19,8 @@ import Control.Concurrent
 import Data.List
 import Control.Monad
 import Data.Foldable
+import Data.Aeson
+import System.Posix.Files
 
 match :: SBOM -> [Advisory] -> IO ()
 match sbom cves = do
@@ -53,51 +55,57 @@ match sbom cves = do
                                   Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
                             in
                               (pname, version, path)
-                      map split deps
+                      filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
 
       getFromNVD :: [Text] -> (Text, Maybe Text, Text) -> IO [Text]
       getFromNVD acc (pname, version, path) = do
           case elem pname acc of
             True -> pure acc
             False -> do
-              let second = 1000000
-              threadDelay $ second * 3
-              nvd <- keywordSearch pname
-              putStrLn $ T.unpack pname
+              f <- fileExist $ "/tmp/NVD-" <> T.unpack pname
+              case f of
+                True -> do
+                    putStrLn "Known Vulnerable before, skipping"
+                    pure $ acc <> [pname]
+                False -> do
+                  putStrLn "Running Keyword Search"
+                  nvd <- keywordSearch pname
+                  putStrLn $ T.unpack pname
 
-              let configs = map (\x -> (_nvdcve_id $ _nvdwrapper_cve x, _nvdcve_configurations $ _nvdwrapper_cve x)) $
-                                _nvdresponse_vulnerabilities nvd
-                  (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
-                    Nothing -> ("Fail", [])
-                    Just conf -> do
-                        let cpeMatch = (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
-                        (cveId, cpeMatch)
+                  let configs = map (\x -> (_nvdcve_id $ _nvdwrapper_cve x, _nvdcve_configurations $ _nvdwrapper_cve x)) $
+                                    _nvdresponse_vulnerabilities nvd
+                      (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
+                        Nothing -> ("Fail", [])
+                        Just conf -> do
+                            let cpeMatch = (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
+                            (cveId, cpeMatch)
 
-                  vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
-                    let nvdVer = _cpematch_versionEndIncluding x
-                        nvdCPE = (\x -> pname == _cpe_product x) <$> (parseCPE $ _cpematch_criteria x)
-                    case nvdCPE of
-                      (Just False) -> Nothing
-                      (Just True) -> case nvdVer of
-                        Nothing -> Nothing
-                        Just ver -> do
-                          let ver' = splitSemVer ver
-                              localver = splitSemVer <$> version
-                          case (ver', localver) of
-                            (Just v, Just (Just lv)) -> do
-                                if _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv then
-                                    Just (cveId, lv, v)
-                                else Nothing
-                            (_, _) -> Nothing
-                      _ -> Nothing
+                      vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
+                        let nvdVer = _cpematch_versionEndIncluding x
+                            nvdCPE = (\x -> pname == _cpe_product x) <$> (parseCPE $ _cpematch_criteria x)
+                        case nvdCPE of
+                          (Just False) -> Nothing
+                          (Just True) -> case nvdVer of
+                            Nothing -> Nothing
+                            Just ver -> do
+                              let ver' = splitSemVer ver
+                                  localver = splitSemVer <$> version
+                              case (ver', localver) of
+                                (Just v, Just (Just lv)) -> do
+                                    if _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv then
+                                        Just (cveId, lv, v)
+                                    else Nothing
+                                (_, _) -> Nothing
+                          _ -> Nothing
 
-              flip mapM_ vulns $ \case
-                Just (cveId, localver, nvdver) -> do
-                    putStrLn $ T.unpack cveId
-                    putStrLn $ "VULN"
-                    putStrLn $ show localver
-                Nothing -> pure ()
-              pure $ acc <> [pname]
+                  flip mapM_ vulns $ \case
+                    Just (cveId, localver, nvdver) -> do
+                        putStrLn $ T.unpack cveId
+                        putStrLn $ "VULN"
+                        putStrLn $ show localver
+                        --encodeFile ("/tmp/NVD-" <> T.unpack pname) $ LocalCache cveId pname (T.pack $ prettySemVer localver)
+                    Nothing -> pure ()
+                  pure $ acc <> [pname]
 
 
 

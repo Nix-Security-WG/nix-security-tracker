@@ -20,6 +20,7 @@ import Data.Map (fromList)
 import System.Environment.Blank
 import Control.Concurrent
 import Data.Map(Map, size, fromList, toList)
+import Control.Exception
 
 data NVDResponse = NVDResponse
   { _nvdresponse_resultsPerPage :: Int
@@ -103,6 +104,12 @@ data CPEMatch = CPEMatch
   , _cpematch_versionEndIncluding :: Maybe Text
   } deriving (Show, Eq, Ord, Generic)
 
+data LocalCache = LocalCache
+  { _localcache_cveId :: Text
+  , _localcache_pname :: Text
+  , _localcache_version :: Text
+  } deriving (Show, Eq, Ord, Generic)
+
 get' :: URL -> (Response -> InputStream ByteString -> IO a) -> IO a
 get' a b = withOpenSSL $ do
     putStrLn "[NVD] No API Key, waiting 8 seconds.."
@@ -121,6 +128,7 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''Configuration
     , ''Node
     , ''CPEMatch
+    , ''LocalCache
     ])
 
 keywordSearch :: Text -> IO NVDResponse
@@ -130,12 +138,23 @@ cveSearch :: Text -> IO NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
 nvdApi :: Map Text Text -> IO NVDResponse
-nvdApi r = if size r == 0 then error "Pass a map that isn't empty" else do
-    let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
-        url = baseUrl <> (convertToApi $ toList r)
-    withApiKey (get' url jsonHandler) $ \key ->
-        getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler
+nvdApi r = if size r == 0 then error "Pass a map that isn't empty" else do go 0
   where
+      go :: Int -> IO NVDResponse
+      go count = do
+        let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
+            url = baseUrl <> (convertToApi $ toList r)
+
+        v <- try (withApiKey (get' url jsonHandler) $ \key ->
+            getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler) :: IO (Either SomeException NVDResponse)
+        case v of
+          Left _ -> do
+              putStrLn "Failed to parse, waiting for 10 seconds and retrying.."
+              putStrLn $ "Retry count: " <> show count
+              threadDelay $ 1000000 * 10
+              go (count + 1)
+          Right c -> pure c
+
       convertToApi :: [(Text, Text)] -> ByteString
       convertToApi = TE.encodeUtf8 . T.intercalate "&" . map (\(x, y) -> x <> "=" <> y)
 
