@@ -15,29 +15,26 @@ import qualified Data.Text as T
 import Control.Monad
 import System.Posix.Files
 
+data InventoryDependency = InventoryDependency
+  { _inventorydependency_pname :: Text
+  , _inventorydependency_version :: Maybe Text
+  , _inventorydependency_drv :: Text
+  } deriving (Show)
+
 match :: SBOM -> [Advisory] -> Bool -> IO ()
 match sbom _cves debug = do
     putStrLn "Matched advisories:"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
-          let d = getDeps $ Just s
-          case d of
-            Nothing -> pure ()
-            Just a' -> do
-                nvdCves <- loadNVDCVEs debug
-                foldM_ (getFromNVD nvdCves) ([] :: [Text]) a'
-
-
-
+          let d = getDeps s
+          nvdCves <- loadNVDCVEs debug
+          foldM_ (getFromNVD nvdCves) ([] :: [Text]) d
     where
-      getDeps :: Maybe [SBOMDependency] -> Maybe [(Text, Maybe Text, Text)]
-      getDeps a = case a of
-                  Nothing -> Nothing
-                  Just d -> Just $ do
-                      let deps = map (_sbomdependency_ref) d
-                          split :: Text -> (Text, Maybe Text, Text)
-                          split path =
+      getDeps :: [SBOMDependency] -> [InventoryDependency]
+      getDeps d = let deps = map (_sbomdependency_ref) d
+                      split :: Text -> InventoryDependency
+                      split path =
                             let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
                                 lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
                                 version =
@@ -48,11 +45,11 @@ match sbom _cves debug = do
                                   Nothing -> name
                                   Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
                             in
-                              (pname, version, path)
-                      filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
+                              (InventoryDependency pname version path)
+                  in map split deps
 
-      getFromNVD :: [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> IO [Text]
-      getFromNVD resp acc (pname, version, _path) = do
+      getFromNVD :: [NVDCVE] -> [Text] -> InventoryDependency -> IO [Text]
+      getFromNVD resp acc (InventoryDependency pname version _drv) = do
           case elem pname acc of
             True -> pure acc
             False -> do
