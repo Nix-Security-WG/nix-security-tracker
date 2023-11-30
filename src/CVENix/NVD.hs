@@ -137,6 +137,14 @@ keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 cveSearch :: Text -> IO NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
+writeEverythingToDisk :: IO ()
+writeEverythingToDisk = do
+    resp <- getEverything
+    let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
+    flip mapM_ t $ \x -> do
+        let id = _nvdcve_id x
+        encodeFile ("localtmp/" <> T.unpack id <> ".json") x
+
 getEverything :: IO [NVDResponse]
 getEverything = do
   response1 <- nvdApi mempty
@@ -151,7 +159,7 @@ getEverything = do
         let st = pages * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
         print pages
-        if pages == 0 then
+        if pages <= 0 then
             pure acc
         else go (acc <> [resp]) (pages - 1, results)
 
