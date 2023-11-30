@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE FlexibleContexts #-}
 module CVENix.Matching where
 
 import CVENix.SBOM
@@ -14,24 +16,25 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
 import System.Posix.Files
+import Control.Monad.Log
+import Control.Monad.Log.Colors
+import Control.Monad.IO.Class
+import Prettyprinter
+import Control.Monad.Trans.Reader
 
-match :: SBOM -> [Advisory] -> Bool -> IO ()
-match sbom _cves debug = do
+match :: SBOM -> [Advisory] -> Parameters -> IO ()
+match sbom _cves params = do
     putStrLn "Matched advisories:"
-    when debug $ putStrLn "Debug on!"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
           let d = getDeps $ Just s
           case d of
             Nothing -> pure ()
-            Just a' -> do
+            Just a' -> let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ do
                 resp <- getEverything
                 let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
                 foldM_ (getFromNVD t) ([] :: [Text]) a'
-
-
-
     where
       getDeps :: Maybe [SBOMDependency] -> Maybe [(Text, Maybe Text, Text)]
       getDeps a = case a of
@@ -53,19 +56,23 @@ match sbom _cves debug = do
                               (pname, version, path)
                       filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
 
-      getFromNVD :: [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> IO [Text]
+      getFromNVD :: LogT m ann => [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> ReaderT Parameters m [Text]
       getFromNVD resp acc (pname, version, _path) = do
+          env <- ask
+          let debug' = debug env
           case elem pname acc of
-            True -> pure acc
+            True -> do
+                when (debug') $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname
+                pure acc
             False -> do
-              f <- fileExist $ "/tmp/NVD-" <> T.unpack pname
+              f <- liftIO $ fileExist $ "/tmp/NVD-" <> T.unpack pname
               case f of
                 True -> do
-                    putStrLn "Known Vulnerable before, skipping"
+                    liftIO $ putStrLn "Known Vulnerable before, skipping"
                     pure $ acc <> [pname]
                 False -> do
-                  when debug $ putStrLn "Running Keyword Search"
-                  putStrLn $ T.unpack pname
+                  when (debug') $ logMessage $ WithSeverity Informational $ "Running Keyword Search"
+                  --putStrLn $ T.unpack pname
 
                   let configs = map (\x -> (_nvdcve_id x, _nvdcve_configurations x)) resp
                       (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
@@ -86,17 +93,18 @@ match sbom _cves debug = do
                                   localver = splitSemVer <$> version
                               case (ver', localver) of
                                 (Just v, Just (Just lv)) -> do
-                                    if _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv then
-                                        Just (cveId, lv, v)
-                                    else Nothing
+                                    if | v == lv -> Just (cveId, lv, v)
+                                       | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv -> Just (cveId, lv, v)
+                                       | otherwise -> Nothing
                                 (_, _) -> Nothing
                           _ -> Nothing
 
                   flip mapM_ vulns $ \case
                     Just (cveId, localver, _nvdver) -> do
-                        putStrLn $ T.unpack cveId
-                        putStrLn $ "VULN"
-                        putStrLn $ show localver
+                        logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
+                        logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cveId
+                        --putStrLn $ "VULN"
+                        logMessage $ colorize $ WithSeverity Warning $ pretty $ prettySemVer localver
                         --encodeFile ("/tmp/NVD-" <> T.unpack pname) $ LocalCache cveId pname (T.pack $ prettySemVer localver)
                     Nothing -> pure ()
                   pure $ acc <> [pname]

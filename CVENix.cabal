@@ -39,7 +39,11 @@ library
                       HsOpenSSL,
                       io-streams,
                       network-uri,
-                      unix
+                      unix,
+                      logging-effect,
+                      prettyprinter,
+                      logging-effect-colors,
+                      transformers
 
 
     hs-source-dirs:   src

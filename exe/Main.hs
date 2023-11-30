@@ -8,14 +8,10 @@ import Options.Applicative
 import CVENix.SBOM
 import CVENix.Examples
 import CVENix.Matching
+import CVENix.Types
 import System.Process
 import System.Posix.Files
 
-data Parameters = Parameters
-  { debug :: !Bool
-  , sbom :: !String
-  , path :: !(Maybe String)
-  } deriving (Show, Eq, Ord)
 
 programOptions :: Parser Parameters
 programOptions = Parameters
@@ -52,11 +48,10 @@ main = do
  where
      go params = do
        let sbom' = sbom params
-           debug' = debug params
        sbom'' <- parseSBOM $ sbom'
        cves <- exampleParseCVE
        case sbom'' of
          Nothing ->
            putStrLn "[SBOM] Failed to parse"
          Just s ->
-           match s cves $ debug'
+           match s cves params

@@ -2,9 +2,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module CVENix.NVD where
 
 import CVENix.Utils
+import CVENix.Types
 
 import qualified Data.Text as T
 import Data.Text(Text)
@@ -21,6 +24,11 @@ import System.Environment.Blank
 import Control.Concurrent
 import Data.Map(Map, toList)
 import Control.Exception
+import Control.Monad.Log
+import Prettyprinter
+import Control.Monad.IO.Class
+import Control.Monad.Log.Colors
+import Control.Monad.Trans.Reader
 
 data NVDResponse = NVDResponse
   { _nvdresponse_resultsPerPage :: Int
@@ -131,21 +139,21 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''LocalCache
     ])
 
-keywordSearch :: Text -> IO NVDResponse
+keywordSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
 keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 
-cveSearch :: Text -> IO NVDResponse
+cveSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
-writeEverythingToDisk :: IO ()
+writeEverythingToDisk :: LogT m ann => ReaderT Parameters m ()
 writeEverythingToDisk = do
     resp <- getEverything
     let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
     flip mapM_ t $ \x -> do
         let id' = _nvdcve_id x
-        encodeFile ("localtmp/" <> T.unpack id' <> ".json") x
+        liftIO $ encodeFile ("localtmp/" <> T.unpack id' <> ".json") x
 
-getEverything :: IO [NVDResponse]
+getEverything :: LogT m ann => ReaderT Parameters m [NVDResponse]
 getEverything = do
   response1 <- nvdApi mempty
   let st = _nvdresponse_totalResults response1
@@ -153,29 +161,30 @@ getEverything = do
       (numOfPages, _) = properFraction $ ((fromIntegral st / fromIntegral results) :: Double)
   go [] (numOfPages, results)
   where
-    go :: [NVDResponse] -> (Int, Int) -> IO [NVDResponse]
+    go :: LogT m ann => [NVDResponse] -> (Int, Int) -> ReaderT Parameters m [NVDResponse]
     go acc (pages, results) = do
         let st = pages * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
+        logMessage $ colorize $ WithSeverity Debug $ pretty $ "Page: " <> show pages
         if pages <= 0 then
             pure acc
         else go (acc <> [resp]) (pages - 1, results)
 
-nvdApi :: Map Text Text -> IO NVDResponse
+nvdApi :: LogT m ann => Map Text Text -> ReaderT Parameters m NVDResponse
 nvdApi r = go 0
   where
-      go :: Int -> IO NVDResponse
+      go :: LogT m ann => Int -> ReaderT Parameters m NVDResponse
       go count = do
         let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
             url = baseUrl <> (convertToApi $ toList r)
 
-        v <- try (withApiKey (get' url jsonHandler) $ \key ->
-            getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler) :: IO (Either SomeException NVDResponse)
+        v <- liftIO $ (try (withApiKey (get' url jsonHandler) $ \key ->
+            getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler)) :: LogT m ann => m (Either SomeException NVDResponse)
         case v of
           Left _ -> do
-              putStrLn "Failed to parse, waiting for 10 seconds and retrying.."
-              putStrLn $ "Retry count: " <> show count
-              threadDelay $ 1000000 * 10
+              logMessage $ colorize $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
+              logMessage $ colorize $ WithSeverity Informational $ pretty $ "Retry count: " <> show count
+              liftIO $ threadDelay $ 1000000 * 10
               go (count + 1)
           Right c -> pure c
 

@@ -1,10 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module CVENix.Types where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import CVENix.CVE
 import qualified Data.Text.Read as TR
+import Control.Monad.Log
+import Prettyprinter
+import Control.Monad.IO.Class
+
+type LogT m ann = (MonadLog (WithSeverity (Doc ann)) m, MonadIO m)
+
+data Parameters = Parameters
+  { debug :: !Bool
+  , sbom :: !String
+  , path :: !(Maybe String)
+  } deriving (Show, Eq, Ord)
+
 
 data Advisory = Advisory
   -- id is for example CVE is, later maybe GHSA etc
