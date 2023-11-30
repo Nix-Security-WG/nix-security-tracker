@@ -25,6 +25,7 @@ import System.Posix.Files
 match :: SBOM -> [Advisory] -> Bool -> IO ()
 match sbom cves debug = do
     putStrLn "Matched advisories:"
+    when debug $ putStrLn "Debug on!"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
@@ -113,7 +114,7 @@ match sbom cves debug = do
 
 
 
-match' :: SBOM -> [Advisory] -> IO ()
+    {-match' :: SBOM -> [Advisory] -> IO ()
 match' sbom cves = do
     putStrLn "Matched advisories:"
     case _sbom_dependencies sbom of
@@ -255,4 +256,4 @@ match' sbom cves = do
                                 Nothing -> []
                                 Just v -> map (\matched_advisory -> Match pname v path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName)
                         )
-                        inventory
+                        inventory-}

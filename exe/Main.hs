@@ -3,35 +3,36 @@
 
 module Main where
 
-import Options.Generic
+import Options.Applicative
 
 import CVENix.SBOM
 import CVENix.Examples
 import CVENix.Matching
 
 data Parameters = Parameters
-  { debug :: Bool
-  , drv :: NoLabel String
-  } deriving (Generic, Show)
-instance ParseRecord Parameters
+  { debug :: !Bool
+  , sbom :: !String
+  } deriving (Show, Eq, Ord)
 
--- https://github.com/Gabriella439/optparse-generic/issues/65
-newtype NoLabel a = NoLabel a
-  deriving (Generic, Show)
+programOptions = Parameters
+  <$> switch (long "debug")
+  <*> strOption (  long "drv"
+                <> value "sbom.cdx.json"
+                <> help "SBOM to ingest"
+                <> metavar "SBOM JSON"
+                <> showDefault
+                )
 
-instance ParseFields a => ParseRecord (NoLabel a)
-instance ParseFields a => ParseFields (NoLabel a) where
-  parseFields msg _ _ def = fmap NoLabel (parseFields msg Nothing Nothing def)
+parameterInfo = info (programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")
 
 
 main :: IO ()
 main = do
-    params <- getRecord "CVENix"
-    let NoLabel derivationToAnalyze = drv params
-    sbom <- parseSBOM $ derivationToAnalyze
+    params <- execParser parameterInfo
+    sbom <- parseSBOM $ sbom params
     cves <- exampleParseCVE
     case sbom of
       Nothing ->
         putStrLn "[SBOM] Failed to parse"
       Just s ->
-        match s cves $ debug params
+        match s cves $ (debug params)

@@ -21,4 +21,4 @@ else
     git clone https://github.com/CVEProject/cvelistV5 CVE
 fi
 
-CVENix ./sbom.cdx.json
+CVENix --debug

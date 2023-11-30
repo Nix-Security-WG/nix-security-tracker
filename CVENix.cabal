@@ -53,7 +53,7 @@ executable CVENix
     -- other-extensions:
     build-depends:
         base ^>=4.17.2.0,
-        optparse-generic,
+        optparse-applicative,
         CVENix
 
     hs-source-dirs:   exe
