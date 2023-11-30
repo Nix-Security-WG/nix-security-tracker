@@ -18,7 +18,6 @@ import System.Posix.Files
 match :: SBOM -> [Advisory] -> Bool -> IO ()
 match sbom _cves debug = do
     putStrLn "Matched advisories:"
-    when debug $ putStrLn "Debug on!"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
@@ -26,9 +25,8 @@ match sbom _cves debug = do
           case d of
             Nothing -> pure ()
             Just a' -> do
-                resp <- getEverything
-                let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
-                foldM_ (getFromNVD t) ([] :: [Text]) a'
+                nvdCves <- loadNVDCVEs debug
+                foldM_ (getFromNVD nvdCves) ([] :: [Text]) a'
 
 
 

@@ -6,14 +6,17 @@ module CVENix.NVD where
 
 import CVENix.Utils
 
+import Control.Monad
 import qualified Data.Text as T
 import Data.Text(Text)
 import qualified Data.Text.Encoding as TE
+import Data.Time.Clock
 import Data.Aeson
 import Data.Aeson.TH
 import GHC.Generics (Generic)
 import Network.Http.Client
 import OpenSSL
+import System.Directory
 import System.IO.Streams (InputStream)
 import Data.ByteString (ByteString)
 import Data.Map (fromList)
@@ -110,9 +113,15 @@ data LocalCache = LocalCache
   , _localcache_version :: Text
   } deriving (Show, Eq, Ord, Generic)
 
+data CacheStatus = CacheStatus
+  { _cachestatus_last_updated :: UTCTime
+  }
+
 get' :: URL -> (Response -> InputStream ByteString -> IO a) -> IO a
 get' a b = withOpenSSL $ do
-    putStrLn "[NVD] No API Key, waiting 8 seconds.."
+    putStrLn "[NVD] NVD_API_KEY environment variable not found."
+    putStrLn "[NVD] Request an API key from https://nvd.nist.gov/developers/start-here to reduce rate limits."
+    putStrLn "[NVD] waiting 8 seconds.."
     let second = 1000000
     threadDelay $ second * 8
     get a b
@@ -129,25 +138,26 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''Node
     , ''CPEMatch
     , ''LocalCache
+    , ''CacheStatus
     ])
 
 keywordSearch :: Text -> IO NVDResponse
-keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
+keywordSearch t = nvdApi True $ fromList [("keywordSearch", t)]
 
 cveSearch :: Text -> IO NVDResponse
-cveSearch t = nvdApi $ fromList [("cveId", t)]
+cveSearch t = nvdApi True $ fromList [("cveId", t)]
 
-writeEverythingToDisk :: IO ()
-writeEverythingToDisk = do
-    resp <- getEverything
-    let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
+writeToDisk :: NVDResponse -> IO ()
+writeToDisk resp = do
+    let t = map (_nvdwrapper_cve) $ _nvdresponse_vulnerabilities resp
     flip mapM_ t $ \x -> do
         let id' = _nvdcve_id x
         encodeFile ("localtmp/" <> T.unpack id' <> ".json") x
 
-getEverything :: IO [NVDResponse]
-getEverything = do
-  response1 <- nvdApi mempty
+getEverything :: Bool -> IO [NVDResponse]
+getEverything debug = do
+  when debug $ putStrLn "[NVD] Getting first response"
+  response1 <- nvdApi debug mempty
   let st = _nvdresponse_totalResults response1
       results = _nvdresponse_resultsPerPage response1
       (numOfPages, _) = properFraction $ ((fromIntegral st / fromIntegral results) :: Double)
@@ -155,24 +165,68 @@ getEverything = do
   where
     go :: [NVDResponse] -> (Int, Int) -> IO [NVDResponse]
     go acc (pages, results) = do
+        when debug $ putStrLn $ "[NVD] Got partial data, " <> (show pages) <> " pages to go"
         let st = pages * results
-        resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
+        resp <- nvdApi debug (fromList [("startIndex", (T.pack $ show st))])
         if pages <= 0 then
             pure acc
         else go (acc <> [resp]) (pages - 1, results)
 
-nvdApi :: Map Text Text -> IO NVDResponse
-nvdApi r = go 0
+data NVDException = CacheMalformed !FilePath
+  deriving (Show)
+instance Exception NVDException
+
+loadCacheStatus :: IO (Maybe CacheStatus)
+loadCacheStatus = do
+  exists <- doesFileExist "localtmp/status.json"
+  if exists then decodeFileStrict "localtmp/status.json" :: IO (Maybe CacheStatus)
+  else pure Nothing
+
+writeCacheStatus :: UTCTime -> IO ()
+writeCacheStatus startTime = do
+  exists <- doesDirectoryExist "localtmp"
+  if not exists then createDirectory "localtmp" else pure ()
+  encodeFile "localtmp/status.json" $ CacheStatus startTime
+
+loadNVDCVEs :: Bool -> IO [NVDCVE]
+loadNVDCVEs debug = do
+  cacheStatus <- loadCacheStatus
+  case cacheStatus of
+    Just status -> do
+      putStrLn "[NVD] Loading NVD data from cache"
+      putStrLn $ "[NVD] Cache last updated: " <> (show $ _cachestatus_last_updated status)
+      -- TODO if the cache is stale, fetch updates via the cvehistory API
+      files' <- listDirectory "localtmp"
+      let files = filter (\x -> not (x == "status.json")) files'
+      mapM (\filename -> do
+        parsed <- decodeFileStrict $ "localtmp/" <> filename :: IO (Maybe NVDCVE)
+        case parsed of
+          Just cve -> pure cve
+          Nothing -> throw $ CacheMalformed filename) files
+    Nothing -> do
+      putStrLn "[NVD] Data not yet cached, fetching. This will take considerable time for the first import."
+      startTime <- getCurrentTime
+      everything <- getEverything debug
+      when debug $ putStrLn "Got everything, writing to cache"
+      mapM_ writeToDisk everything
+      writeCacheStatus startTime
+      pure $ map _nvdwrapper_cve $ concatMap _nvdresponse_vulnerabilities everything
+
+
+nvdApi :: Bool -> Map Text Text -> IO NVDResponse
+nvdApi debug r = go 0
   where
       go :: Int -> IO NVDResponse
       go count = do
         let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
             url = baseUrl <> (convertToApi $ toList r)
 
+        when debug $ putStrLn $ show url
         v <- try (withApiKey (get' url jsonHandler) $ \key ->
             getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler) :: IO (Either SomeException NVDResponse)
         case v of
-          Left _ -> do
+          Left e -> do
+              when debug $ putStrLn $ show e
               putStrLn "Failed to parse, waiting for 10 seconds and retrying.."
               putStrLn $ "Retry count: " <> show count
               threadDelay $ 1000000 * 10
