@@ -15,7 +15,10 @@ data Parameters = Parameters
   } deriving (Show, Eq, Ord)
 
 programOptions = Parameters
-  <$> switch (long "debug")
+  <$> switch (  long "debug"
+             <> short 'v'
+             <> help "Debug logging"
+             )
   <*> strOption (  long "drv"
                 <> value "sbom.cdx.json"
                 <> help "SBOM to ingest"
@@ -23,7 +26,7 @@ programOptions = Parameters
                 <> showDefault
                 )
 
-parameterInfo = info (programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")
+parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")
 
 
 main :: IO ()
