@@ -7,3 +7,9 @@ process described in that shell, such as:
 ```
 cabal run CVENix ./sbom.cdx.json
 ```
+
+To also show debug information on unmatched advisories:
+
+```
+cabal run CVENix -- --debug ./sbom.cdx.json
+```

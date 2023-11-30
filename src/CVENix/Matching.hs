@@ -20,8 +20,8 @@ import Data.List
 import Control.Monad
 import Data.Foldable
 
-match :: SBOM -> [Advisory] -> IO ()
-match sbom cves = do
+match :: SBOM -> [Advisory] -> Bool -> IO ()
+match sbom cves debug = do
     putStrLn "Matched advisories:"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
@@ -41,17 +41,14 @@ match sbom cves = do
           let pname = _match_pname m
           case elem pname acc of
             True -> do
-                pure acc
+              pure acc
             False -> do
               response <- keywordSearch pname
-              putStrLn $ T.unpack pname
               let configs = map (\x -> (_nvdcve_id $ _nvdwrapper_cve x, _nvdcve_configurations $ _nvdwrapper_cve x)) $ _nvdresponse_vulnerabilities response
               let versions = flip map configs $ uncurry $ \cveId -> \case
                     Nothing -> ("Fail", [])
                     Just conf ->
                         (cveId, catMaybes $ map (_cpematch_versionEndIncluding) (concat (map _node_cpeMatch (concat (map _configuration_nodes conf)))))
-              print $ _match_version m
-              putStrLn "Vulnerable versions: "
               let vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
                     let nvdVer = splitSemVer x
                         matchVer = splitSemVer (_match_version m)
@@ -64,12 +61,15 @@ match sbom cves = do
                           (matchVer, cveId, False)
                       _ -> (matchVer, cveId, False)
               flip mapM_ vulns $ \(x, cveId, y) -> do
-                  if y == True then do
+                  if y == True || debug then do
+                    putStrLn $ T.unpack pname
+                    print $ _match_version m
                     putStrLn $ "CVEID: " <> T.unpack cveId
                     print x
-                    putStrLn $ "Vulnerable!"
+                    (if y then do putStrLn $ "Vulnerable"
+                    else do putStrLn $ "Not matched")
+                    putStrLn ""
                   else pure ()
-              putStrLn ""
               pure $ acc <> [pname]
 
       pretty :: Match -> IO String
