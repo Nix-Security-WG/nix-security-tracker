@@ -105,7 +105,7 @@ wrapRedirect u n handler headers p i = do
 
 establish :: URI -> IO (Connection)
 establish u =
-    case scheme of
+    case scheme' of
         "http:" -> do
             openConnection host port
         "https:" -> do
@@ -113,9 +113,9 @@ establish u =
             openConnectionSSL ctx host ports
         "unix:" -> do
             openConnectionUnix $ uriPath u
-        _ -> error ("Unknown URI scheme " ++ scheme)
+        _ -> error ("Unknown URI scheme " ++ scheme')
   where
-    scheme = uriScheme u
+    scheme' = uriScheme u
 
     auth = case uriAuthority u of
         Just x -> x

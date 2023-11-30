@@ -9,19 +9,106 @@ import CVENix.CVE
 import CVENix.NVD
 
 import Data.Maybe
-import qualified Data.Set as Set
 import Data.Char (isDigit)
 import Data.Text (Text)
-import qualified Data.Multimap.Set as SetMultimap
-import Data.Multimap.Set (SetMultimap)
 import qualified Data.Text as T
-import Control.Concurrent
-import Data.List
 import Control.Monad
-import Data.Foldable
+import System.Posix.Files
 
 match :: SBOM -> [Advisory] -> Bool -> IO ()
-match sbom cves debug = do
+match sbom _cves debug = do
+    putStrLn "Matched advisories:"
+    when debug $ putStrLn "Debug on!"
+    case _sbom_dependencies sbom of
+      Nothing -> putStrLn "No known deps?"
+      Just s -> do
+          let d = getDeps $ Just s
+          case d of
+            Nothing -> pure ()
+            Just a' -> do
+                resp <- getEverything
+                let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
+                foldM_ (getFromNVD t) ([] :: [Text]) a'
+
+
+
+    where
+      getDeps :: Maybe [SBOMDependency] -> Maybe [(Text, Maybe Text, Text)]
+      getDeps a = case a of
+                  Nothing -> Nothing
+                  Just d -> Just $ do
+                      let deps = map (_sbomdependency_ref) d
+                          split :: Text -> (Text, Maybe Text, Text)
+                          split path =
+                            let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
+                                lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                                version =
+                                  if T.length lastSegment == 0 then Nothing
+                                  else if isDigit (T.head lastSegment) then Just lastSegment
+                                  else Nothing
+                                pname = case version of
+                                  Nothing -> name
+                                  Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
+                            in
+                              (pname, version, path)
+                      filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
+
+      getFromNVD :: [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> IO [Text]
+      getFromNVD resp acc (pname, version, _path) = do
+          case elem pname acc of
+            True -> pure acc
+            False -> do
+              f <- fileExist $ "/tmp/NVD-" <> T.unpack pname
+              case f of
+                True -> do
+                    putStrLn "Known Vulnerable before, skipping"
+                    pure $ acc <> [pname]
+                False -> do
+                  when debug $ putStrLn "Running Keyword Search"
+                  putStrLn $ T.unpack pname
+
+                  let configs = map (\x -> (_nvdcve_id x, _nvdcve_configurations x)) resp
+                      (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
+                        Nothing -> ("Fail", [])
+                        Just conf -> do
+                            let cpeMatch = (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
+                            (cveId, cpeMatch)
+
+                      vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
+                        let nvdVer = _cpematch_versionEndIncluding x
+                            nvdCPE = (\c -> pname == _cpe_product c) <$> (parseCPE $ _cpematch_criteria x)
+                        case nvdCPE of
+                          (Just False) -> Nothing
+                          (Just True) -> case nvdVer of
+                            Nothing -> Nothing
+                            Just ver -> do
+                              let ver' = splitSemVer ver
+                                  localver = splitSemVer <$> version
+                              case (ver', localver) of
+                                (Just v, Just (Just lv)) -> do
+                                    if _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv then
+                                        Just (cveId, lv, v)
+                                    else Nothing
+                                (_, _) -> Nothing
+                          _ -> Nothing
+
+                  flip mapM_ vulns $ \case
+                    Just (cveId, localver, _nvdver) -> do
+                        putStrLn $ T.unpack cveId
+                        putStrLn $ "VULN"
+                        putStrLn $ show localver
+                        --encodeFile ("/tmp/NVD-" <> T.unpack pname) $ LocalCache cveId pname (T.pack $ prettySemVer localver)
+                    Nothing -> pure ()
+                  pure $ acc <> [pname]
+
+
+
+
+
+
+
+    {-match' :: SBOM -> [Advisory] -> IO ()
+match' sbom cves = do
     putStrLn "Matched advisories:"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
@@ -60,16 +147,20 @@ match sbom cves debug = do
                         else
                           (matchVer, cveId, False)
                       _ -> (matchVer, cveId, False)
-              flip mapM_ vulns $ \(x, cveId, y) -> do
-                  if y == True || debug then do
+              flip mapM_ vulns $ \(x, cveId, y) -> case y of
+                  True -> do
                     putStrLn $ T.unpack pname
                     print $ _match_version m
                     putStrLn $ "CVEID: " <> T.unpack cveId
-                    print x
-                    (if y then do putStrLn $ "Vulnerable"
-                    else do putStrLn $ "Not matched")
-                    putStrLn ""
-                  else pure ()
+                    print $ prettySemVer <$> x
+                    putStrLn $ "Vulnerable!"
+                  False -> do
+                    putStrLn $ T.unpack pname
+                    print $ _match_version m
+                    putStrLn $ "CVEID: " <> T.unpack cveId
+                    print $ prettySemVer <$> x
+                    putStrLn $ "Not Vulnerable!"
+                  _ -> pure ()
               pure $ acc <> [pname]
 
       pretty :: Match -> IO String
@@ -158,4 +249,4 @@ match sbom cves debug = do
                                 Nothing -> []
                                 Just v -> map (\matched_advisory -> Match pname v path matched_advisory) (Set.toList $ SetMultimap.lookup pname advisoriesByProductName)
                         )
-                        inventory
+                        inventory-}

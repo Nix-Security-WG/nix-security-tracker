@@ -38,7 +38,8 @@ library
                       http-streams,
                       HsOpenSSL,
                       io-streams,
-                      network-uri
+                      network-uri,
+                      unix
 
 
     hs-source-dirs:   src
@@ -52,7 +53,9 @@ executable CVENix
     -- other-extensions:
     build-depends:
         base ^>=4.17.2.0,
-        optparse-generic,
+        optparse-applicative,
+        unix,
+        process,
         CVENix
 
     hs-source-dirs:   exe
