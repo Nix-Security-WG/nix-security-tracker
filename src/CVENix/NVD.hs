@@ -9,14 +9,17 @@ module CVENix.NVD where
 import CVENix.Utils
 import CVENix.Types
 
+import Control.Monad
 import qualified Data.Text as T
 import Data.Text(Text)
 import qualified Data.Text.Encoding as TE
+import Data.Time.Clock
 import Data.Aeson
 import Data.Aeson.TH
 import GHC.Generics (Generic)
 import Network.Http.Client
 import OpenSSL
+import System.Directory
 import System.IO.Streams (InputStream)
 import Data.ByteString (ByteString)
 import Data.Map (fromList)
@@ -118,9 +121,15 @@ data LocalCache = LocalCache
   , _localcache_version :: Text
   } deriving (Show, Eq, Ord, Generic)
 
+data CacheStatus = CacheStatus
+  { _cachestatus_last_updated :: UTCTime
+  }
+
 get' :: URL -> (Response -> InputStream ByteString -> IO a) -> IO a
 get' a b = withOpenSSL $ do
-    putStrLn "[NVD] No API Key, waiting 8 seconds.."
+    putStrLn "[NVD] NVD_API_KEY environment variable not found."
+    putStrLn "[NVD] Request an API key from https://nvd.nist.gov/developers/start-here to reduce rate limits."
+    putStrLn "[NVD] waiting 8 seconds.."
     let second = 1000000
     threadDelay $ second * 8
     get a b
@@ -137,6 +146,7 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''Node
     , ''CPEMatch
     , ''LocalCache
+    , ''CacheStatus
     ])
 
 keywordSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
@@ -145,16 +155,19 @@ keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 cveSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
-writeEverythingToDisk :: LogT m ann => ReaderT Parameters m ()
-writeEverythingToDisk = do
-    resp <- getEverything
-    let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
+
+writeToDisk :: LogT m ann => NVDResponse -> ReaderT Parameters m ()
+writeToDisk resp = do
+    let t = map (_nvdwrapper_cve) $ _nvdresponse_vulnerabilities resp
     flip mapM_ t $ \x -> do
         let id' = _nvdcve_id x
         liftIO $ encodeFile ("localtmp/" <> T.unpack id' <> ".json") x
 
 getEverything :: LogT m ann => ReaderT Parameters m [NVDResponse]
 getEverything = do
+  env <- ask
+  let debug' = debug env
+  when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Getting first response from NVD"
   response1 <- nvdApi mempty
   let st = _nvdresponse_totalResults response1
       results = _nvdresponse_resultsPerPage response1
@@ -163,12 +176,59 @@ getEverything = do
   where
     go :: LogT m ann => [NVDResponse] -> (Int, Int) -> ReaderT Parameters m [NVDResponse]
     go acc (pages, results) = do
+        env <- ask
+        let debug' = debug env
+        when debug' $ logMessage $ colorize $  WithSeverity Debug $ pretty $ "[NVD] Got partial data, " <> (show pages) <> " pages to go"
         let st = pages * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
         logMessage $ colorize $ WithSeverity Debug $ pretty $ "Page: " <> show pages
         if pages <= 0 then
             pure acc
         else go (acc <> [resp]) (pages - 1, results)
+
+data NVDException = CacheMalformed !FilePath
+  deriving (Show)
+instance Exception NVDException
+
+loadCacheStatus :: IO (Maybe CacheStatus)
+loadCacheStatus = do
+  exists <- doesFileExist "localtmp/status.json"
+  if exists then decodeFileStrict "localtmp/status.json" :: IO (Maybe CacheStatus)
+  else pure Nothing
+
+writeCacheStatus :: UTCTime -> IO ()
+writeCacheStatus startTime = do
+  exists <- doesDirectoryExist "localtmp"
+  if not exists then createDirectory "localtmp" else pure ()
+  encodeFile "localtmp/status.json" $ CacheStatus startTime
+
+loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
+loadNVDCVEs = do
+  cacheStatus <- liftIO loadCacheStatus
+  env <- ask
+  let debug' = debug env
+  case cacheStatus of
+    Just status -> do
+      logMessage $ colorize $ WithSeverity Informational $ "Loading NVD data from cache"
+      logMessage $ colorize $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ _cachestatus_last_updated status)
+      -- TODO if the cache is stale, fetch updates via the cvehistory API
+      files' <- liftIO $ listDirectory "localtmp"
+      let files = filter (\x -> not (x == "status.json")) files'
+      mapM (\filename -> do
+        parsed <- liftIO $ (decodeFileStrict $ "localtmp/" <> filename :: IO (Maybe NVDCVE))
+        case parsed of
+          Just cve -> pure cve
+          Nothing -> throw $ CacheMalformed filename) files
+    Nothing -> do
+      logMessage $ colorize $ WithSeverity Informational $ "Data not yet cached, fetching. This will take considerable time for the first import."
+      startTime <- liftIO $ getCurrentTime
+      everything <- getEverything
+      when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Got everything, writing to cache"
+      mapM_ (writeToDisk) everything
+      liftIO $ writeCacheStatus startTime
+      pure $ map _nvdwrapper_cve $ concatMap _nvdresponse_vulnerabilities everything
+
+
 
 nvdApi :: LogT m ann => Map Text Text -> ReaderT Parameters m NVDResponse
 nvdApi r = go 0
@@ -177,13 +237,16 @@ nvdApi r = go 0
       go count = do
         let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
             url = baseUrl <> (convertToApi $ toList r)
-
+        env <- ask
+        let debug' = debug env
         v <- liftIO $ (try (withApiKey (get' url jsonHandler) $ \key ->
             getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler)) :: LogT m ann => m (Either SomeException NVDResponse)
+        when debug' $ logMessage $ colorize $  WithSeverity Debug $ pretty $ show url
         case v of
-          Left _ -> do
+          Left e -> do
+              when debug' $ logMessage $ colorize $ WithSeverity Debug $ pretty $ show e
               logMessage $ colorize $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
-              logMessage $ colorize $ WithSeverity Informational $ pretty $ "Retry count: " <> show count
+              logMessage $ colorize $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
               liftIO $ threadDelay $ 1000000 * 10
               go (count + 1)
           Right c -> pure c

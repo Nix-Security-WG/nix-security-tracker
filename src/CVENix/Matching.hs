@@ -22,27 +22,29 @@ import Control.Monad.IO.Class
 import Prettyprinter
 import Control.Monad.Trans.Reader
 
+data InventoryDependency = InventoryDependency
+  { _inventorydependency_pname :: Text
+  , _inventorydependency_version :: Maybe Text
+  , _inventorydependency_drv :: Text
+  } deriving (Show)
+
 match :: SBOM -> [Advisory] -> Parameters -> IO ()
 match sbom _cves params = do
     putStrLn "Matched advisories:"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
-          let d = getDeps $ Just s
-          case d of
-            Nothing -> pure ()
-            Just a' -> let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ do
+          let d = getDeps s
+          let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ do
                 resp <- getEverything
-                let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
-                foldM_ (getFromNVD t) ([] :: [Text]) a'
+                nvdCVEs <- loadNVDCVEs
+                foldM_ (getFromNVD nvdCVEs) ([] :: [Text]) d
+
     where
-      getDeps :: Maybe [SBOMDependency] -> Maybe [(Text, Maybe Text, Text)]
-      getDeps a = case a of
-                  Nothing -> Nothing
-                  Just d -> Just $ do
-                      let deps = map (_sbomdependency_ref) d
-                          split :: Text -> (Text, Maybe Text, Text)
-                          split path =
+      getDeps :: [SBOMDependency] -> [InventoryDependency]
+      getDeps d = let deps = map (_sbomdependency_ref) d
+                      split :: Text -> InventoryDependency
+                      split path =
                             let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
                                 lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
                                 version =
@@ -53,11 +55,11 @@ match sbom _cves params = do
                                   Nothing -> name
                                   Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
                             in
-                              (pname, version, path)
-                      filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
+                              (InventoryDependency pname version path)
+                  in map split deps
 
-      getFromNVD :: LogT m ann => [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> ReaderT Parameters m [Text]
-      getFromNVD resp acc (pname, version, _path) = do
+      getFromNVD :: LogT m ann => [NVDCVE] -> [Text] -> InventoryDependency -> ReaderT Parameters m [Text]
+      getFromNVD resp acc (InventoryDependency pname version _drv) = do
           env <- ask
           let debug' = debug env
           case elem pname acc of
