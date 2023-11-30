@@ -137,8 +137,26 @@ keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 cveSearch :: Text -> IO NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
+getEverything :: IO [NVDResponse]
+getEverything = do
+  response1 <- nvdApi mempty
+  let st = _nvdresponse_totalResults response1
+      results = _nvdresponse_resultsPerPage response1
+      (numOfPages, _) = properFraction $ (fromIntegral st / fromIntegral results)
+  print numOfPages
+  go [] (numOfPages, results)
+  where
+    go :: [NVDResponse] -> (Int, Int) -> IO [NVDResponse]
+    go acc (pages, results) = do
+        let st = pages * results
+        resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
+        print pages
+        if pages == 0 then
+            pure acc
+        else go (acc <> [resp]) (pages - 1, results)
+
 nvdApi :: Map Text Text -> IO NVDResponse
-nvdApi r = if size r == 0 then error "Pass a map that isn't empty" else do go 0
+nvdApi r = go 0
   where
       go :: Int -> IO NVDResponse
       go count = do
