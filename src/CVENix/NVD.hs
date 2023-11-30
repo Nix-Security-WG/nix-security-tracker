@@ -178,10 +178,9 @@ getEverything = do
     go acc (pages, results) = do
         env <- ask
         let debug' = debug env
-        when debug' $ logMessage $ colorize $  WithSeverity Debug $ pretty $ "[NVD] Got partial data, " <> (show pages) <> " pages to go"
+        when debug' $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "[NVD] Got partial data, " <> (show pages) <> " pages to go"
         let st = pages * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
-        logMessage $ colorize $ WithSeverity Debug $ pretty $ "Page: " <> show pages
         if pages <= 0 then
             pure acc
         else go (acc <> [resp]) (pages - 1, results)
