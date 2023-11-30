@@ -9,21 +9,14 @@ import CVENix.CVE
 import CVENix.NVD
 
 import Data.Maybe
-import qualified Data.Set as Set
 import Data.Char (isDigit)
 import Data.Text (Text)
-import qualified Data.Multimap.Set as SetMultimap
-import Data.Multimap.Set (SetMultimap)
 import qualified Data.Text as T
-import Control.Concurrent
-import Data.List
 import Control.Monad
-import Data.Foldable
-import Data.Aeson
 import System.Posix.Files
 
 match :: SBOM -> [Advisory] -> Bool -> IO ()
-match sbom cves debug = do
+match sbom _cves debug = do
     putStrLn "Matched advisories:"
     when debug $ putStrLn "Debug on!"
     case _sbom_dependencies sbom of
@@ -61,7 +54,7 @@ match sbom cves debug = do
                       filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
 
       getFromNVD :: [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> IO [Text]
-      getFromNVD resp acc (pname, version, path) = do
+      getFromNVD resp acc (pname, version, _path) = do
           case elem pname acc of
             True -> pure acc
             False -> do
@@ -71,7 +64,7 @@ match sbom cves debug = do
                     putStrLn "Known Vulnerable before, skipping"
                     pure $ acc <> [pname]
                 False -> do
-                  putStrLn "Running Keyword Search"
+                  when debug $ putStrLn "Running Keyword Search"
                   putStrLn $ T.unpack pname
 
                   let configs = map (\x -> (_nvdcve_id x, _nvdcve_configurations x)) resp
@@ -83,7 +76,7 @@ match sbom cves debug = do
 
                       vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
                         let nvdVer = _cpematch_versionEndIncluding x
-                            nvdCPE = (\x -> pname == _cpe_product x) <$> (parseCPE $ _cpematch_criteria x)
+                            nvdCPE = (\c -> pname == _cpe_product c) <$> (parseCPE $ _cpematch_criteria x)
                         case nvdCPE of
                           (Just False) -> Nothing
                           (Just True) -> case nvdVer of
@@ -100,7 +93,7 @@ match sbom cves debug = do
                           _ -> Nothing
 
                   flip mapM_ vulns $ \case
-                    Just (cveId, localver, nvdver) -> do
+                    Just (cveId, localver, _nvdver) -> do
                         putStrLn $ T.unpack cveId
                         putStrLn $ "VULN"
                         putStrLn $ show localver

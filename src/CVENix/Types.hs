@@ -68,14 +68,14 @@ splitSemVer v = do
     case t of
       [major, minor] -> do
           let maj = getInt major
-              min = getInt minor
-          case (maj, min) of
+              min' = getInt minor
+          case (maj, min') of
             (Just a, Just b) -> Just $ SemVer a b Nothing
             _ -> Nothing
       [major, minor, patch] -> do
           let maj = getInt major
-              min = getInt minor
-          case (maj, min) of
+              min' = getInt minor
+          case (maj, min') of
             (Just a, Just b) -> Just $ SemVer a b (getInt patch)
             _ -> Nothing
       _ -> Nothing

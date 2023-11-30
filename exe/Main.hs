@@ -14,6 +14,7 @@ data Parameters = Parameters
   , sbom :: !String
   } deriving (Show, Eq, Ord)
 
+programOptions :: Parser Parameters
 programOptions = Parameters
   <$> switch (  long "debug"
              <> short 'v'
@@ -26,15 +27,16 @@ programOptions = Parameters
                 <> showDefault
                 )
 
+parameterInfo :: ParserInfo Parameters
 parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")
 
 
 main :: IO ()
 main = do
     params <- execParser parameterInfo
-    sbom <- parseSBOM $ sbom params
+    sbom' <- parseSBOM $ sbom params
     cves <- exampleParseCVE
-    case sbom of
+    case sbom' of
       Nothing ->
         putStrLn "[SBOM] Failed to parse"
       Just s ->

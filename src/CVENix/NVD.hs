@@ -19,7 +19,7 @@ import Data.ByteString (ByteString)
 import Data.Map (fromList)
 import System.Environment.Blank
 import Control.Concurrent
-import Data.Map(Map, size, fromList, toList)
+import Data.Map(Map, toList)
 import Control.Exception
 
 data NVDResponse = NVDResponse
@@ -142,23 +142,21 @@ writeEverythingToDisk = do
     resp <- getEverything
     let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
     flip mapM_ t $ \x -> do
-        let id = _nvdcve_id x
-        encodeFile ("localtmp/" <> T.unpack id <> ".json") x
+        let id' = _nvdcve_id x
+        encodeFile ("localtmp/" <> T.unpack id' <> ".json") x
 
 getEverything :: IO [NVDResponse]
 getEverything = do
   response1 <- nvdApi mempty
   let st = _nvdresponse_totalResults response1
       results = _nvdresponse_resultsPerPage response1
-      (numOfPages, _) = properFraction $ (fromIntegral st / fromIntegral results)
-  print numOfPages
+      (numOfPages, _) = properFraction $ ((fromIntegral st / fromIntegral results) :: Double)
   go [] (numOfPages, results)
   where
     go :: [NVDResponse] -> (Int, Int) -> IO [NVDResponse]
     go acc (pages, results) = do
         let st = pages * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
-        print pages
         if pages <= 0 then
             pure acc
         else go (acc <> [resp]) (pages - 1, results)
