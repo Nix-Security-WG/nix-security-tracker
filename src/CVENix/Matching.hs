@@ -32,7 +32,9 @@ match sbom cves = do
           case d of
             Nothing -> pure ()
             Just a' -> do
-                foldM_ (getFromNVD) ([] :: [Text]) a'
+                resp <- getEverything
+                let t = map (_nvdwrapper_cve) $ concatMap _nvdresponse_vulnerabilities resp
+                foldM_ (getFromNVD t) ([] :: [Text]) a'
 
 
 
@@ -57,8 +59,8 @@ match sbom cves = do
                               (pname, version, path)
                       filter (\(x, _, _) -> if isJust (T.stripSuffix ".conf" x) then False else True) $ map split deps
 
-      getFromNVD :: [Text] -> (Text, Maybe Text, Text) -> IO [Text]
-      getFromNVD acc (pname, version, path) = do
+      getFromNVD :: [NVDCVE] -> [Text] -> (Text, Maybe Text, Text) -> IO [Text]
+      getFromNVD resp acc (pname, version, path) = do
           case elem pname acc of
             True -> pure acc
             False -> do
@@ -69,11 +71,9 @@ match sbom cves = do
                     pure $ acc <> [pname]
                 False -> do
                   putStrLn "Running Keyword Search"
-                  nvd <- keywordSearch pname
                   putStrLn $ T.unpack pname
 
-                  let configs = map (\x -> (_nvdcve_id $ _nvdwrapper_cve x, _nvdcve_configurations $ _nvdwrapper_cve x)) $
-                                    _nvdresponse_vulnerabilities nvd
+                  let configs = map (\x -> (_nvdcve_id x, _nvdcve_configurations x)) resp
                       (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
                         Nothing -> ("Fail", [])
                         Just conf -> do
