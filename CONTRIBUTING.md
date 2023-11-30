@@ -5,11 +5,11 @@ but for fast(er) development round-trips you can also run part of the
 process described in that shell, such as:
 
 ```
-cabal run CVENix ./sbom.cdx.json
+cabal run CVENix -- --sbom ./sbom.cdx.json
 ```
 
 To also show debug information on unmatched advisories:
 
 ```
-cabal run CVENix -- --debug ./sbom.cdx.json
+cabal run CVENix -- --debug --sbom ./sbom.cdx.json
 ```
