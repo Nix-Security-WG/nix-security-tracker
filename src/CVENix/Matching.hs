@@ -9,6 +9,7 @@ import CVENix.SBOM
 import CVENix.Types
 import CVENix.CVE
 import CVENix.NVD
+import CVENix.Utils
 
 import Data.Maybe
 import Data.Char (isDigit)
@@ -21,6 +22,9 @@ import Control.Monad.Log.Colors
 import Control.Monad.IO.Class
 import Prettyprinter
 import Control.Monad.Trans.Reader
+import Data.Time.Clock
+import qualified Data.Map.Strict as Map
+import Data.Map (Map)
 
 data InventoryDependency = InventoryDependency
   { _inventorydependency_pname :: Text
@@ -35,10 +39,11 @@ match sbom _cves params = do
       Nothing -> putStrLn "No known deps?"
       Just s -> do
           let d = getDeps s
-          let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ do
-                resp <- getEverything
-                nvdCVEs <- loadNVDCVEs
-                foldM_ (getFromNVD nvdCVEs) ([] :: [Text]) d
+          let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ timeLog $ do
+                when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
+                nvdCVEs <- timeLog $ loadNVDCVEs
+                matches <- matchNVD nvdCVEs
+                timeLog $ foldM_ (getFromNVD (concat matches)) ([] :: [(Text, Maybe Text)]) d
 
     where
       getDeps :: [SBOMDependency] -> [InventoryDependency]
@@ -58,58 +63,57 @@ match sbom _cves params = do
                               (InventoryDependency pname version path)
                   in map split deps
 
-      getFromNVD :: LogT m ann => [NVDCVE] -> [Text] -> InventoryDependency -> ReaderT Parameters m [Text]
-      getFromNVD resp acc (InventoryDependency pname version _drv) = do
+      matchNVD :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
+      matchNVD nvds = timeLog $ flip mapM nvds $ \x -> do
+          let configs = _nvdcve_configurations x
+              id' = _nvdcve_id x
+              versions = case configs of
+                Nothing -> []
+                Just cfg -> flip concatMap cfg $ \cc -> do
+                    let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
+                    flip concatMap cpeMatch $ \c -> do
+                        let nvdVer = _cpematch_versionEndIncluding c
+                            cpe = (parseCPE $ _cpematch_criteria c)
+                        [LocalVuln nvdVer (_cpe_product <$> cpe) id']
+          pure versions
+
+
+
+      getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
+      getFromNVD vulns acc (InventoryDependency pname version _drv) = do
           env <- ask
           let debug' = debug env
-          case elem pname acc of
+          case elem (pname, version) acc of
             True -> do
                 when (debug') $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname
                 pure acc
-            False -> do
-              f <- liftIO $ fileExist $ "/tmp/NVD-" <> T.unpack pname
-              case f of
-                True -> do
-                    liftIO $ putStrLn "Known Vulnerable before, skipping"
-                    pure $ acc <> [pname]
-                False -> do
-                  when (debug') $ logMessage $ WithSeverity Informational $ "Running Keyword Search"
-                  --putStrLn $ T.unpack pname
+            False -> timeLog $ do
+              when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname
+              let  vulns' = flip map vulns $ \(LocalVuln endVer product cveId) -> do
+                    let nvdVer = splitSemVer <$> endVer
+                        nvdCPE = (\c -> pname == c) <$> (product)
+                    case nvdCPE of
+                      (Just True) -> case nvdVer of
+                        Nothing -> Nothing
+                        Just ver' -> do
+                          let localver = splitSemVer <$> version
+                          case (ver', localver) of
+                            (Just v, Just (Just lv)) -> do
+                                if | v == lv -> Just (cveId, lv, v)
+                                   | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv -> Just (cveId, lv, v)
+                                   | otherwise -> Nothing
+                            (_, _) -> Nothing
+                      _ -> Nothing
 
-                  let configs = map (\x -> (_nvdcve_id x, _nvdcve_configurations x)) resp
-                      (versions :: [(Text, [CPEMatch])]) = flip map configs $ uncurry $ \cveId -> \case
-                        Nothing -> ("Fail", [])
-                        Just conf -> do
-                            let cpeMatch = (concat (map _node_cpeMatch (concat (map _configuration_nodes conf))))
-                            (cveId, cpeMatch)
-
-                      vulns = flip concatMap versions $ uncurry $ \cveId x' -> flip map x' $ \x -> do
-                        let nvdVer = _cpematch_versionEndIncluding x
-                            nvdCPE = (\c -> pname == _cpe_product c) <$> (parseCPE $ _cpematch_criteria x)
-                        case nvdCPE of
-                          (Just False) -> Nothing
-                          (Just True) -> case nvdVer of
-                            Nothing -> Nothing
-                            Just ver -> do
-                              let ver' = splitSemVer ver
-                                  localver = splitSemVer <$> version
-                              case (ver', localver) of
-                                (Just v, Just (Just lv)) -> do
-                                    if | v == lv -> Just (cveId, lv, v)
-                                       | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv -> Just (cveId, lv, v)
-                                       | otherwise -> Nothing
-                                (_, _) -> Nothing
-                          _ -> Nothing
-
-                  flip mapM_ vulns $ \case
-                    Just (cveId, localver, _nvdver) -> do
-                        logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
-                        logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cveId
-                        --putStrLn $ "VULN"
-                        logMessage $ colorize $ WithSeverity Warning $ pretty $ prettySemVer localver
-                        --encodeFile ("/tmp/NVD-" <> T.unpack pname) $ LocalCache cveId pname (T.pack $ prettySemVer localver)
-                    Nothing -> pure ()
-                  pure $ acc <> [pname]
+              timeLog $ flip mapM_ vulns' $ \case
+                Nothing -> pure ()
+                Just (cid, local, nvd) -> timeLog $ do
+                    logMessage $ colorize $ WithSeverity Informational $ pretty $ T.unpack pname
+                    logMessage $ colorize $ WithSeverity Debug $ pretty $ T.unpack cid
+                    logMessage $ colorize $ WithSeverity Debug $ pretty $ "Vulnerable version: " <> prettySemVer nvd
+                    logMessage $ colorize $ WithSeverity Debug $ pretty $ "Local Version: " <> prettySemVer local
+                    liftIO $ putStrLn ""
+              pure $ acc <> [(pname, version)]
 
 
 

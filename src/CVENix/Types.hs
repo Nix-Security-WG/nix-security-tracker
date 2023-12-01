@@ -1,24 +1,47 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric #-}
 module CVENix.Types where
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import CVENix.CVE
 import qualified Data.Text.Read as TR
 import Control.Monad.Log
 import Prettyprinter
 import Control.Monad.IO.Class
+import GHC.Generics
 
 type LogT m ann = (MonadLog (WithSeverity (Doc ann)) m, MonadIO m)
+
+data Version = Version
+  { _version_version :: Text
+  , _version_status :: Text
+  , _version_type :: Maybe Text
+  , _version_lessThan :: Maybe Text
+  , _version_lessThanOrEqual :: Maybe Text
+  , _version_changes :: Maybe [Change]
+  } deriving (Show, Eq, Ord, Generic)
+
+data Change = Change
+  { _change_at :: Text
+  , _change_status :: Text
+  } deriving (Show, Eq, Ord, Generic)
+
 
 data Parameters = Parameters
   { debug :: !Bool
   , sbom :: !String
   , path :: !(Maybe String)
+  , timeInfo :: Bool
   } deriving (Show, Eq, Ord)
 
+
+data LocalVuln = LocalVuln
+  { _vuln_endVersion :: Maybe Text
+  , _vuln_product :: Maybe Text
+  , _vuln_cveId :: Text
+  } deriving (Show, Eq, Ord)
 
 data Advisory = Advisory
   -- id is for example CVE is, later maybe GHSA etc

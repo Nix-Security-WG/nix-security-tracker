@@ -214,7 +214,7 @@ loadNVDCVEs = do
       files' <- liftIO $ listDirectory "localtmp"
       let files = filter (\x -> not (x == "status.json")) files'
       mapM (\filename -> do
-        parsed <- liftIO $ (decodeFileStrict $ "localtmp/" <> filename :: IO (Maybe NVDCVE))
+        parsed <- liftIO $ (decodeFileStrict' $ "localtmp/" <> filename :: IO (Maybe NVDCVE))
         case parsed of
           Just cve -> pure cve
           Nothing -> throw $ CacheMalformed filename) files

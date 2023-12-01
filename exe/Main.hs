@@ -28,6 +28,7 @@ programOptions = Parameters
   <*> (optional $ strOption ( long "path"
                 <> help "Path to ingest"
                 ))
+  <*> switch (long "timeinfo")
 
 parameterInfo :: ParserInfo Parameters
 parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")
