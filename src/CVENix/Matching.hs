@@ -38,7 +38,7 @@ match sbom _cves params = do
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
-          let d = getDeps s
+          let d = filter (\(InventoryDependency pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getDeps s
           let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ timeLog $ do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ loadNVDCVEs
@@ -81,14 +81,14 @@ match sbom _cves params = do
 
       getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
       getFromNVD vulns acc (InventoryDependency pname version _drv) = do
-          env <- ask
-          let debug' = debug env
+          debug' <- debug <$> ask
+          let localver = splitSemVer <$> version
           case elem (pname, version) acc of
             True -> do
-                when (debug') $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname
+                when (debug') $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
                 pure acc
             False -> timeLog $ do
-              when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname
+              when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
               let  vulns' = flip map vulns $ \(LocalVuln endVer product cveId) -> do
                     let nvdVer = splitSemVer <$> endVer
                         nvdCPE = (\c -> pname == c) <$> (product)
@@ -96,11 +96,10 @@ match sbom _cves params = do
                       (Just True) -> case nvdVer of
                         Nothing -> Nothing
                         Just ver' -> do
-                          let localver = splitSemVer <$> version
                           case (ver', localver) of
                             (Just v, Just (Just lv)) -> do
-                                if | v == lv -> Just (cveId, lv, v)
-                                   | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv -> Just (cveId, lv, v)
+                                if | _semver_major v > _semver_major lv -> Just (cveId, lv, v)
+                                   | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv && _semver_patch v >= _semver_patch lv -> Just (cveId, lv, v)
                                    | otherwise -> Nothing
                             (_, _) -> Nothing
                       _ -> Nothing
@@ -108,10 +107,11 @@ match sbom _cves params = do
               timeLog $ flip mapM_ vulns' $ \case
                 Nothing -> pure ()
                 Just (cid, local, nvd) -> timeLog $ do
-                    logMessage $ colorize $ WithSeverity Informational $ pretty $ T.unpack pname
-                    logMessage $ colorize $ WithSeverity Debug $ pretty $ T.unpack cid
-                    logMessage $ colorize $ WithSeverity Debug $ pretty $ "Vulnerable version: " <> prettySemVer nvd
-                    logMessage $ colorize $ WithSeverity Debug $ pretty $ "Local Version: " <> prettySemVer local
+                    liftIO $ putStrLn ""
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cid
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version: " <> prettySemVer nvd
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Local Version: " <> prettySemVer local
                     liftIO $ putStrLn ""
               pure $ acc <> [(pname, version)]
 
