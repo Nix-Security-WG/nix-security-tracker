@@ -36,6 +36,7 @@
 
       mkdir -p .credentials
       export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
+      export DATABASE_URL="sqlite:///tracker.sqlite3"
     '';
   };
 

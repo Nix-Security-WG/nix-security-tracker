@@ -19,6 +19,8 @@ in extraPkgs // {
       django-types
       django_4
       djangorestframework
+      dj-database-url
+      psycopg2
       ipython
       pygithub
       requests
