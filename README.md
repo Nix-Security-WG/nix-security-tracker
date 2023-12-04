@@ -16,6 +16,12 @@ Show helper commands:
 ./src/website/manage.py --help
 ```
 
+> You may want to set an alias for convenience:
+>
+> ```console
+> alias manage=./src/website/manage.py
+> ```
+
 Start server:
 
 ```console
