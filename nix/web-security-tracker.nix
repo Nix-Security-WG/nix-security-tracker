@@ -31,6 +31,10 @@ in {
       mkEnableOption "web security tracker for Nixpkgs and similar monorepo";
 
     package = mkPackageOptionMD pkgs "web-security-tracker" { };
+    domain = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+    };
     port = mkOption {
       type = types.port;
       default = 8000;
@@ -55,8 +59,11 @@ in {
 
   config = mkIf cfg.enable {
     environment.systemPackages = [ wstManageScript ];
-    services.web-security-tracker.settings.STATIC_ROOT =
-      mkDefault "/var/lib/web-security-tracker/static";
+    services.web-security-tracker.settings = {
+      STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
+      DEBUG = mkDefault false;
+    };
+
     users.users.web-security-tracker = {
       isSystemUser = true;
       group = "web-security-tracker";
@@ -71,13 +78,18 @@ in {
       ensureDatabases = [ "web-security-tracker" ];
     };
 
+    services.nginx.virtualHosts = lib.mkIf (cfg.domain != null) {
+      "${cfg.domain}" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://localhost:${toString cfg.port}";
+        locations."/static".alias = "/var/lib/web-security-tracker/static/";
+      };
+    };
+
     systemd.services.web-security-tracker-server = {
       description = "A web security tracker ASGI server";
-      after = [
-        "network.target"
-        "systemd-tmpfiles-setup.service"
-        "postgresql.service"
-      ];
+      after = [ "network.target" "postgresql.service" ];
       requires = [ "postgresql.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ pythonEnv wstManageScript ];
