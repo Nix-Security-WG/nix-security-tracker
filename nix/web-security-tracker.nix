@@ -1,9 +1,20 @@
 { config, pkgs, lib, ... }:
 let
   inherit (lib)
-    types mkIf mkEnableOption mkPackageOptionMD mkOption mapAttrsToList;
+    types mkIf mkEnableOption mkPackageOptionMD mkOption mapAttrsToList
+    mkDefault;
   inherit (pkgs) writeScriptBin stdenv;
   cfg = config.services.web-security-tracker;
+  pythonFmt = pkgs.formats.pythonVars { };
+
+  settingsFile = pythonFmt.generate "wst-settings.py" cfg.settings;
+  extraConfigFile = pkgs.writeTextFile {
+    name = "wst-extraConfig.py";
+    text = cfg.extraConfig;
+  };
+
+  configFile =
+    pkgs.concatText "configuration.py" [ settingsFile extraConfigFile ];
   pythonEnv = pkgs.python3.withPackages (ps: with ps; [ cfg.package daphne ]);
   wstManageScript = writeScriptBin "wst-manage" ''
     #!${stdenv.shell}
@@ -28,6 +39,14 @@ in {
       type = types.nullOr types.str;
       default = null;
     };
+    settings = mkOption {
+      type = types.attrsOf types.anything;
+      default = { };
+    };
+    extraConfig = mkOption {
+      type = types.lines;
+      default = "";
+    };
     secrets = mkOption {
       type = types.attrsOf types.path;
       default = { };
@@ -36,6 +55,8 @@ in {
 
   config = mkIf cfg.enable {
     environment.systemPackages = [ wstManageScript ];
+    services.web-security-tracker.settings.STATIC_ROOT =
+      mkDefault "/var/lib/web-security-tracker/static";
     users.users.web-security-tracker = {
       isSystemUser = true;
       group = "web-security-tracker";
@@ -70,13 +91,16 @@ in {
           mapAttrsToList (name: secretPath: "${name}:${secretPath}")
           cfg.secrets;
       };
-      environment = { DATABASE_URL = "postgres:///web-security-tracker"; };
+      environment = {
+        DATABASE_URL = "postgres:///web-security-tracker";
+        USER_SETTINGS_FILE = "${configFile}";
+      };
       preStart = ''
         # Auto-migrate on first run or if the package has changed
         versionFile="/var/lib/web-security-tracker/package-version"
         if [[ $(cat "$versionFile" 2>/dev/null) != ${cfg.package} ]]; then
           wst-manage migrate --no-input
-          echo todo wst-manage collectstatic --no-input --clear
+          wst-manage collectstatic --no-input --clear
           echo ${cfg.package} > "$versionFile"
         fi
       '';

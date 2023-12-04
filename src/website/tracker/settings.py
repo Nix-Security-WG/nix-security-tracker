@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from os import environ as env
 from pathlib import Path
 import dj_database_url
+import importlib.util
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -166,3 +168,14 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Customization via user settings
+user_settings_file = env.get("USER_SETTINGS_FILE", None)
+if user_settings_file is not None:
+    spec = importlib.util.spec_from_file_location("user_settings", user_settings_file)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("User settings specification failed!")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    sys.modules["user_settings"] = module
+    from user_settings import *  # noqa: F403 # pyright: ignore [reportMissingImports]
