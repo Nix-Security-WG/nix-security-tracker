@@ -14,7 +14,14 @@
       nodes.machine = { ... }: {
         imports = [ wstModule machine ];
 
-        services.web-security-tracker = { enable = true; };
+        services.web-security-tracker = {
+          enable = true;
+          secrets = {
+            SECRET_KEY = pkgs.writeText "secret.key" "aaaaaaaaaaaaaaaaaaaa";
+            GH_CLIENT_ID = pkgs.writeText "gh_client" "bonjour";
+            GH_SECRET = pkgs.writeText "gh_secret" "secret";
+          };
+        };
       };
     };
 }

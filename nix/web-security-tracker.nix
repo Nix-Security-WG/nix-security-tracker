@@ -1,14 +1,19 @@
 { config, pkgs, lib, ... }:
 let
-  inherit (lib) types mkIf mkEnableOption mkPackageOptionMD mkOption;
+  inherit (lib)
+    types mkIf mkEnableOption mkPackageOptionMD mkOption mapAttrsToList;
+  inherit (pkgs) writeScriptBin stdenv;
   cfg = config.services.web-security-tracker;
   pythonEnv = pkgs.python3.withPackages (ps: with ps; [ cfg.package daphne ]);
-  wstManageScript = with pkgs;
-    (writeScriptBin "wst-manage" ''
-      #!${stdenv.shell}
-      export PYTHONPATH=${cfg.package.pythonPath}
-      sudo -u web-security-tracker ${cfg.package}/bin/manage.py "$@"
-    '');
+  wstManageScript = writeScriptBin "wst-manage" ''
+    #!${stdenv.shell}
+    sudo=exec
+    if [[ "$USER" != "web-security-tracker" ]]; then
+      sudo='exec /run/wrappers/bin/sudo -u web-security-tracker --preserve-env --preserve-env=PYTHONPATH'
+    fi
+    export PYTHONPATH=${toString cfg.package.pythonPath}
+    $sudo ${cfg.package}/bin/manage.py "$@"
+  '';
 in {
   options.services.web-security-tracker = {
     enable =
@@ -22,6 +27,10 @@ in {
     unixSocket = mkOption {
       type = types.nullOr types.str;
       default = null;
+    };
+    secrets = mkOption {
+      type = types.attrsOf types.path;
+      default = { };
     };
   };
 
@@ -43,15 +52,23 @@ in {
 
     systemd.services.web-security-tracker-server = {
       description = "A web security tracker ASGI server";
-      after = [ "network.target" "systemd-tmpfiles-setup.service" ];
+      after = [
+        "network.target"
+        "systemd-tmpfiles-setup.service"
+        "postgresql.service"
+      ];
+      requires = [ "postgresql.service" ];
       wantedBy = [ "multi-user.target" ];
-      path = [ pythonEnv ];
+      path = [ pythonEnv wstManageScript ];
       serviceConfig = {
         User = "web-security-tracker";
         Restart = "always";
         WorkingDirectory = "/var/lib/web-security-tracker";
         StateDirectory = "web-security-tracker";
         RuntimeDirectory = "web-security-tracker";
+        LoadCredential =
+          mapAttrsToList (name: secretPath: "${name}:${secretPath}")
+          cfg.secrets;
       };
       environment = { DATABASE_URL = "postgres:///web-security-tracker"; };
       preStart = ''
