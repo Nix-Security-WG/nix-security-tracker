@@ -2,7 +2,7 @@
 let
   inherit (lib)
     types mkIf mkEnableOption mkPackageOptionMD mkOption mapAttrsToList
-    mkDefault;
+    mkDefault concatStringsSep;
   inherit (pkgs) writeScriptBin stdenv;
   cfg = config.services.web-security-tracker;
   pythonFmt = pkgs.formats.pythonVars { };
@@ -24,6 +24,28 @@ let
     fi
     export PYTHONPATH=${toString cfg.package.pythonPath}
     $sudo ${cfg.package}/bin/manage.py "$@"
+  '';
+  credentials =
+    mapAttrsToList (name: secretPath: "${name}:${secretPath}") cfg.secrets;
+  databaseUrl = "postgres:///web-security-tracker";
+  # This script has access to the credentials, no matter where it is.
+  wstExternalManageScript = writeScriptBin "wst-manage" ''
+    #!${stdenv.shell}
+    echo "${concatStringsSep " " credentials}"
+    systemd-run --pty \
+      --same-dir \
+      --wait \
+      --collect \
+      --service-type=exec \
+      --unit "wst-manage.service" \
+      --property "User=web-security-tracker" \
+      --property "Group=web-security-tracker" \
+      ${
+        concatStringsSep "\n"
+        (map (cred: "--property 'LoadCredential=${cred}' \\") credentials)
+      }
+      --property "Environment=DATABASE_URL=${databaseUrl} USER_SETTINGS_FILE=${settingsFile}" \
+      "${wstManageScript}/bin/wst-manage" "$@"
   '';
 in {
   options.services.web-security-tracker = {
@@ -58,10 +80,12 @@ in {
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [ wstManageScript ];
+    environment.systemPackages = [ wstExternalManageScript ];
     services.web-security-tracker.settings = {
       STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
       DEBUG = mkDefault false;
+      ALLOWED_HOSTS = mkDefault
+        (if cfg.domain != null then [ cfg.domain ] else [ "127.0.0.1" ]);
     };
 
     users.users.web-security-tracker = {
@@ -99,12 +123,10 @@ in {
         WorkingDirectory = "/var/lib/web-security-tracker";
         StateDirectory = "web-security-tracker";
         RuntimeDirectory = "web-security-tracker";
-        LoadCredential =
-          mapAttrsToList (name: secretPath: "${name}:${secretPath}")
-          cfg.secrets;
+        LoadCredential = credentials;
       };
       environment = {
-        DATABASE_URL = "postgres:///web-security-tracker";
+        DATABASE_URL = databaseUrl;
         USER_SETTINGS_FILE = "${configFile}";
       };
       preStart = ''

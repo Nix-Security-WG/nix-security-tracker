@@ -9,6 +9,7 @@
         machine.wait_for_unit("web-security-tracker-server.service")
         machine.wait_for_open_port(8000)
         machine.succeed("curl http://127.0.0.1:8000")
+        machine.succeed("wst-manage test")
         ${testScript}
       '';
 
