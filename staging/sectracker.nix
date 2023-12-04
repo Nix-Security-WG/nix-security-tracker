@@ -1,9 +1,16 @@
-{ pkgs, ... }:
-let sectracker = import ../. { inherit pkgs; };
+{ pkgs, lib, ... }:
+let
+  sectracker = import ../. { inherit pkgs; };
+  obfuscate = email:
+    lib.strings.concatStrings
+    (lib.reverseList (lib.strings.stringToCharacters email));
 in {
   imports = [ sectracker.module ];
 
   nixpkgs.overlays = sectracker.overlays;
+  services.nginx.enable = true;
+  security.acme.acceptTerms = true;
+  security.acme.defaults.email = obfuscate "zyx.afhal@emca-cilbup";
   services.web-security-tracker = {
     enable = true;
     domain = "sectracker.nixpkgs.lahfa.xyz";
