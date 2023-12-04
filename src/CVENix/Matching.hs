@@ -39,7 +39,7 @@ match sbom _cves params = do
       Nothing -> putStrLn "No known deps?"
       Just s -> do
           let d = filter (\(InventoryDependency pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getDeps s
-          let withLoggingT f = runLoggingT (runReaderT f params) (print . renderWithSeverity id) in withLoggingT $ timeLog $ do
+          withApp params $ timeLog $ do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ loadNVDCVEs
                 matches <- matchNVD nvdCVEs

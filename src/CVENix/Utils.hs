@@ -57,6 +57,9 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
     replaceUnderScores :: String -> String
     replaceUnderScores a = flip map a $ \x -> if x == '_' then '-' else x
 
+withApp :: r -> ReaderT r (LoggingT (WithSeverity (Doc ann)) IO) a -> IO a
+withApp params f = runLoggingT (runReaderT f params) (print . renderWithSeverity id)
+
 timeLog :: forall a m ann. LogT m ann => (ReaderT Parameters m a) -> ReaderT Parameters m a
 timeLog f = do
     debug' <- timeInfo <$> ask

@@ -197,8 +197,6 @@ loadCacheStatus = do
 
 writeCacheStatus :: UTCTime -> IO ()
 writeCacheStatus startTime = do
-  exists <- doesDirectoryExist "localtmp"
-  if not exists then createDirectory "localtmp" else pure ()
   encodeFile "localtmp/status.json" $ CacheStatus startTime
 
 loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
@@ -221,6 +219,9 @@ loadNVDCVEs = do
     Nothing -> do
       logMessage $ colorize $ WithSeverity Informational $ "Data not yet cached, fetching. This will take considerable time for the first import."
       startTime <- liftIO $ getCurrentTime
+      exists <- doesDirectoryExist "localtmp"
+      if not exists then createDirectory "localtmp" else pure ()
+
       everything <- getEverything
       when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Got everything, writing to cache"
       mapM_ (writeToDisk) everything
