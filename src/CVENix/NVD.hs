@@ -219,8 +219,9 @@ loadNVDCVEs = do
     Nothing -> do
       logMessage $ colorize $ WithSeverity Informational $ "Data not yet cached, fetching. This will take considerable time for the first import."
       startTime <- liftIO $ getCurrentTime
-      exists <- doesDirectoryExist "localtmp"
-      if not exists then createDirectory "localtmp" else pure ()
+
+      exists <- liftIO $ doesDirectoryExist "localtmp"
+      when (not exists) $ liftIO $ createDirectory "localtmp"
 
       everything <- getEverything
       when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Got everything, writing to cache"
