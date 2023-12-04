@@ -26,5 +26,12 @@ in extraPkgs // {
       pyngo
       django-ninja
     ];
+
+    postInstall = ''
+      mkdir -p $out/bin
+      ln -s $out/lib/python3.11/site-packages/website/manage.py $out/bin/manage.py
+      chmod +x $out/bin/manage.py
+      wrapProgram $out/bin/manage.py --prefix PYTHONPATH : "$PYTHONPATH"
+    '';
   };
 }
