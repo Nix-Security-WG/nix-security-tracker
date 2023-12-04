@@ -76,7 +76,7 @@ in {
         versionFile="/var/lib/web-security-tracker/package-version"
         if [[ $(cat "$versionFile" 2>/dev/null) != ${cfg.package} ]]; then
           wst-manage migrate --no-input
-          wst-manage collectstatic --no-input --clear
+          echo todo wst-manage collectstatic --no-input --clear
           echo ${cfg.package} > "$versionFile"
         fi
       '';
