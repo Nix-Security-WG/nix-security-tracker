@@ -1,7 +1,3 @@
-[project]
-name = "web-security-tracker"
-version = "0.0.1"
-
 [tool.ruff]
 target-version = "py311"
 

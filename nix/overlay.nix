@@ -6,12 +6,12 @@ let
     python3 = python;
   };
 in extraPkgs // {
-  web-security-tracker = python.pkgs.buildPythonPackage {
+  web-security-tracker = python.pkgs.buildPythonPackage rec {
     pname = "web-security-tracker";
     version = "0.0.1";
     pyproject = true;
 
-    src = ../.;
+    src = ../src/website;
 
     propagatedBuildInputs = with python.pkgs; [
       # Nix python packages
@@ -31,7 +31,7 @@ in extraPkgs // {
 
     postInstall = ''
       mkdir -p $out/bin
-      ln -s $out/lib/python3.11/site-packages/website/manage.py $out/bin/manage.py
+      cp -v ${src}/manage.py $out/bin/manage.py
       chmod +x $out/bin/manage.py
       wrapProgram $out/bin/manage.py --prefix PYTHONPATH : "$PYTHONPATH"
     '';
