@@ -5,7 +5,11 @@
     inherit pkgs;
     python3 = python;
   };
+
+  # For exports.
+  overlays = [ overlay ];
   package = pkgs.web-security-tracker;
+  module = import ./nix/web-security-tracker.nix;
 
   pre-commit-check = (import sources.pre-commit-hooks).run {
     src = ./.;
@@ -29,6 +33,7 @@
       commitizen.enable = true;
     };
   };
+
   shell = pkgs.mkShell {
     packages = [ package pkgs.commitizen ];
     shellHook = ''
@@ -42,6 +47,6 @@
 
   tests = import ./nix/tests/vm-basic.nix {
     inherit pkgs;
-    wstModule = ./nix/web-security-tracker.nix;
+    wstModule = module;
   };
 }
