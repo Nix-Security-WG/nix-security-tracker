@@ -1,0 +1,12 @@
+recursive-include shared/management *
+recursive-include shared/migrations *
+recursive-include shared/static *
+recursive-include shared/templates *
+recursive-include webview/management *
+recursive-include webview/migrations *
+recursive-include webview/static *
+recursive-include webview/templates *
+recursive-include tracker/management *
+recursive-include tracker/migrations *
+recursive-include tracker/static *
+recursive-include tracker/templates *

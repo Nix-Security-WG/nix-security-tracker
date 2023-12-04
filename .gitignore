@@ -1,5 +1,5 @@
 .direnv
 .pre-commit-config.yaml
 __pycache__
-db.sqlite3
+*.sqlite3
 .credentials
