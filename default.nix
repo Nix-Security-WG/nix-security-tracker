@@ -21,7 +21,7 @@
       deadnix.enable = true;
 
       # Python setup
-      ruff.enable = true;
+      # TODO: ruff.enable = true; -- re-enable only when F403 is disabled. It is too noisy otherwise.
       black.enable = true;
       pyright.enable = true;
 
