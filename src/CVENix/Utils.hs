@@ -10,6 +10,7 @@
 
 module CVENix.Utils where
 
+import CVENix.Types
 import Data.Aeson
 import Network.Http.Client
 import System.IO.Streams (InputStream)
@@ -27,6 +28,13 @@ import Network.URI
 import Network.Http.Inconvenience
 import Data.IORef
 import Data.Map (Map, toList)
+import Data.Time.Clock
+import Control.Monad.Trans.Reader
+import Control.Monad.Log
+import Control.Monad.Log.Colors
+import Prettyprinter
+import Control.Monad.IO.Class
+import Control.Monad
 
 stripType :: Options
 stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
@@ -48,6 +56,18 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
 
     replaceUnderScores :: String -> String
     replaceUnderScores a = flip map a $ \x -> if x == '_' then '-' else x
+
+withApp :: r -> ReaderT r (LoggingT (WithSeverity (Doc ann)) IO) a -> IO a
+withApp params f = runLoggingT (runReaderT f params) (print . renderWithSeverity id)
+
+timeLog :: forall a m ann. LogT m ann => (ReaderT Parameters m a) -> ReaderT Parameters m a
+timeLog f = do
+    debug' <- timeInfo <$> ask
+    time <- liftIO $ getCurrentTime
+    o <- f
+    time' <- liftIO $ getCurrentTime
+    when debug' $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Time to run: " <> (show $ diffUTCTime time' time)
+    pure o
 
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a
 getWithHeaders' headers r' handler = withOpenSSL $ getWithHeaders 0 r' handler headers
