@@ -41,6 +41,7 @@ data LocalVuln = LocalVuln
   { _vuln_endVersion :: Maybe Text
   , _vuln_product :: Maybe Text
   , _vuln_cveId :: Text
+  , _vuln_severity :: Maybe Text
   } deriving (Show, Eq, Ord)
 
 data Advisory = Advisory

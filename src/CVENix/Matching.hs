@@ -66,6 +66,8 @@ match sbom _cves params = do
       matchNVD :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
       matchNVD nvds = timeLog $ flip mapM nvds $ \x -> do
           let configs = _nvdcve_configurations x
+              -- TODO support for multiple or non-cvss-v31 severities
+              (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe
               id' = _nvdcve_id x
               versions = case configs of
                 Nothing -> []
@@ -74,7 +76,7 @@ match sbom _cves params = do
                     flip concatMap cpeMatch $ \c -> do
                         let nvdVer = _cpematch_versionEndIncluding c
                             cpe = (parseCPE $ _cpematch_criteria c)
-                        [LocalVuln nvdVer (_cpe_product <$> cpe) id']
+                        [LocalVuln nvdVer (_cpe_product <$> cpe) id' severity]
           pure versions
 
 
@@ -89,7 +91,7 @@ match sbom _cves params = do
                 pure acc
             False -> timeLog $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
-              let  vulns' = flip map vulns $ \(LocalVuln endVer product cveId) -> do
+              let  vulns' = flip map vulns $ \(LocalVuln endVer product cveId severity) -> do
                     let nvdVer = splitSemVer <$> endVer
                         nvdCPE = (\c -> pname == c) <$> (product)
                     case nvdCPE of
@@ -98,18 +100,21 @@ match sbom _cves params = do
                         Just ver' -> do
                           case (ver', localver) of
                             (Just v, Just (Just lv)) -> do
-                                if | _semver_major v > _semver_major lv -> Just (cveId, lv, v)
-                                   | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv && _semver_patch v >= _semver_patch lv -> Just (cveId, lv, v)
+                                if | _semver_major v > _semver_major lv -> Just (cveId, severity, lv, v)
+                                   | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv && _semver_patch v >= _semver_patch lv -> Just (cveId, severity, lv, v)
                                    | otherwise -> Nothing
                             (_, _) -> Nothing
                       _ -> Nothing
 
               timeLog $ flip mapM_ vulns' $ \case
                 Nothing -> pure ()
-                Just (cid, local, nvd) -> timeLog $ do
+                Just (cid, severity, local, nvd) -> timeLog $ do
                     liftIO $ putStrLn ""
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cid
+                    case severity of
+                      Just s -> logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack s
+                      Nothing -> pure ()
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version: " <> prettySemVer nvd
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Local Version: " <> prettySemVer local
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv

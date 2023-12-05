@@ -43,8 +43,18 @@ data NVDResponse = NVDResponse
   , _nvdresponse_vulnerabilities :: [NVDWrapper]
   } deriving (Show, Eq, Ord, Generic)
 
+data Cvss31Data = Cvss31Data
+  { _cvss31data_baseSeverity :: Text
+  } deriving (Show, Eq, Ord, Generic)
 
-type Metrics = Object
+data Cvss31Metric = Cvss31Metric
+  { _cvss31metric_cvssData :: Cvss31Data
+  } deriving (Show, Eq, Ord, Generic)
+
+data Metric = Metric
+  -- TODO support for non-cvss-v31 severities
+  { _metric_cvssMetricV31 :: Maybe [Cvss31Metric]
+  } deriving (Show, Eq, Ord, Generic)
 
 data NVDWrapper = NVDWrapper
   { _nvdwrapper_cve :: NVDCVE } deriving (Show, Eq, Ord)
@@ -64,7 +74,7 @@ data NVDCVE = NVDCVE
   , _nvdcve_cisaVulnerabilityName :: Maybe Text
   , _nvdcve_descriptions :: [LangString] --
   , _nvdcve_references :: [Reference] --
-  , _nvdcve_metrics :: Maybe Metrics
+  , _nvdcve_metrics :: Maybe Metric
   , _nvdcve_weaknesses :: Maybe [Weakness]
   , _nvdcve_configurations :: Maybe [Configuration]
   , _nvdcve_vendorComments :: Maybe [VendorComment]
@@ -147,6 +157,9 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''CPEMatch
     , ''LocalCache
     , ''CacheStatus
+    , ''Metric
+    , ''Cvss31Metric
+    , ''Cvss31Data
     ])
 
 keywordSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
