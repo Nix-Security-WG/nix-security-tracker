@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ issue }}
+{% endblock title %}
+
+{% block content %}
+<div>
+  <h1>{{ object.code }}</h1>
+  <p>{{ object.description }}</p>
+</div>
+{% endblock content %}

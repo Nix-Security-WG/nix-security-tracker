@@ -3,6 +3,8 @@ from typing import Type
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 def text_length(choices: Type[models.TextChoices]):
@@ -255,13 +257,16 @@ class Container(models.Model):
 
 ###
 #
-# Nix related models
+# Nixpkgs related models
 #
 ##
 
 
-class NixIssue(models.Model):
+class NixpkgsIssue(models.Model):
     """The Nixpkgs version of a cve."""
+
+    created = models.DateField(auto_now_add=True)
+    code = models.CharField(max_length=len("NIXPKGS-YYYY-") + 19)
 
     class IssueStatus(models.TextChoices):
         UNKNOWN = "U", _("unknown")
@@ -279,17 +284,27 @@ class NixIssue(models.Model):
     )
 
 
-class NixEvent(models.Model):
+@receiver(post_save, sender=NixpkgsIssue)
+def generate_code(sender, instance, created, **kwargs):
+    if created:
+        number = sender.objects.filter(
+            created__year=instance.created.year, pk__lte=instance.pk
+        ).count()
+        instance.code = f"NIXPKGS-{str(instance.created.year)}-{str(number).zfill(5)}"
+        instance.save()
+
+
+class NixpkgsEvent(models.Model):
     class EventType(models.TextChoices):
         ISSUED = "I", _("issue opened")
         PR_OPENED = "P", _("PR opened")
         PR_MERGED = "M", _("PR merged")
 
-    issue = models.ForeignKey(NixIssue, on_delete=models.CASCADE)
+    issue = models.ForeignKey(NixpkgsIssue, on_delete=models.CASCADE)
     reference = models.TextField()
 
 
-class NixAdvisory(models.Model):
+class NixpkgsAdvisory(models.Model):
     class AdvisoryStatus(models.TextChoices):
         DRAFT = "DRAFT", _("draft")
         RELEASED = "RELEASED", _("released")
@@ -302,4 +317,4 @@ class NixAdvisory(models.Model):
         HIGH = "HIGH", _("high")
         CRITICAL = "CRITICAL", _("critical")
 
-    issues = models.ManyToManyField(NixIssue)
+    issues = models.ManyToManyField(NixpkgsIssue)
