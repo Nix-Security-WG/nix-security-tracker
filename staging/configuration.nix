@@ -15,7 +15,9 @@
   services.qemuGuest.enable = true;
 
   users.mutableUsers = false;
-  users.users.root = { openssh.authorizedKeys.keyFiles = [ ./raito.keys ]; };
+  users.users.root = {
+    openssh.authorizedKeys.keyFiles = [ ./raito.keys ./thubrecht.keys ];
+  };
 
   # IPv4 connectivity.
   networking.interfaces.enp6s19.useDHCP = true;
