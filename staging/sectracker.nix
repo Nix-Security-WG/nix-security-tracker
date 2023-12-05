@@ -11,6 +11,7 @@ in {
   services.nginx.enable = true;
   security.acme.acceptTerms = true;
   security.acme.defaults.email = obfuscate "zyx.afhal@emca-cilbup";
+  networking.firewall.allowedTCPPorts = [ 443 ];
   services.web-security-tracker = {
     enable = true;
     domain = "sectracker.nixpkgs.lahfa.xyz";
