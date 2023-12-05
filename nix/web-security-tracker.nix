@@ -86,6 +86,8 @@ in {
       DEBUG = mkDefault false;
       ALLOWED_HOSTS = mkDefault ((optional (cfg.domain != null) cfg.domain)
         ++ [ "localhost" "127.0.0.1" "[::1]" ]);
+      CSRF_TRUSTED_ORIGINS =
+        mkIf (cfg.domain != null) [ "https://${cfg.domain}" ];
     };
 
     users.users.web-security-tracker = {

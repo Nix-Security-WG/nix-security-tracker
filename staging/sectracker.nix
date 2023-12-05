@@ -21,6 +21,7 @@ in {
   services.web-security-tracker = {
     enable = true;
     domain = "sectracker.nixpkgs.lahfa.xyz";
+    settings.DEBUG = true;
     secrets = {
       SECRET_KEY = "/etc/secrets/django-secret-key";
       GH_CLIENT_ID = "/etc/secrets/gh-client";
