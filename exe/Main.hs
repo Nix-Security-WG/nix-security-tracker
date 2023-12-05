@@ -50,9 +50,8 @@ main = do
      go params = do
        let sbom' = sbom params
        sbom'' <- parseSBOM $ sbom'
-       cves <- exampleParseCVE
        case sbom'' of
          Nothing ->
            putStrLn "[SBOM] Failed to parse"
          Just s ->
-           match s cves params
+           match s params

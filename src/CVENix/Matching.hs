@@ -32,8 +32,8 @@ data InventoryDependency = InventoryDependency
   , _inventorydependency_drv :: Text
   } deriving (Show)
 
-match :: SBOM -> [Advisory] -> Parameters -> IO ()
-match sbom _cves params = do
+match :: SBOM -> Parameters -> IO ()
+match sbom params = do
     putStrLn "Matched advisories:"
     case _sbom_dependencies sbom of
       Nothing -> putStrLn "No known deps?"
