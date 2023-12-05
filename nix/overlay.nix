@@ -43,9 +43,9 @@ in
       pygithub
       requests
       tqdm
-      # Custom dependencies injected via overlay
       pyngo
       django-ninja
+      django-pgpubsub
     ];
 
     postInstall = ''

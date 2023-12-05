@@ -1,4 +1,4 @@
-{ lib, buildPythonPackage, fetchFromGitHub, poetry, poetry-core, django
+{ lib, buildPythonPackage, fetchFromGitHub, poetry-core, django
 , django-pgtrigger }:
 
 buildPythonPackage rec {
@@ -13,11 +13,17 @@ buildPythonPackage rec {
     hash = "sha256-TXyojZ7EHOlAdC0/QqTspCAsI4G55fnfsZfH5JUp5D0=";
   };
 
-  nativeBuildInputs = [ poetry poetry-core ];
+  postPatch = ''
+    substituteInPlace pyproject.toml \
+    --replace 'poetry.masonry.api' 'poetry.core.masonry.api' \
+    --replace 'poetry>=1.1.13' 'poetry-core>=1.0.0' \
+  '';
+
+  nativeBuildInputs = [ poetry-core ];
 
   propagatedBuildInputs = [ django django-pgtrigger ];
 
-  pythonImportsCheck = [ "django_pgpubsub" ];
+  pythonImportsCheck = [ "pgpubsub" ];
 
   meta = with lib; {
     description =
