@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<ul>
+    {% for object in object_list %}
+      <li><a href="{% url 'webview:issue_detail' object.code %}">{{ object.code }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock content %}

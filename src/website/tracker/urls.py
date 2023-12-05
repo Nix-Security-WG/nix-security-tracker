@@ -21,4 +21,5 @@ urlpatterns = [
     path("", include("webview.urls")),
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
+    path("debug/", include("debug_toolbar.urls")),
 ]

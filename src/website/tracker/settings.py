@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "debug_toolbar",
     # AllAuth config
     "allauth",
     "allauth.account",
@@ -74,6 +75,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     # Allauth account middleware
     "allauth.account.middleware.AccountMiddleware",
 ]
@@ -179,3 +181,9 @@ if user_settings_file is not None:
     spec.loader.exec_module(module)
     sys.modules["user_settings"] = module
     from user_settings import *  # noqa: F403 # pyright: ignore [reportMissingImports]
+
+# needed for debug_toolbar
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "[::1]",
+]

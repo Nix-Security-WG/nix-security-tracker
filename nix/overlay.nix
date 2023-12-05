@@ -16,6 +16,7 @@ in extraPkgs // {
     propagatedBuildInputs = with python.pkgs; [
       # Nix python packages
       django-allauth
+      django-debug-toolbar
       django-types
       django_4
       djangorestframework
