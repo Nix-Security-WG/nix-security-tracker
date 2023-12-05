@@ -5,8 +5,17 @@
 {% endblock title %}
 
 {% block content %}
-<div>
-  <h1>{{ object.code }}</h1>
-  <p>{{ object.description }}</p>
-</div>
+<h1>{{ object.code }}</h1>
+
+<p>{{ object.description.value }}</p>
+
+<dt>Issue status</dt>
+<dd>{{ object.status_string }}</dd>
+
+<h2>Related CVEs</h2>
+<ul>
+    {% for cve in object.cve.all %}
+      <li>{{ cve.cve_id }}</li>
+    {% endfor %}
+</ul>
 {% endblock content %}
