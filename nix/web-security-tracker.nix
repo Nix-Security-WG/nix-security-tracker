@@ -107,7 +107,7 @@ in {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:${toString cfg.port}";
-        locations."/static".alias = "/var/lib/web-security-tracker/static/";
+        locations."/static/".alias = "/var/lib/web-security-tracker/static/";
       };
     };
 
