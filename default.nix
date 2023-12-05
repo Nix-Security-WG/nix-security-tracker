@@ -35,7 +35,7 @@
   };
 
   shell = pkgs.mkShell {
-    packages = [ package pkgs.commitizen ];
+    packages = [ package pkgs.nix-eval-jobs pkgs.commitizen ];
     shellHook = ''
       ${pre-commit-check.shellHook}
 
