@@ -17,7 +17,7 @@ class NixMaintainer(models.Model):
     github = models.CharField(max_length=200, null=True)
     github_id = models.IntegerField(null=True)
     matrix = models.CharField(max_length=200, null=True)
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
 
 
 class NixLicense(models.Model):
@@ -28,11 +28,14 @@ class NixLicense(models.Model):
 
     deprecated = models.BooleanField()
     free = models.BooleanField()
-    full_name = models.CharField(max_length=255)
-    short_name = models.CharField(max_length=255)
-    spdx_id = models.CharField(max_length=255)
+    full_name = models.CharField(max_length=255, null=True)
+    short_name = models.CharField(max_length=255, null=True)
+    spdx_id = models.CharField(max_length=255, null=True)
     redistributable = models.BooleanField()
-    url = models.URLField()
+    url = models.URLField(null=True)
+
+    class Meta:
+        unique_together = ("full_name", "short_name", "spdx_id", "url")
 
 
 class NixSourceProvenance(models.Model):
@@ -52,7 +55,7 @@ class NixPlatform(models.Model):
     e.g. x86_64-linux.
     """
 
-    system_double = models.CharField(max_length=255)
+    system_double = models.CharField(max_length=255, unique=True)
 
 
 class NixDerivationMeta(models.Model):
@@ -61,7 +64,7 @@ class NixDerivationMeta(models.Model):
     is synthesized here.
     """
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True)
     maintainers = models.ManyToManyField(NixMaintainer)
     licenses = models.ManyToManyField(NixLicense)
     source_provenances = models.ManyToManyField(NixSourceProvenance)
@@ -72,14 +75,14 @@ class NixDerivationMeta(models.Model):
     unfree = models.BooleanField()
     unsupported = models.BooleanField()
 
-    homepage = models.URLField()
+    homepage = models.URLField(null=True)
 
-    description = models.TextField()
-    main_program = models.CharField(max_length=255)
+    description = models.TextField(null=True)
+    main_program = models.CharField(max_length=255, null=True)
 
     platforms = models.ManyToManyField(NixPlatform)
 
-    position = models.URLField()
+    position = models.URLField(null=True)
 
 
 class NixOutput(models.Model):
@@ -87,7 +90,7 @@ class NixOutput(models.Model):
     This is all the known outputs names.
     """
 
-    output_name = models.CharField(max_length=255)
+    output_name = models.CharField(max_length=255, unique=True)
 
 
 class NixStorePathOutput(models.Model):
@@ -100,6 +103,9 @@ class NixStorePathOutput(models.Model):
     # seems like premature optimization to me.
     output_name = models.CharField(max_length=255)
     store_path = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = ("output_name", "store_path")
 
 
 class NixDerivationOutput(models.Model):
@@ -143,7 +149,7 @@ class NixChannel(models.Model):
     # A channel branch is the `nixos-$number` branch of
     # `nixos-unstable(-small)` for unstable(-small). Not to confuse with the
     # channel tarballs and scripts from releases.nixos.org.
-    channel_branch = models.CharField(max_length=255)
+    channel_branch = models.CharField(max_length=255, primary_key=True)
     state = models.CharField(
         max_length=text_length(ChannelState), choices=ChannelState.choices
     )
@@ -153,6 +159,9 @@ class NixChannel(models.Model):
     # It's a bit annoying though
     # TODO(raitobezarius): make a proper ForeignKey?
     repository = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return f"<Nix channel {self.staging_branch} -> {self.channel_branch} ({self.state}, release: {self.release_version}) from repository {self.repository}>"
 
 
 class NixEvaluation(models.Model):
@@ -185,7 +194,10 @@ class NixDerivation(models.Model):
     dependencies = models.ManyToManyField(NixDerivationOutput)
     name = models.CharField(max_length=255)
     metadata = models.OneToOneField(
-        NixDerivationMeta, related_name="derivation", on_delete=models.CASCADE
+        NixDerivationMeta,
+        related_name="derivation",
+        on_delete=models.CASCADE,
+        null=True,
     )
     outputs = models.ManyToManyField(NixStorePathOutput)
     system = models.ForeignKey(
