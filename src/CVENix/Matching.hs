@@ -80,7 +80,7 @@ match sbom _cves params = do
 
 
       getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
-      getFromNVD vulns acc (InventoryDependency pname version _drv) = do
+      getFromNVD vulns acc (InventoryDependency pname version drv) = do
           debug' <- debug <$> ask
           let localver = splitSemVer <$> version
           case elem (pname, version) acc of
@@ -112,5 +112,6 @@ match sbom _cves params = do
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cid
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version: " <> prettySemVer nvd
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Local Version: " <> prettySemVer local
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
                     liftIO $ putStrLn ""
               pure $ acc <> [(pname, version)]
