@@ -24,6 +24,8 @@ in extraPkgs // {
       ipython
       pygithub
       requests
+      dataclass-wizard
+      tqdm
       # Custom dependencies injected via overlay
       pyngo
       django-ninja

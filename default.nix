@@ -21,7 +21,7 @@
       deadnix.enable = true;
 
       # Python setup
-      ruff.enable = true;
+      # TODO: ruff.enable = true; -- re-enable only when F403 is disabled. It is too noisy otherwise.
       black.enable = true;
       pyright.enable = true;
 
@@ -35,7 +35,7 @@
   };
 
   shell = pkgs.mkShell {
-    packages = [ package pkgs.commitizen ];
+    packages = [ package pkgs.nix-eval-jobs pkgs.commitizen ];
     shellHook = ''
       ${pre-commit-check.shellHook}
 

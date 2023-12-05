@@ -8,10 +8,16 @@ in {
   imports = [ sectracker.module ];
 
   nixpkgs.overlays = sectracker.overlays;
-  services.nginx.enable = true;
+  services.nginx = {
+    enable = true;
+    recommendedTlsSettings = true;
+    recommendedProxySettings = true;
+    recommendedGzipSettings = true;
+    recommendedOptimisation = true;
+  };
   security.acme.acceptTerms = true;
   security.acme.defaults.email = obfuscate "zyx.afhal@emca-cilbup";
-  networking.firewall.allowedTCPPorts = [ 443 ];
+  networking.firewall.allowedTCPPorts = [ 80 443 ];
   services.web-security-tracker = {
     enable = true;
     domain = "sectracker.nixpkgs.lahfa.xyz";
