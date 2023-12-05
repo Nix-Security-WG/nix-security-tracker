@@ -2,7 +2,7 @@
 let
   inherit (lib)
     types mkIf mkEnableOption mkPackageOptionMD mkOption mapAttrsToList
-    mkDefault concatStringsSep;
+    mkDefault concatStringsSep optional;
   inherit (pkgs) writeScriptBin stdenv;
   cfg = config.services.web-security-tracker;
   pythonFmt = pkgs.formats.pythonVars { };
@@ -84,8 +84,8 @@ in {
     services.web-security-tracker.settings = {
       STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
       DEBUG = mkDefault false;
-      ALLOWED_HOSTS = mkDefault
-        (if cfg.domain != null then [ cfg.domain ] else [ "127.0.0.1" ]);
+      ALLOWED_HOSTS = mkDefault ((optional (cfg.domain != null) cfg.domain)
+        ++ [ "localhost" "127.0.0.1" "[::1]" ]);
     };
 
     users.users.web-security-tracker = {
