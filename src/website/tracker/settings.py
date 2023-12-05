@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from os import environ as env
+import os
 from pathlib import Path
 import dj_database_url
 import importlib.util
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "debug_toolbar",
+    "compressor",
     # AllAuth config
     "allauth",
     "allauth.account",
@@ -79,6 +81,14 @@ MIDDLEWARE = [
     # Allauth account middleware
     "allauth.account.middleware.AccountMiddleware",
 ]
+
+COMPRESS_PRECOMPILERS = [
+    ("text/x-sass", "django_libsass.SassCompiler"),
+]
+
+STATICFILES_FINDERS = ["compressor.finders.CompressorFinder"]
+
+STATIC_ROOT = os.path.join(BASE_DIR, "shared/static/")
 
 ROOT_URLCONF = "tracker.urls"
 

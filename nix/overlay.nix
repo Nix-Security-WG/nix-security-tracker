@@ -15,17 +15,19 @@ in extraPkgs // {
 
     propagatedBuildInputs = with python.pkgs; [
       # Nix python packages
+      dataclass-wizard
+      dj-database-url
       django-allauth
+      django-compressor
       django-debug-toolbar
+      django-libsass
       django-types
       django_4
       djangorestframework
-      dj-database-url
-      psycopg2
       ipython
+      psycopg2
       pygithub
       requests
-      dataclass-wizard
       tqdm
       # Custom dependencies injected via overlay
       pyngo
