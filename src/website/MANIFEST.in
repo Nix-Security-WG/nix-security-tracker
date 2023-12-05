@@ -2,6 +2,7 @@ recursive-include shared/management *
 recursive-include shared/migrations *
 recursive-include shared/static *
 recursive-include shared/templates *
+recursive-include shared/models *
 recursive-include webview/management *
 recursive-include webview/migrations *
 recursive-include webview/static *
