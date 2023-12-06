@@ -75,7 +75,7 @@ class NixDerivationMeta(models.Model):
     licenses = models.ManyToManyField(NixLicense)
     source_provenances = models.ManyToManyField(NixSourceProvenance)
 
-    knownVulnerabilities = models.ManyToManyField("Container")
+    known_vulnerabilities = models.ManyToManyField("Container")
 
     insecure = models.BooleanField()
     available = models.BooleanField()

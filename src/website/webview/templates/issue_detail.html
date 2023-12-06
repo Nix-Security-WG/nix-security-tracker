@@ -5,17 +5,44 @@
 {% endblock title %}
 
 {% block content %}
+
 <h1>{{ object.code }}</h1>
 
 <p>{{ object.description.value }}</p>
 
-<dt>Issue status</dt>
-<dd>{{ object.status_string }}</dd>
+<dl>
+  <dt>Issue status</dt>
+    <dd>{{ object.status_string }}</dd>
+</dl>
 
-<h2>Related CVEs</h2>
+<h2>Related derivations</h2>
 <ul>
-    {% for cve in object.cve.all %}
-      <li>{{ cve.cve_id }}</li>
+    {% for drv in object.derivations.all %}
+      <li>
+        {{ drv.name }} (<a href="{{drv.metadata.position}}">source</a>)
+        {% if drv.metadata.maintainers.all %}
+        <figure>
+          <figcaption>Maintainers</figcaption>
+          <ul>
+            {% for maintainer in drv.metadata.maintainers.all %}
+              <li><a href="https://github.com/{{ maintainer.github }}">@{{ maintainer.github }}</a></li>
+            {% endfor %}
+          </ul>
+        </figure>
+        {% endif %}
+
+        {% if drv.metadata.knownVulnerabilities.all %}
+        <figure>
+          <figcaption>CVEs</figcaption>
+          <ul>
+            {% for vuln in drv.metadata.knownVulnerabilities.all %}
+              <li>{{ vuln.cve.cve_id }}</li>
+            {% endfor %}
+          </ul>
+        </figure>
+        {% endif %}
+      </li>
     {% endfor %}
 </ul>
+
 {% endblock content %}
