@@ -6,7 +6,11 @@ from shared.models import (
     NixpkgsIssue,
     Description,
     CveRecord,
+    NixChannel,
 )
+
+
+admin.site.register(NixChannel)
 
 
 class CveRecordAdmin(admin.ModelAdmin):
