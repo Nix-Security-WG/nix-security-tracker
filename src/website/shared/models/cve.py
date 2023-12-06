@@ -262,18 +262,19 @@ class Container(models.Model):
 ##
 
 
+class IssueStatus(models.TextChoices):
+    UNKNOWN = "U", _("unknown")
+    AFFECTED = "A", _("affected")
+    NOTAFFECTED = "NA", _("notaffected")
+    NOTFORUS = "O", _("notforus")
+    WONTFIX = "W", _("wontfix")
+
+
 class NixpkgsIssue(models.Model):
     """The Nixpkgs version of a cve."""
 
     created = models.DateField(auto_now_add=True)
     code = models.CharField(max_length=len("NIXPKGS-YYYY-") + 19)
-
-    class IssueStatus(models.TextChoices):
-        UNKNOWN = "U", _("unknown")
-        AFFECTED = "A", _("affected")
-        NOTAFFECTED = "NA", _("notaffected")
-        NOTFORUS = "O", _("notforus")
-        WONTFIX = "W", _("wontfix")
 
     cve = models.ManyToManyField(CveRecord)
     description = models.ForeignKey(Description, on_delete=models.PROTECT)
@@ -282,6 +283,17 @@ class NixpkgsIssue(models.Model):
         choices=IssueStatus.choices,
         default=IssueStatus.UNKNOWN,
     )
+
+    @property
+    def status_string(self):
+        mapping = {
+            IssueStatus.UNKNOWN: "unknown",
+            IssueStatus.AFFECTED: "affected",
+            IssueStatus.NOTAFFECTED: "not affected",
+            IssueStatus.NOTFORUS: "not relevant for us",
+            IssueStatus.WONTFIX: "won't fix",
+        }
+        return mapping.get(self.status, mapping[IssueStatus.UNKNOWN])  # type: ignore
 
 
 @receiver(post_save, sender=NixpkgsIssue)
