@@ -19,6 +19,9 @@ class NixMaintainer(models.Model):
     matrix = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, unique=True)
 
+    def __str__(self):
+        return f"@{self.github}"
+
 
 class NixLicense(models.Model):
     """
@@ -36,6 +39,9 @@ class NixLicense(models.Model):
 
     class Meta:
         unique_together = ("full_name", "short_name", "spdx_id", "url")
+
+    def __str__(self):
+        return f"{self.spdx_id}"
 
 
 class NixSourceProvenance(models.Model):
@@ -68,6 +74,8 @@ class NixDerivationMeta(models.Model):
     maintainers = models.ManyToManyField(NixMaintainer)
     licenses = models.ManyToManyField(NixLicense)
     source_provenances = models.ManyToManyField(NixSourceProvenance)
+
+    knownVulnerabilities = models.ManyToManyField("Container")
 
     insecure = models.BooleanField()
     available = models.BooleanField()
@@ -161,7 +169,7 @@ class NixChannel(models.Model):
     repository = models.CharField(max_length=255)
 
     def __str__(self) -> str:
-        return f"<Nix channel {self.staging_branch} -> {self.channel_branch} ({self.state}, release: {self.release_version}) from repository {self.repository}>"
+        return f"{self.staging_branch} -> {self.channel_branch} (Release: {self.release_version}) {self.state}"
 
 
 class NixEvaluation(models.Model):
@@ -206,3 +214,9 @@ class NixDerivation(models.Model):
     parent_evaluation = models.ForeignKey(
         NixEvaluation, related_name="derivations", on_delete=models.CASCADE
     )
+
+    def __str__(self):
+        if self.metadata.maintainers.all():  # type: ignore
+            return f"{self.name} (has maintainers) ({self.pk})"
+
+        return f"{self.name}"

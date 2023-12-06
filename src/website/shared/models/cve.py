@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from .nix_evaluation import NixDerivation
 
 
 def text_length(choices: Type[models.TextChoices]):
@@ -75,6 +76,9 @@ class Description(models.Model):
     )
     value = models.TextField()
     media = models.ManyToManyField(SupportingMedia)
+
+    def __str__(self):
+        return f"{self.value[:32]}..."
 
 
 class Tag(models.Model):
@@ -254,6 +258,9 @@ class Container(models.Model):
     credits = models.ManyToManyField(Credit)
     source = models.JSONField(default=dict)
 
+    def __str__(self):
+        return f"{self.cve.cve_id}"
+
 
 ###
 #
@@ -276,13 +283,13 @@ class NixpkgsIssue(models.Model):
     created = models.DateField(auto_now_add=True)
     code = models.CharField(max_length=len("NIXPKGS-YYYY-") + 19)
 
-    cve = models.ManyToManyField(CveRecord)
     description = models.ForeignKey(Description, on_delete=models.PROTECT)
     status = models.CharField(
         max_length=text_length(IssueStatus),
         choices=IssueStatus.choices,
         default=IssueStatus.UNKNOWN,
     )
+    derivations = models.ManyToManyField(NixDerivation)
 
     @property
     def status_string(self):
