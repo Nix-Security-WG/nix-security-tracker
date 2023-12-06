@@ -16,6 +16,25 @@ from shared.models import (
     NixMaintainer,
 )
 
+from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.admin import GroupAdmin
+
+admin.site.unregister(Group)
+
+
+@admin.register(Permission)
+class CustomPermissionAdmin(admin.ModelAdmin):
+    search_fields = ["name"]
+
+
+@admin.register(Group)
+class CustomGroupAdmin(GroupAdmin):
+    autocomplete_fields = ["permissions"]
+    # search_fields = [ "permissions" ]
+
+
+# class CustomModelAdmin(admin.ModelAdmin):
+# search_fields = [ "" ]
 
 admin.site.register(NixChannel)
 
