@@ -10,6 +10,8 @@ Start a development shell:
 nix-shell
 ```
 
+Or set up [`nix-direnv`](https://github.com/nix-community/nix-direnv) on your system and run `direnv allow` to enter the development environment automatically.
+
 Show helper commands:
 
 ```console
@@ -22,33 +24,26 @@ Show helper commands:
 > alias manage=./src/website/manage.py
 > ```
 
-Start server:
+Set any values for secrets required by the server:
 
 ```console
-./src/website/manage.py  runserver
-```
-
-systemd automatically sets `$CREDENTIALS_DIRECTORY` to this location:
-
-```
-ls ./.credentials
-```
-
-On first start this will not exist. Set these values:
-
-```console
+mkdir .credentials
 echo foo > .credentials/SECRET_KEY
 echo bar > .credentials/GH_CLIENT_ID
 echo baz > .credentials/GH_SECRET
 ```
 
-You only need actual GitHub credentials to use the login feature.
+You only need actual GitHub credentials to use the OAuth login feature.
 
-The database is written to `./src/website`.
+On the first start, run `manage migrate` to create the schema.
+The database is written to `./tracker.sqlite3`.
 
-- On the first start, run `migrate` to create the schema.
-- Run `ingest_bulk_cve`. This will take about an hour and produce ~500 MB of data.
-- Call `runserver` and check `https://localhost:8000`.
+Run `manage ingest_bulk_cve`.
+This will take about an hour and produce ~500 MB of data.
+
+Call `manage runserver` and open <https://localhost:8000>.
+
+Run `manage createsuperuser` to access the admin panel at <https://localhost:8000/admin> and manually edit database entries.
 
 Whenever you add a field in the database schema, call `makemigrations`.
 Then run `migrate` before starting the server again.
