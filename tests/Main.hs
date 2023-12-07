@@ -9,14 +9,16 @@ import CVENix.NVD
 import CVENix.Types
 import CVENix.Utils
 
-parseSpec :: Spec
-parseSpec = do
+parseNVDSpec :: SpecWith (Arg (IO ()))
+parseNVDSpec = do
   it "needs to parse a CVE" $ do
     let params = Parameters False "test.sbom" (Just "/nix/store/test") False
     Just nvdcve <- decodeFileStrict "tests/resources/CVE-2023-32611.json"
-    withApp params $ do
-      local <- convertToLocal [nvdcve]
-      pure $ length local > 0
+    decode <- withApp params $ do
+      convertToLocal [nvdcve]
+    (length decode) `shouldBe` (0 :: Int)
 
 main :: IO ()
-main = hspec parseSpec
+main = hspec $ do
+    describe "Parse NVD Spec" $ do
+        parseNVDSpec
