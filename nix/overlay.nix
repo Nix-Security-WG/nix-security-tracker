@@ -5,8 +5,23 @@ let
     pkgs = prev;
     python3 = python;
   };
-in extraPkgs // {
+  sources = import ../npins;
+in
+extraPkgs
+// {
+  # RFC 166
+  nixfmt = (import sources.nixfmt).default;
+
+  # go through the motions to make a flake-incompat project use the build
+  # inputs we want
+  pre-commit-hooks = final.callPackage "${sources.pre-commit-hooks}/nix/run.nix" {
+    tools = import "${sources.pre-commit-hooks}/nix/call-tools.nix" final;
+    gitignore-nix-src = sources.gitignore;
+    isFlakes = false;
+  };
+
   web-security-tracker = python.pkgs.buildPythonPackage rec {
+
     pname = "web-security-tracker";
     version = "0.0.1";
     pyproject = true;
