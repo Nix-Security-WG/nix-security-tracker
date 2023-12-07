@@ -42,7 +42,7 @@ match sbom params = do
           withApp params $ timeLog $ do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ loadNVDCVEs
-                matches <- matchNVD nvdCVEs
+                matches <- convertToLocal nvdCVEs
                 timeLog $ foldM_ (getFromNVD (concat matches)) ([] :: [(Text, Maybe Text)]) d
 
     where
@@ -62,24 +62,6 @@ match sbom params = do
                             in
                               (InventoryDependency pname version path)
                   in map split deps
-
-      matchNVD :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
-      matchNVD nvds = timeLog $ flip mapM nvds $ \x -> do
-          let configs = _nvdcve_configurations x
-              -- TODO support for multiple or non-cvss-v31 severities
-              (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe
-              id' = _nvdcve_id x
-              versions = case configs of
-                Nothing -> []
-                Just cfg -> flip concatMap cfg $ \cc -> do
-                    let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
-                    flip concatMap cpeMatch $ \c -> do
-                        let nvdVer = _cpematch_versionEndIncluding c
-                            cpe = (parseCPE $ _cpematch_criteria c)
-                        [LocalVuln nvdVer (_cpe_product <$> cpe) id' severity]
-          pure versions
-
-
 
       getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
       getFromNVD vulns acc (InventoryDependency pname version drv) = do
