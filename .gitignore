@@ -1,4 +1,5 @@
-*.json
+/localtmp/*.json
+/CVE/*.json
 dist-newstyle
 CVE
 cves.zip

@@ -8,6 +8,7 @@ module CVENix.NVD where
 
 import CVENix.Utils
 import CVENix.Types
+import qualified CVENix.CVE as CVE
 
 import Control.Monad
 import qualified Data.Text as T
@@ -16,6 +17,7 @@ import qualified Data.Text.Encoding as TE
 import Data.Time.Clock
 import Data.Aeson
 import Data.Aeson.TH
+import Data.Maybe
 import GHC.Generics (Generic)
 import Network.Http.Client
 import OpenSSL
@@ -277,3 +279,20 @@ withApiKey f1 f = do
     case apiKey of
       Nothing -> f1
       Just apiKey' -> f (TE.encodeUtf8 $ T.pack $ apiKey')
+
+-- convert NVDCVE JSON data type to our internal feed-agnostic LocalVuln data model:
+convertToLocal :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
+convertToLocal nvds = timeLog $ flip mapM nvds $ \x -> do
+    let configs = _nvdcve_configurations x
+        -- TODO support for multiple or non-cvss-v31 severities
+        (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe
+        id' = _nvdcve_id x
+        versions = case configs of
+          Nothing -> []
+          Just cfg -> flip concatMap cfg $ \cc -> do
+              let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
+              flip concatMap cpeMatch $ \c -> do
+                  let nvdVer = _cpematch_versionEndIncluding c
+                      cpe = (CVE.parseCPE $ _cpematch_criteria c)
+                  [LocalVuln nvdVer (CVE._cpe_product <$> cpe) id' severity]
+    pure versions
