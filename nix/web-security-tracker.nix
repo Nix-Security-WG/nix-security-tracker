@@ -113,42 +113,81 @@ in {
       };
     };
 
-    systemd.services.web-security-tracker-server = {
-      description = "A web security tracker ASGI server";
-      after = [ "network.target" "postgresql.service" ];
-      requires = [ "postgresql.service" ];
-      wantedBy = [ "multi-user.target" ];
-      path = [ pythonEnv wstManageScript ];
-      serviceConfig = {
-        User = "web-security-tracker";
-        Restart = "always";
-        WorkingDirectory = "/var/lib/web-security-tracker";
-        StateDirectory = "web-security-tracker";
-        RuntimeDirectory = "web-security-tracker";
-        LoadCredential = credentials;
+    systemd.services = {
+      web-security-tracker-server = {
+        description = "A web security tracker ASGI server";
+        after = [ "network.target" "postgresql.service" ];
+        requires = [ "postgresql.service" ];
+        wantedBy = [ "multi-user.target" ];
+        path = [ pythonEnv wstManageScript ];
+        serviceConfig = {
+          User = "web-security-tracker";
+          Restart = "always";
+          WorkingDirectory = "/var/lib/web-security-tracker";
+          StateDirectory = "web-security-tracker";
+          RuntimeDirectory = "web-security-tracker";
+          LoadCredential = credentials;
+        };
+        environment = {
+          DATABASE_URL = databaseUrl;
+          USER_SETTINGS_FILE = "${configFile}";
+        };
+        preStart = ''
+          # Auto-migrate on first run or if the package has changed
+          versionFile="/var/lib/web-security-tracker/package-version"
+          if [[ $(cat "$versionFile" 2>/dev/null) != ${cfg.package} ]]; then
+            wst-manage migrate --no-input
+            wst-manage collectstatic --no-input --clear
+            echo ${cfg.package} > "$versionFile"
+          fi
+        '';
+        script = let
+          networking = if cfg.unixSocket != null then
+            "-u ${cfg.unixSocket}"
+          else
+            "-b 127.0.0.1 -p ${toString cfg.port}";
+        in ''
+          daphne ${networking} \
+            tracker.asgi:application
+        '';
       };
-      environment = {
-        DATABASE_URL = databaseUrl;
-        USER_SETTINGS_FILE = "${configFile}";
+
+      web-security-tracker-delta = {
+        description = "A web security tracker ASGI server";
+        after = [ "network.target" "postgresql.service" ];
+        requires = [ "postgresql.service" ];
+        wantedBy = [ "multi-user.target" ];
+        path = [ pythonEnv wstManageScript ];
+        serviceConfig = {
+          User = "web-security-tracker";
+          Restart = "always";
+          WorkingDirectory = "/var/lib/web-security-tracker";
+          StateDirectory = "web-security-tracker";
+          RuntimeDirectory = "web-security-tracker";
+          LoadCredential = credentials;
+          Type = "oneshot";
+        };
+        environment = {
+          DATABASE_URL = databaseUrl;
+          USER_SETTINGS_FILE = "${configFile}";
+        };
+        preStart = ''
+          # Auto-migrate on first run or if the package has changed
+          versionFile="/var/lib/web-security-tracker/package-version"
+          if [[ $(cat "$versionFile" 2>/dev/null) != ${cfg.package} ]]; then
+            wst-manage migrate --no-input
+            wst-manage collectstatic --no-input --clear
+            echo ${cfg.package} > "$versionFile"
+          fi
+        '';
+
+        script = ''
+          wst-manage ingest_delta_cve "$(date --date='yesterday' --iso)"
+        '';
+
+        # Start at 03h so that the data will have been published
+        startAt = "*-*-* 03:00:00";
       };
-      preStart = ''
-        # Auto-migrate on first run or if the package has changed
-        versionFile="/var/lib/web-security-tracker/package-version"
-        if [[ $(cat "$versionFile" 2>/dev/null) != ${cfg.package} ]]; then
-          wst-manage migrate --no-input
-          wst-manage collectstatic --no-input --clear
-          echo ${cfg.package} > "$versionFile"
-        fi
-      '';
-      script = let
-        networking = if cfg.unixSocket != null then
-          "-u ${cfg.unixSocket}"
-        else
-          "-b 127.0.0.1 -p ${toString cfg.port}";
-      in ''
-        daphne ${networking} \
-          tracker.asgi:application
-      '';
     };
   };
 }
