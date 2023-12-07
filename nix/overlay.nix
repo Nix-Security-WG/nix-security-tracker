@@ -1,19 +1,22 @@
 final: prev:
 let
-  python = final.python3;
-  extraPkgs = import ../pkgs {
+  inherit (final) python3;
+  extraPython3Packages = import ../pkgs {
     pkgs = prev;
-    python3 = python;
+    inherit python3;
   };
-in extraPkgs // {
-  web-security-tracker = python.pkgs.buildPythonPackage rec {
+in {
+  python3 = prev.lib.attrsets.recursiveUpdate prev.python3 {
+    pkgs = extraPython3Packages;
+  };
+  web-security-tracker = python3.pkgs.buildPythonPackage rec {
     pname = "web-security-tracker";
     version = "0.0.1";
     pyproject = true;
 
     src = ../src/website;
 
-    propagatedBuildInputs = with python.pkgs; [
+    propagatedBuildInputs = with python3.pkgs; [
       # Nix python packages
       dataclass-wizard
       dj-database-url
@@ -32,6 +35,7 @@ in extraPkgs // {
       # Custom dependencies injected via overlay
       pyngo
       django-ninja
+      django-permission2
     ];
 
     postInstall = ''

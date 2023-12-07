@@ -1,10 +1,7 @@
 { sources ? import ./npins, overlay ? import ./nix/overlay.nix
 , pkgs ? import sources.nixpkgs { overlays = [ overlay ]; } }: rec {
-  python = pkgs.python3;
-  localPkgs = import ./pkgs {
-    inherit pkgs;
-    python3 = python;
-  };
+  inherit (pkgs) python3;
+  localPythonPackages = import ./pkgs { inherit pkgs python3; };
 
   # For exports.
   overlays = [ overlay ];
