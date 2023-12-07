@@ -16,7 +16,7 @@ parseNVDSpec = do
     Just nvdcve <- decodeFileStrict "tests/resources/CVE-2023-32611.json"
     decode <- withApp params $ do
       convertToLocal [nvdcve]
-    (length decode) `shouldBe` (0 :: Int)
+    (length $ concat decode) `shouldNotBe` (0 :: Int)
 
 main :: IO ()
 main = hspec $ do
