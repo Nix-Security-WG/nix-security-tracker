@@ -1,14 +1,15 @@
 final: prev:
 let
-  python = final.python3;
-  extraPkgs = import ../pkgs {
+  inherit (final) python3;
+  extraPython3Packages = import ../pkgs {
     pkgs = prev;
-    python3 = python;
+    inherit python3;
   };
   sources = import ../npins;
 in
-extraPkgs
-// {
+{
+  python3 = prev.lib.attrsets.recursiveUpdate prev.python3 { pkgs = extraPython3Packages; };
+
   # RFC 166
   nixfmt = (import sources.nixfmt).default;
 
@@ -20,16 +21,14 @@ extraPkgs
     isFlakes = false;
   };
 
-  web-security-tracker = python.pkgs.buildPythonPackage rec {
-
+  web-security-tracker = python3.pkgs.buildPythonPackage rec {
     pname = "web-security-tracker";
     version = "0.0.1";
     pyproject = true;
 
-    src =
-      final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src/website;
+    src = final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src/website;
 
-    propagatedBuildInputs = with python.pkgs; [
+    propagatedBuildInputs = with python3.pkgs; [
       # Nix python packages
       dataclass-wizard
       dj-database-url

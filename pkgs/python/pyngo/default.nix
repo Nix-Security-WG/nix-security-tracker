@@ -1,6 +1,14 @@
-{ lib, python3, fetchFromGitHub }:
+{
+  lib,
+  django_4,
+  pydantic,
+  typing-extensions,
+  hatchling,
+  buildPythonPackage,
+  fetchFromGitHub,
+}:
 
-python3.pkgs.buildPythonPackage rec {
+buildPythonPackage rec {
   pname = "pyngo";
   version = "1.6.0";
   pyproject = true;
@@ -12,9 +20,9 @@ python3.pkgs.buildPythonPackage rec {
     hash = "sha256-qOY1ILMDqSguLnbhuu5JJVMvG3uA08Lv2fB70TgrKqI=";
   };
 
-  nativeBuildInputs = [ python3.pkgs.hatchling ];
+  nativeBuildInputs = [ hatchling ];
 
-  propagatedBuildInputs = with python3.pkgs; [
+  propagatedBuildInputs = [
     django_4
     pydantic
     typing-extensions
@@ -27,6 +35,5 @@ python3.pkgs.buildPythonPackage rec {
     homepage = "https://github.com/yezz123/pyngo";
     license = licenses.mit;
     maintainers = with maintainers; [ ];
-    mainProgram = "pyngo";
   };
 }
