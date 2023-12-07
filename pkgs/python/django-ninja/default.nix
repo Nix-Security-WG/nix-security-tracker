@@ -12,9 +12,9 @@ python3.pkgs.buildPythonPackage rec {
     hash = "sha256-oeisurp9seSn3X/5jFF9DMm9nU6uDYIU1b6/J3o2be0=";
   };
 
-  nativeBuildInputs = [ python3.pkgs.flit-core ];
+  nativeBuildInputs = with python3.pkgs; [ flit-core ];
 
-  propagatedBuildInputs = [ python3.pkgs.pydantic python3.pkgs.django_4 ];
+  propagatedBuildInputs = with python3.pkgs; [ pydantic django_4 ];
 
   doCheck = false;
 

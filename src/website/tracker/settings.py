@@ -59,11 +59,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "compressor",
-    # AllAuth config
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
+    "permission",
     "rest_framework",
     "shared",
     "webview",
@@ -78,7 +78,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
-    # Allauth account middleware
     "allauth.account.middleware.AccountMiddleware",
 ]
 
@@ -103,6 +102,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+            ],
+            "builtins": [
+                "permission.templatetags.permissionif",
             ],
         },
     },
@@ -135,6 +137,7 @@ AUTHENTICATION_BACKENDS = [
     # Needed to login by username in Django admin, regardless of `allauth`
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
+    "permission.backends.PermissionBackend",
 ]
 
 SOCIALACCOUNT_PROVIDERS = {

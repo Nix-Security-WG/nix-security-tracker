@@ -12,7 +12,7 @@ python3.pkgs.buildPythonPackage rec {
     hash = "sha256-qOY1ILMDqSguLnbhuu5JJVMvG3uA08Lv2fB70TgrKqI=";
   };
 
-  nativeBuildInputs = [ python3.pkgs.hatchling ];
+  nativeBuildInputs = with python3.pkgs; [ hatchling ];
 
   propagatedBuildInputs = with python3.pkgs; [
     django_4
@@ -27,6 +27,5 @@ python3.pkgs.buildPythonPackage rec {
     homepage = "https://github.com/yezz123/pyngo";
     license = licenses.mit;
     maintainers = with maintainers; [ ];
-    mainProgram = "pyngo";
   };
 }

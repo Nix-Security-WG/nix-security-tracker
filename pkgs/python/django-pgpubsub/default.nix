@@ -1,5 +1,4 @@
-{ lib, buildPythonPackage, fetchFromGitHub, poetry, poetry-core, django
-, django-pgtrigger }:
+{ lib, buildPythonPackage, fetchFromGitHub, python3 }:
 
 buildPythonPackage rec {
   pname = "django-pgpubsub";
@@ -13,9 +12,9 @@ buildPythonPackage rec {
     hash = "sha256-TXyojZ7EHOlAdC0/QqTspCAsI4G55fnfsZfH5JUp5D0=";
   };
 
-  nativeBuildInputs = [ poetry poetry-core ];
+  nativeBuildInputs = with python3.pkgs; [ poetry poetry-core ];
 
-  propagatedBuildInputs = [ django django-pgtrigger ];
+  propagatedBuildInputs = with python3.pkgs; [ django django-pgtrigger ];
 
   pythonImportsCheck = [ "django_pgpubsub" ];
 
