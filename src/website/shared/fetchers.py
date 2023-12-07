@@ -190,7 +190,7 @@ def mkCveRecord(
         uuid=data["assignerOrgId"], short_name=data.get("assignerShortName")
     )
 
-    assert org is not None
+    assert org is not None, "Organisation cannot be empty"
 
     cve.assigner = org
     cve.requester = mkOrganization(uuid=data.get("requesterUserId"))

@@ -153,14 +153,16 @@ in {
       };
 
       web-security-tracker-delta = {
-        description = "A web security tracker ASGI server";
-        after = [ "network.target" "postgresql.service" ];
+        description = "Web security tracker catch up with CVEs";
+        after = [
+          "network.target"
+          "postgresql.service"
+          "web-security-tracker-server.service"
+        ];
         requires = [ "postgresql.service" ];
-        wantedBy = [ "multi-user.target" ];
         path = [ pythonEnv wstManageScript ];
         serviceConfig = {
           User = "web-security-tracker";
-          Restart = "always";
           WorkingDirectory = "/var/lib/web-security-tracker";
           StateDirectory = "web-security-tracker";
           RuntimeDirectory = "web-security-tracker";
@@ -171,15 +173,6 @@ in {
           DATABASE_URL = databaseUrl;
           USER_SETTINGS_FILE = "${configFile}";
         };
-        preStart = ''
-          # Auto-migrate on first run or if the package has changed
-          versionFile="/var/lib/web-security-tracker/package-version"
-          if [[ $(cat "$versionFile" 2>/dev/null) != ${cfg.package} ]]; then
-            wst-manage migrate --no-input
-            wst-manage collectstatic --no-input --clear
-            echo ${cfg.package} > "$versionFile"
-          fi
-        '';
 
         script = ''
           wst-manage ingest_delta_cve "$(date --date='yesterday' --iso)"
