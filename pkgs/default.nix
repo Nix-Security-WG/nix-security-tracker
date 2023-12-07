@@ -3,14 +3,20 @@
 let
   inherit (pkgs) lib;
 
-  callPackage =
-    lib.callPackageWith (pkgs // { inherit python3; } // pythonPackages);
+  callPackage = lib.callPackageWith (pkgs // { inherit python3; } // python3.pkgs // pythonPackages);
 
-  mkPackages = dir:
-    builtins.listToAttrs (builtins.map (name: {
-      inherit name;
-      value = callPackage (dir + "/${name}") { };
-    }) (builtins.attrNames (builtins.readDir dir)));
+  mkPackages =
+    dir:
+    with builtins;
+    listToAttrs (
+      map
+        (name: {
+          inherit name;
+          value = callPackage (dir + "/${name}") { };
+        })
+        (attrNames (readDir dir))
+    );
 
   pythonPackages = mkPackages ./python;
-in { inherit pythonPackages; }
+in
+pythonPackages
