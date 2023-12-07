@@ -2,9 +2,9 @@ from typing import Type
 
 from django.core.validators import RegexValidator
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils.translation import gettext_lazy as _
 
 
 def text_length(choices: Type[models.TextChoices]):
@@ -46,6 +46,8 @@ class CveRecord(models.Model):
     date_published = models.DateTimeField(null=True, default=None)
 
     local_timestamp = models.DateTimeField(auto_now_add=True)
+
+    triaged = models.BooleanField(default=False)
 
 
 class Product(models.Model):
@@ -253,6 +255,21 @@ class Container(models.Model):
     tags = models.ManyToManyField(Tag)
     credits = models.ManyToManyField(Credit)
     source = models.JSONField(default=dict)
+
+
+###
+#
+# Internal models
+#
+###
+
+
+class CveIngestion(models.Model):
+    """Class representing an ingestion of CVE data."""
+
+    timestamp = models.DateTimeField(auto_now_add=True)
+    valid_to = models.DateField()
+    delta = models.BooleanField(default=True)
 
 
 ###
