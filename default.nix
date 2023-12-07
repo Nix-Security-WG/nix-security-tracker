@@ -1,5 +1,9 @@
-{ sources ? import ./npins, overlay ? import ./nix/overlay.nix
-, pkgs ? import sources.nixpkgs { overlays = [ overlay ]; } }: rec {
+{ sources ? import ./npins
+, overlay ? import ./nix/overlay.nix
+, pkgs ? import sources.nixpkgs { overlays = [ overlay ]; }
+,
+}:
+rec {
   python = pkgs.python3;
   localPkgs = import ./pkgs {
     inherit pkgs;
@@ -11,8 +15,13 @@
   package = pkgs.web-security-tracker;
   module = import ./nix/web-security-tracker.nix;
 
-  pre-commit-check = (import sources.pre-commit-hooks).run {
+  pre-commit-check = pkgs.pre-commit-hooks {
     src = ./.;
+
+    settings.statix.ignore = [
+      "/staging"
+      "/nix/web-security-tracker.nix"
+    ];
 
     hooks = {
       # Nix setup
@@ -33,15 +42,26 @@
       # Global setup
       prettier = {
         enable = true;
-        excludes = [ "\\.min.css$" "\\.html$" ];
+        excludes = [
+          "\\.min.css$"
+          "\\.html$"
+        ];
       };
       commitizen.enable = true;
     };
   };
 
   shell = pkgs.mkShell {
-    packages = [ package pkgs.nix-eval-jobs pkgs.commitizen ];
     DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
+
+    packages = [
+      package
+      pkgs.nix-eval-jobs
+      pkgs.commitizen
+      pkgs.npins
+      pkgs.nixfmt
+    ];
+
     shellHook = ''
       ${pre-commit-check.shellHook}
 

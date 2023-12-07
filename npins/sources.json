@@ -1,5 +1,29 @@
 {
   "pins": {
+    "gitignore": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "hercules-ci",
+        "repo": "gitignore"
+      },
+      "branch": "master",
+      "revision": "9e21c80adf67ebcb077d75bd5e7d724d21eeafd6",
+      "url": "https://github.com/hercules-ci/gitignore/archive/9e21c80adf67ebcb077d75bd5e7d724d21eeafd6.tar.gz",
+      "hash": "1lbkgn94y8850g7idqnbji12pscxjwrspnzmx8fmm7xmy9ablk5y"
+    },
+    "nixfmt": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "piegamesde",
+        "repo": "nixfmt"
+      },
+      "branch": "rfc101-style",
+      "revision": "136edf487b0747c0dd0e59614356f306039864c9",
+      "url": "https://github.com/piegamesde/nixfmt/archive/136edf487b0747c0dd0e59614356f306039864c9.tar.gz",
+      "hash": "017zpd6n3yspal1nv81fiygyyx06vhj5gnsg5x139mzvlic8i03v"
+    },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
