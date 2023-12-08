@@ -282,18 +282,24 @@ withApiKey f1 f = do
 
 -- convert NVDCVE JSON data type to our internal feed-agnostic LocalVuln data model:
 convertToLocal :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
-convertToLocal nvds = timeLog $ flip mapM nvds $ \x -> do
-    let configs = _nvdcve_configurations x
-        -- TODO support for multiple or non-cvss-v31 severities
-        (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe
-        id' = _nvdcve_id x
-        versions = case configs of
-          Nothing -> []
-          Just cfg -> flip concatMap cfg $ \cc -> do
-              let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
-              flip concatMap cpeMatch $ \c -> do
-                  let versionEndIncluding = _cpematch_versionEndIncluding c
-                      versionEndExcluding = _cpematch_versionEndExcluding c
-                      cpe = (CVE.parseCPE $ _cpematch_criteria c)
-                  [LocalVuln versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
-    pure versions
+convertToLocal nvds = do
+    excludeVendors' <- excludeVendors <$> ask
+    timeLog $ flip mapM nvds $ \x -> do
+      let configs = _nvdcve_configurations x
+          -- TODO support for multiple or non-cvss-v31 severities
+          (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe
+          id' = _nvdcve_id x
+          versions = case configs of
+            Nothing -> []
+            Just cfg -> flip concatMap cfg $ \cc -> do
+                let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
+                flip concatMap cpeMatch $ \c -> do
+                    let versionEndIncluding = _cpematch_versionEndIncluding c
+                        versionEndExcluding = _cpematch_versionEndExcluding c
+                        cpe = (CVE.parseCPE $ _cpematch_criteria c)
+                    case excludeVendors' of
+                      Nothing -> [LocalVuln versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
+                      Just v -> if (CVE._cpe_vendor <$> cpe) `elem` (map (Just . T.pack) v) then
+                        []
+                      else [LocalVuln versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
+      pure versions

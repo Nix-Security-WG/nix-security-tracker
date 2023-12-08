@@ -21,6 +21,7 @@ data Parameters = Parameters
   , sbom :: !String
   , path :: !(Maybe String)
   , timeInfo :: Bool
+  , excludeVendors :: Maybe [String]
   } deriving (Show, Eq, Ord)
 
 
@@ -47,7 +48,7 @@ data SemVer = SemVer
   } deriving (Show, Eq, Ord)
 
 instance Default Parameters where
-    def = Parameters False "test.sbom" Nothing False
+    def = Parameters False "test.sbom" Nothing False Nothing
 
 
 prettySemVer :: SemVer -> String

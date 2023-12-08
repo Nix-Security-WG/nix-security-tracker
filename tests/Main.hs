@@ -15,21 +15,21 @@ import CVENix.Matching
 
 parseNVDSpec :: SpecWith (Arg (IO ()))
 parseNVDSpec = do
-  it "needs to parse a CVE from the NVD feed into our local data model" $ do
+  it "Parses a CVE from the NVD feed into our local data model" $ do
     Just nvdcve <- decodeFileStrict "tests/resources/CVE-2023-32611.json"
     advisoryParts <- withApp def $ convertToLocal [nvdcve]
     (length $ concat advisoryParts) `shouldNotBe` (0 :: Int)
 
 versionShouldNotMatch :: String -> String -> SpecWith (Arg (IO ()))
 versionShouldNotMatch version advisoryId = do
-  it ("version " <> version <> " should not match " <> advisoryId) $ do
+  it ("Version " <> version <> " should not match " <> advisoryId) $ do
     Just nvdcve <- decodeFileStrict $ "tests/resources/" <> advisoryId <> ".json"
     [[advisory]] <- withApp def $ convertToLocal [nvdcve]
     (versionInRange advisory (Just $ T.pack version)) `shouldBe` Nothing
 
 versionShouldMatch :: String -> String -> SpecWith (Arg (IO ()))
 versionShouldMatch version advisoryId = do
-  it ("version " <> version <> " should match " <> advisoryId) $ do
+  it ("Version " <> version <> " should match " <> advisoryId) $ do
     Just nvdcve <- decodeFileStrict $ "tests/resources/" <> advisoryId <> ".json"
     [[advisory]] <- withApp def $ convertToLocal [nvdcve]
     (versionInRange advisory (Just $ T.pack version)) `shouldSatisfy` isJust
