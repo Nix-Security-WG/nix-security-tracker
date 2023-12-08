@@ -61,6 +61,7 @@ test-suite Tests
         HUnit,
         CVENix,
         aeson,
+        text,
 
 executable CVENix
     import:           warnings

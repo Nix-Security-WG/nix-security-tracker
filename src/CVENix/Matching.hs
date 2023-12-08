@@ -32,6 +32,22 @@ data InventoryDependency = InventoryDependency
   , _inventorydependency_drv :: Text
   } deriving (Show)
 
+versionInRange :: LocalVuln -> Maybe Text -> Maybe (Text, Maybe Text, SemVer, SemVer)
+versionInRange product version =
+  let advisoryId = _vuln_cveId product
+      localver = splitSemVer <$> version
+      nvdVer = splitSemVer <$> (_vuln_endVersion product)
+      severity = _vuln_severity product
+  in case nvdVer of
+      Nothing -> Nothing
+      Just ver' -> do
+          case (ver', localver) of
+              (Just v, Just (Just lv)) -> do
+                  if | _semver_major v > _semver_major lv -> Just (advisoryId, severity, lv, v)
+                     | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv && _semver_patch v >= _semver_patch lv -> Just (advisoryId, severity, lv, v)
+                     | otherwise -> Nothing
+              (_, _) -> Nothing
+
 match :: SBOM -> Parameters -> IO ()
 match sbom params = do
     putStrLn "Matched advisories:"
@@ -66,26 +82,16 @@ match sbom params = do
       getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
       getFromNVD vulns acc (InventoryDependency pname version drv) = do
           debug' <- debug <$> ask
-          let localver = splitSemVer <$> version
           case elem (pname, version) acc of
             True -> do
                 when (debug') $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
                 pure acc
             False -> timeLog $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
-              let  vulns' = flip map vulns $ \(LocalVuln endVer product cveId severity) -> do
-                    let nvdVer = splitSemVer <$> endVer
-                        nvdCPE = (\c -> pname == c) <$> (product)
-                    case nvdCPE of
-                      (Just True) -> case nvdVer of
-                        Nothing -> Nothing
-                        Just ver' -> do
-                          case (ver', localver) of
-                            (Just v, Just (Just lv)) -> do
-                                if | _semver_major v > _semver_major lv -> Just (cveId, severity, lv, v)
-                                   | _semver_major v >= _semver_major lv && _semver_minor v >= _semver_minor lv && _semver_patch v >= _semver_patch lv -> Just (cveId, severity, lv, v)
-                                   | otherwise -> Nothing
-                            (_, _) -> Nothing
+              let  vulns' = flip map vulns $ \vuln -> do
+                    case (_vuln_product vuln) of
+                      (Just product) ->
+                        if product == pname then versionInRange vuln version else Nothing
                       _ -> Nothing
 
               timeLog $ flip mapM_ vulns' $ \case
