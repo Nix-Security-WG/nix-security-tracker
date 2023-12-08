@@ -12,7 +12,6 @@
 module CVENix.CVE where
 
 import CVENix.Utils
-import CVENix.Types
 
 import Data.Aeson.TH
 import Data.Aeson
@@ -127,6 +126,21 @@ data Product = Product
   , _product_defaultStatus :: Maybe Text
   , _product_versions :: Maybe [Version]
   } deriving (Show, Eq, Ord, Generic)
+
+data Version = Version
+  { _version_version :: Text
+  , _version_status :: Text
+  , _version_type :: Maybe Text
+  , _version_lessThan :: Maybe Text
+  , _version_lessThanOrEqual :: Maybe Text
+  , _version_changes :: Maybe [Change]
+  } deriving (Show, Eq, Ord, Generic)
+
+data Change = Change
+  { _change_at :: Text
+  , _change_status :: Text
+  } deriving (Show, Eq, Ord, Generic)
+
 
 
 type Affected = Product

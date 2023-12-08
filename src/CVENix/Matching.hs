@@ -101,7 +101,7 @@ match inventory params = do
 
               timeLog $ flip mapM_ vulns' $ \case
                 Nothing -> pure ()
-                Just (cid, severity, version, rangeEnd) -> timeLog $ do
+                Just (cid, severity, v, rangeEnd) -> timeLog $ do
                     liftIO $ putStrLn ""
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cid
@@ -109,7 +109,7 @@ match inventory params = do
                       Just s -> logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack s
                       Nothing -> pure ()
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> prettySemVer rangeEnd
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Local Version: " <> prettySemVer version
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Version in inventory: " <> prettySemVer v
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
                     liftIO $ putStrLn ""
               pure $ acc <> [(pname, version)]

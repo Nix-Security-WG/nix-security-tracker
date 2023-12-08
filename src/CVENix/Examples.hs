@@ -7,10 +7,8 @@ import CVENix.CVE
 import System.Directory
 import Data.Time.Clock
 import Data.Maybe
-import CVENix.Types
 
-
-exampleParseCVE :: IO [Advisory]
+exampleParseCVE :: IO [CVE]
 exampleParseCVE = do
     files' <- listDirectory "CVE/cves/"
     let files = filter (\x -> not (x == "delta.json" || x == "deltaLog.json")) files'
@@ -28,38 +26,14 @@ exampleParseCVE = do
     curTime <- getCurrentTime
     l <- flip mapM thing' $ \x -> do
       file <- decodeFileStrict x :: IO (Maybe CVE)
-      pure $ asAdvisories file
+      case file of
+        Just cve -> pure cve
+        Nothing -> fail $ "Failed to parse " <> x
     putStrLn $ "[CVE] Done parsing"
     curTime' <- getCurrentTime
     putStrLn $ "[CVE] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
-    pure $ concat $ l
+    pure $ l
   where
-      asAdvisories :: Maybe CVE -> [Advisory]
-      asAdvisories p = case p of
-                      Nothing -> []
-                      Just cve -> do
-                          let
-                            cveId = _cvemetadata_cveId $ _cve_cveMetadata cve
-                            unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
-                          case unwrappedContainer of
-                            Nothing -> []
-                            Just affected ->
-                              let
-                                maybeHead :: [a] -> Maybe a
-                                maybeHead list = case list of
-                                  [] -> Nothing
-                                  other -> Just $ head other
-                                firstJust :: Maybe a -> Maybe a -> Maybe a
-                                firstJust a b = case a of
-                                  Just _ -> a
-                                  _ -> b
-                                -- in theory different products / package collections may have different version
-                                -- ranges, but in practice probably just one, so collect a fallback for when
-                                -- it is not specified for some product:
-                                mainVersions :: Maybe [Version]
-                                mainVersions = maybeHead $ mapMaybe _product_versions affected
-                                names = map (\a -> (_product_packageName a, _product_defaultStatus a, firstJust (_product_versions a) mainVersions)) affected
-                              in [ Advisory cveId $ map (\(n, ds, v) -> AdvisoryProduct n ds v) names ]
       getCPEIDs p = case p of
                       Nothing -> []
                       Just cve -> do
