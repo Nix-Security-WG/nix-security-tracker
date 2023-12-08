@@ -7,7 +7,6 @@ import CVENix.CVE
 import System.Directory
 import Data.Time.Clock
 import Data.Maybe
-import Data.Text (Text)
 import CVENix.Types
 
 

@@ -6,7 +6,6 @@ module Main where
 import Options.Applicative
 
 import CVENix.SBOM
-import CVENix.Examples
 import CVENix.Matching
 import CVENix.Types
 import System.Process

@@ -7,7 +7,6 @@ module CVENix.Matching where
 
 import CVENix.SBOM
 import CVENix.Types
-import CVENix.CVE
 import CVENix.NVD
 import CVENix.Utils
 
@@ -16,15 +15,11 @@ import Data.Char (isDigit)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
-import System.Posix.Files
 import Control.Monad.Log
 import Control.Monad.Log.Colors
 import Control.Monad.IO.Class
 import Prettyprinter
 import Control.Monad.Trans.Reader
-import Data.Time.Clock
-import qualified Data.Map.Strict as Map
-import Data.Map (Map)
 
 data InventoryDependency = InventoryDependency
   { _inventorydependency_pname :: Text
@@ -33,12 +28,12 @@ data InventoryDependency = InventoryDependency
   } deriving (Show)
 
 versionInRange :: LocalVuln -> Maybe Text -> Maybe (Text, Maybe Text, SemVer, SemVer)
-versionInRange product version =
-  let advisoryId = _vuln_cveId product
+versionInRange vuln version =
+  let advisoryId = _vuln_cveId vuln
       localver = splitSemVer <$> version
-      rangeEndIncluding = splitSemVer <$> (_vuln_endVersionIncluding product)
-      rangeEndExcluding = splitSemVer <$> (_vuln_endVersionExcluding product)
-      severity = _vuln_severity product
+      rangeEndIncluding = splitSemVer <$> (_vuln_endVersionIncluding vuln)
+      rangeEndExcluding = splitSemVer <$> (_vuln_endVersionExcluding vuln)
+      severity = _vuln_severity vuln
   in case rangeEndIncluding of
       Nothing -> case rangeEndExcluding of
           Nothing -> Nothing
@@ -59,9 +54,9 @@ versionInRange product version =
               (_, _) -> Nothing
 
 match :: SBOM -> Parameters -> IO ()
-match sbom params = do
+match inventory params = do
     putStrLn "Matched advisories:"
-    case _sbom_dependencies sbom of
+    case _sbom_dependencies inventory of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
           let d = filter (\(InventoryDependency pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getDeps s
@@ -75,8 +70,8 @@ match sbom params = do
       getDeps :: [SBOMDependency] -> [InventoryDependency]
       getDeps d = let deps = map (_sbomdependency_ref) d
                       split :: Text -> InventoryDependency
-                      split path =
-                            let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ path
+                      split drvpath =
+                            let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ drvpath
                                 lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
                                 version =
                                   if T.length lastSegment == 0 then Nothing
@@ -86,7 +81,7 @@ match sbom params = do
                                   Nothing -> name
                                   Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
                             in
-                              (InventoryDependency pname version path)
+                              (InventoryDependency pname version drvpath)
                   in map split deps
 
       getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
@@ -100,21 +95,21 @@ match sbom params = do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
               let  vulns' = flip map vulns $ \vuln -> do
                     case (_vuln_product vuln) of
-                      (Just product) ->
-                        if product == pname then versionInRange vuln version else Nothing
+                      (Just name) ->
+                        if name == pname then versionInRange vuln version else Nothing
                       _ -> Nothing
 
               timeLog $ flip mapM_ vulns' $ \case
                 Nothing -> pure ()
-                Just (cid, severity, local, nvd) -> timeLog $ do
+                Just (cid, severity, version, rangeEnd) -> timeLog $ do
                     liftIO $ putStrLn ""
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cid
                     case severity of
                       Just s -> logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack s
                       Nothing -> pure ()
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version: " <> prettySemVer nvd
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Local Version: " <> prettySemVer local
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> prettySemVer rangeEnd
+                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Local Version: " <> prettySemVer version
                     logMessage $ colorize $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
                     liftIO $ putStrLn ""
               pure $ acc <> [(pname, version)]
