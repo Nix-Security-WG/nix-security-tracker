@@ -1,5 +1,6 @@
 from typing import Type
 
+from django.contrib.postgres import fields
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -68,6 +69,10 @@ class NixDerivationMeta(models.Model):
     maintainers = models.ManyToManyField(NixMaintainer)
     licenses = models.ManyToManyField(NixLicense)
     source_provenances = models.ManyToManyField(NixSourceProvenance)
+
+    known_vulnerabilities = fields.ArrayField(
+        models.CharField(max_length=255), default=list
+    )
 
     insecure = models.BooleanField()
     available = models.BooleanField()
