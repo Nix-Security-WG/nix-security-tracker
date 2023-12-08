@@ -90,11 +90,11 @@ manage dumpdata shared > src/website/shared/fixtures/sample.json
 Add 100 CVE entries to the database:
 
 ```console
-manage ingest_bulk_cve --test
+manage ingest_bulk_cve --subset 100
 ```
 
 This will take a few minutes on an average machine.
-Not passing `--test` will take about an hour and produce ~500 MB of data.
+Not passing `--subset N` will take about an hour and produce ~500 MB of data.
 
 ### Nixpkgs evaluations
 
@@ -123,8 +123,10 @@ src/website/manage.py register_channel <null> nixos-unstable UNSTABLE
 The "Channel branch" field must match the parameter passed to `ingest_manual_evaluation`, which is `nixos-unstable` here.
 All other fields can have arbitrary values.
 
-Ingest the data for one evaluation of a channel branch, and provide the commit hash of that evaluation as well as the channel branch:
+Add 100 entries for one evaluation of a channel branch, and provide the commit hash of that evaluation as well as the channel branch:
 
 ```console
-manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl
+manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl --subset 100
 ```
+
+Not passing `--subset N` will take about an hour and produce ~600 MB of data.

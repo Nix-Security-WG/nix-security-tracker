@@ -744,6 +744,15 @@ class Command(BaseCommand):
         parser.add_argument("channel_branch", type=str)
         parser.add_argument("evaluation_result_file", type=str)
         parser.add_argument("-q", "--quiet", action="store_true")
+        parser.add_argument(
+            "-s",
+            "--subset",
+            nargs="?",
+            type=int,
+            help="Integer value representing the N subset of total entries. "
+            + " Useful to generate a small dataset for development.",
+            default=0,
+        )
 
     def handle(self, *args, **kwargs):
         quiet = kwargs.get("quiet", True)
@@ -762,6 +771,9 @@ class Command(BaseCommand):
             with bulk_saver() as bs:
                 ingester = BulkEvaluationIngestion(bs)
                 lines = f.readlines()
+                if kwargs["subset"] > 0:
+                    lines = lines[: kwargs["subset"]]
+                log.warn(f"{len(lines)} entries to ingest.")
                 for result in tqdm(parse_evaluation_results(lines), total=len(lines)):
                     if result.error is not None:
                         if not quiet:
