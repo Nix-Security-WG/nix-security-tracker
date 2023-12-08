@@ -11,6 +11,9 @@ import Control.Monad.Log
 import Prettyprinter
 import Control.Monad.IO.Class
 
+class Default a where
+    def :: a
+
 type LogT m ann = (MonadLog (WithSeverity (Doc ann)) m, MonadIO m)
 
 data Parameters = Parameters
@@ -42,6 +45,10 @@ data SemVer = SemVer
   , _semver_minor :: Int
   , _semver_patch :: Maybe Int
   } deriving (Show, Eq, Ord)
+
+instance Default Parameters where
+    def = Parameters False "test.sbom" Nothing False
+
 
 prettySemVer :: SemVer -> String
 prettySemVer (SemVer major minor c) = (show major) <> "." <> (show minor) <> case c of

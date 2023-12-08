@@ -13,39 +13,38 @@ import CVENix.Types
 import CVENix.Utils
 import CVENix.Matching
 
-parseNVDSpec :: Parameters -> SpecWith (Arg (IO ()))
-parseNVDSpec params = do
+parseNVDSpec :: SpecWith (Arg (IO ()))
+parseNVDSpec = do
   it "needs to parse a CVE from the NVD feed into our local data model" $ do
     Just nvdcve <- decodeFileStrict "tests/resources/CVE-2023-32611.json"
-    advisoryParts <- withApp params $ convertToLocal [nvdcve]
+    advisoryParts <- withApp def $ convertToLocal [nvdcve]
     (length $ concat advisoryParts) `shouldNotBe` (0 :: Int)
 
-versionShouldNotMatch :: Parameters -> String -> String -> SpecWith (Arg (IO ()))
-versionShouldNotMatch params version advisoryId = do
+versionShouldNotMatch :: String -> String -> SpecWith (Arg (IO ()))
+versionShouldNotMatch version advisoryId = do
   it ("version " <> version <> " should not match " <> advisoryId) $ do
     Just nvdcve <- decodeFileStrict $ "tests/resources/" <> advisoryId <> ".json"
-    [[advisory]] <- withApp params $ convertToLocal [nvdcve]
+    [[advisory]] <- withApp def $ convertToLocal [nvdcve]
     (versionInRange advisory (Just $ T.pack version)) `shouldBe` Nothing
 
-versionShouldMatch :: Parameters -> String -> String -> SpecWith (Arg (IO ()))
-versionShouldMatch params version advisoryId = do
+versionShouldMatch :: String -> String -> SpecWith (Arg (IO ()))
+versionShouldMatch version advisoryId = do
   it ("version " <> version <> " should match " <> advisoryId) $ do
     Just nvdcve <- decodeFileStrict $ "tests/resources/" <> advisoryId <> ".json"
-    [[advisory]] <- withApp params $ convertToLocal [nvdcve]
+    [[advisory]] <- withApp def $ convertToLocal [nvdcve]
     (versionInRange advisory (Just $ T.pack version)) `shouldSatisfy` isJust
 
 main :: IO ()
 main = hspec $ do
-    let params = Parameters False "test.sbom" (Just "/nix/store/test") False
     describe "Parse NVD Spec" $ do
-        parseNVDSpec params
+        parseNVDSpec
     describe "Match version ranges with 'versionEndExcluding'" $ do
-        versionShouldMatch params "2.74.1" "CVE-2023-32611"
-        versionShouldNotMatch params "2.74.2" "CVE-2023-32611"
-        versionShouldNotMatch params "2.78.1" "CVE-2023-32611"
+        versionShouldMatch "2.74.1" "CVE-2023-32611"
+        versionShouldNotMatch "2.74.2" "CVE-2023-32611"
+        versionShouldNotMatch "2.78.1" "CVE-2023-32611"
     describe "Match version ranges with 'versionEndIncluding'" $ do
-        versionShouldMatch params "1.22.11" "CVE-2023-5982"
-        versionShouldMatch params "1.23.9" "CVE-2023-5982"
-        versionShouldMatch params "1.23.10" "CVE-2023-5982"
-        versionShouldNotMatch params "1.23.11" "CVE-2023-5982"
-        versionShouldNotMatch params "2.0.0" "CVE-2023-5982"
+        versionShouldMatch "1.22.11" "CVE-2023-5982"
+        versionShouldMatch "1.23.9" "CVE-2023-5982"
+        versionShouldMatch "1.23.10" "CVE-2023-5982"
+        versionShouldNotMatch "1.23.11" "CVE-2023-5982"
+        versionShouldNotMatch "2.0.0" "CVE-2023-5982"
