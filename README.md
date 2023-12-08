@@ -50,7 +50,44 @@ This is the default Django workflow.
 
 To play around with it, you need some data.
 
-## CVEs
+## Fixtures
+
+A fixture file is availble for the `shared` app, located at `src/website/shared/fixtures/sample.json`.
+
+To load the data into the database:
+
+```console
+manage loaddata sample
+```
+
+Were `sample` is the name of fixture JSON file. Django will look inside the app folders for a fixture folders to match this name.
+
+### Recreating fixture files
+
+In case you want to recreate a fixture file:
+
+```console
+# Empty the database
+manage flush
+
+# Ingest CVE data
+manage ingest_bulk_cve --test
+
+# Register a Nix Channel in the database
+src/website/manage.py register_channel <null> nixos-unstable UNSTABLE
+
+# Ingest evaluation data
+manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl
+
+# Dump the database into the fixture file
+manage dumpdata shared > src/website/shared/fixtures/sample.json
+```
+
+These data ingestion steps are explained in greater detail in the `Manual ingestion` section below.
+
+## Manual ingestion
+
+### CVEs
 
 Add 100 CVE entries to the database:
 
@@ -61,7 +98,7 @@ manage ingest_bulk_cve --test
 This will take a few minutes on an average machine.
 Not passing `--test` will take about an hour and produce ~500 MB of data.
 
-## Nixpkgs evaluations
+### Nixpkgs evaluations
 
 Get a full evaluaton of Nixpkgs:
 
@@ -79,7 +116,11 @@ wget https://files.lahfa.xyz/private/evaluation.jsonl.zst
 zstd -d evaluation.jsonl.zst
 ```
 
-Before ingesting, call `manage runsever` and manually create a "Nix channel": <http://127.0.0.1:8000/admin/shared/nixchannel/>
+Before ingesting, call `manage runsever` and manually create a "Nix channel":
+
+```console
+src/website/manage.py register_channel <null> nixos-unstable UNSTABLE
+```
 
 The "Channel branch" field must match the parameter passed to `ingest_manual_evaluation`, which is `nixos-unstable` here.
 All other fields can have arbitrary values.
