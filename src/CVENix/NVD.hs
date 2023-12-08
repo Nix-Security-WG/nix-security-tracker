@@ -292,7 +292,8 @@ convertToLocal nvds = timeLog $ flip mapM nvds $ \x -> do
           Just cfg -> flip concatMap cfg $ \cc -> do
               let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
               flip concatMap cpeMatch $ \c -> do
-                  let nvdVer = _cpematch_versionEndIncluding c
+                  let versionEndIncluding = _cpematch_versionEndIncluding c
+                      versionEndExcluding = _cpematch_versionEndExcluding c
                       cpe = (CVE.parseCPE $ _cpematch_criteria c)
-                  [LocalVuln nvdVer (CVE._cpe_product <$> cpe) id' severity]
+                  [LocalVuln versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
     pure versions

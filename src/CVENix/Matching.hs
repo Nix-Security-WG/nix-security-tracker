@@ -36,10 +36,20 @@ versionInRange :: LocalVuln -> Maybe Text -> Maybe (Text, Maybe Text, SemVer, Se
 versionInRange product version =
   let advisoryId = _vuln_cveId product
       localver = splitSemVer <$> version
-      nvdVer = splitSemVer <$> (_vuln_endVersion product)
+      rangeEndIncluding = splitSemVer <$> (_vuln_endVersionIncluding product)
+      rangeEndExcluding = splitSemVer <$> (_vuln_endVersionExcluding product)
       severity = _vuln_severity product
-  in case nvdVer of
-      Nothing -> Nothing
+  in case rangeEndIncluding of
+      Nothing -> case rangeEndExcluding of
+          Nothing -> Nothing
+          Just ver' -> do
+              case (ver', localver) of
+                  (Just v, Just (Just lv)) -> do
+                      if | _semver_major v > _semver_major lv -> Just (advisoryId, severity, lv, v)
+                         | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> Just (advisoryId, severity, lv, v)
+                         | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v > _semver_patch lv -> Just (advisoryId, severity, lv, v)
+                         | otherwise -> Nothing
+                  (_, _) -> Nothing
       Just ver' -> do
           case (ver', localver) of
               (Just v, Just (Just lv)) -> do
