@@ -39,6 +39,13 @@ main = hspec $ do
     let params = Parameters False "test.sbom" (Just "/nix/store/test") False
     describe "Parse NVD Spec" $ do
         parseNVDSpec params
+    describe "Match version ranges with 'versionEndExcluding'" $ do
         versionShouldMatch params "2.74.1" "CVE-2023-32611"
         versionShouldNotMatch params "2.74.2" "CVE-2023-32611"
         versionShouldNotMatch params "2.78.1" "CVE-2023-32611"
+    describe "Match version ranges with 'versionEndIncluding'" $ do
+        versionShouldMatch params "1.22.11" "CVE-2023-5982"
+        versionShouldMatch params "1.23.9" "CVE-2023-5982"
+        versionShouldMatch params "1.23.10" "CVE-2023-5982"
+        versionShouldNotMatch params "1.23.11" "CVE-2023-5982"
+        versionShouldNotMatch params "2.0.0" "CVE-2023-5982"
