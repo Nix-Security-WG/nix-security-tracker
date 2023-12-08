@@ -36,6 +36,7 @@
 
   shell = pkgs.mkShell {
     packages = [ package pkgs.nix-eval-jobs pkgs.commitizen ];
+    DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
     shellHook = ''
       ${pre-commit-check.shellHook}
 

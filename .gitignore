@@ -5,3 +5,4 @@ __pycache__
 .credentials
 *.jsonl # Evaluation results
 CACHE
+/**/.data_cache
