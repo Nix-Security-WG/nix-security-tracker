@@ -302,7 +302,7 @@ def generate_code(sender, instance, created, **kwargs):
         number = sender.objects.filter(
             created__year=instance.created.year, pk__lte=instance.pk
         ).count()
-        instance.code = f"NIXPKGS-{str(instance.created.year)}-{str(number).zfill(5)}"
+        instance.code = f"NIXPKGS-{str(instance.created.year)}-{str(number).zfill(4)}"
         instance.save()
 
 
