@@ -20,9 +20,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--test",
-            action="store_true",
-            help="Import a small subset of CVEs for testing",
+            "-s",
+            "--subset",
+            nargs="?",
+            type=int,
+            help="Integer value representing the N subset of total entries. "
+            + " Useful to generate a small dataset for development.",
+            default=0,
         )
 
     def handle(self, *args, **kwargs):
@@ -89,8 +93,8 @@ class Command(BaseCommand):
             with transaction.atomic():
                 # Traverse the tree and import cves
                 cve_list = glob(f"{tmp_dir}/cves/*/*/*.json")
-                if kwargs["test"]:
-                    cve_list = cve_list[0:100]
+                if kwargs["subset"] > 0:
+                    cve_list = cve_list[: kwargs["subset"]]
                 logger.warn(f"{len(cve_list)} CVEs to ingest.")
 
                 for j_cve in cve_list:

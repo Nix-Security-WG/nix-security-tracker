@@ -55,7 +55,7 @@ To play around with it, you need some data.
 Add 100 CVE entries to the database:
 
 ```console
-manage ingest_bulk_cve --test
+manage ingest_bulk_cve --subset 100
 ```
 
 This will take a few minutes on an average machine.
@@ -88,4 +88,10 @@ Ingest the data for one evaluation of a channel branch, and provide the commit h
 
 ```console
 manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl
+```
+
+To ingest some of the entries, use the `--subset` option. For example, to ingest 100 entries:
+
+```console
+manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl --subset 100
 ```
