@@ -11,7 +11,8 @@ in extraPkgs // {
     version = "0.0.1";
     pyproject = true;
 
-    src = ../src/website;
+    src =
+      final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src/website;
 
     propagatedBuildInputs = with python.pkgs; [
       # Nix python packages
