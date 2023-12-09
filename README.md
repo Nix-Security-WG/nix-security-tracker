@@ -74,7 +74,7 @@ manage flush
 manage ingest_bulk_cve --test
 
 # Register a Nix Channel in the database
-src/website/manage.py register_channel <null> nixos-unstable UNSTABLE
+manage register_channel <null> nixos-unstable UNSTABLE
 
 # Ingest evaluation data
 manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl
