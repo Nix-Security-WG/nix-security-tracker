@@ -83,8 +83,6 @@ manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-u
 manage dumpdata shared > src/website/shared/fixtures/sample.json
 ```
 
-These data ingestion steps are explained in greater detail in the `Manual ingestion` section below.
-
 ## Manual ingestion
 
 ### CVEs
