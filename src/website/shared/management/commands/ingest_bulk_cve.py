@@ -19,6 +19,13 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Ingest CVEs in bulk using the Mitre CVE repo"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--test",
+            action="store_true",
+            help="Import a small subset of CVEs for testing",
+        )
+
     def handle(self, *args, **kwargs) -> None:  # pyright: ignore reportUnusedVariable
         # Initialize a GitHub connection
         g = get_gh()
@@ -70,6 +77,8 @@ class Command(BaseCommand):
             with transaction.atomic():
                 # Traverse the tree and import cves
                 cve_list = glob(f"{tmp_dir}/cves/*/*/*.json")
+                if kwargs["test"]:
+                    cve_list = cve_list[0:100]
                 logger.warn(f"{len(cve_list)} CVEs to ingest.")
 
                 for j_cve in cve_list:
