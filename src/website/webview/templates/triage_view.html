@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="get">
+  <input name="search_query" type="text" placeholder="Search to filter..." />
+</form>
+<ul>
+  {% for object in object_list %}
+  <li>{{ object.title }}: {{ object.cve.cve_id }} ({{ object.id }})</li>
+  {% endfor %}
+</ul>
+{% endblock content %}
