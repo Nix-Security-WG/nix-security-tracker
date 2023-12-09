@@ -149,7 +149,11 @@ class BulkSave(object):
         """
         Add an unsaved model (with no pk) to be inserted.
         """
+        pos = len(self.inserts[model.__class__])
         self.inserts[model.__class__].append(model)
+        # Save to set a temporary id.
+        # Check `set_m2m` for the reason why this is needed.
+        model.op_pos = f"insert-{pos}"
 
     def add_delete(self, model):
         """
@@ -180,6 +184,19 @@ class BulkSave(object):
         """
         klass = model.__class__
         mid = model.pk
+        # Set up a temporary id from the operation position;
+        # otherwise all the m2m operations get collapsed into
+        # a None key and relationships get lost when calling
+        # save_m2m (that is, the m2m will only be set for the
+        # last entry found).
+        if model.pk is None:
+            if "op_pos" not in model.__dict__.keys():
+                raise RuntimeError(
+                    "Temporary model id cannot be set. "
+                    + "Check that all `save` operations set a temporary id "
+                    + "inside `model.op_pos`."
+                )
+            mid = model.op_pos
         if mid not in self.m2m[klass]:
             self.m2m[klass][mid] = {}
         # Assert that all models are of the same type
