@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from django.utils.timezone import make_aware
 from requests import get
-from shared.models import cve as models
+from shared import models
 
 
 def mkOrganization(
@@ -177,20 +177,30 @@ def mkAffectedProduct(data: Dict[str, Any]) -> models.AffectedProduct:
     return obj
 
 
-def mkCveRecord(data: Dict[str, Any]) -> models.CveRecord:
-    ctx: Dict[str, Any] = dict()
-    ctx["cve_id"] = data["cveId"]
-    ctx["state"] = data["state"]
-    ctx["assigner"] = mkOrganization(
-        uuid=data.get("assignerOrgId"), short_name=data.get("assignerShortName")
-    )
-    ctx["requester"] = mkOrganization(uuid=data.get("requesterUserId"))
-    ctx["date_reserved"] = mkDate(data.get("dateReserved"))
-    ctx["date_updated"] = mkDate(data.get("dateUpdated"))
-    ctx["date_published"] = mkDate(data.get("datePublished"))
-    ctx["serial"] = data.get("serial", 1)
+def mkCveRecord(
+    data: Dict[str, Any], cve: Optional[models.CveRecord] = None
+) -> models.CveRecord:
+    if cve is None:
+        cve = models.CveRecord()
 
-    return models.CveRecord.objects.create(**ctx)
+    cve.cve_id = data["cveId"]
+    cve.state = data["state"]
+
+    org = mkOrganization(
+        uuid=data["assignerOrgId"], short_name=data.get("assignerShortName")
+    )
+
+    assert org is not None, "Organisation cannot be empty"
+
+    cve.assigner = org
+    cve.requester = mkOrganization(uuid=data.get("requesterUserId"))
+
+    cve.date_reserved = mkDate(data.get("dateReserved"))
+    cve.date_updated = mkDate(data.get("dateUpdated"))
+    cve.date_published = mkDate(data.get("datePublished"))
+    cve.serial = data.get("serial", 1)
+
+    return cve
 
 
 def mkContainer(
@@ -233,8 +243,18 @@ def mkContainer(
     return obj
 
 
-def mkCve(data: Dict[str, Any]) -> models.CveRecord:
-    cve = mkCveRecord(data["cveMetadata"])
+def mkCve(
+    data: Dict[str, Any],
+    record: Optional[models.CveRecord] = None,
+    triaged: bool = False,
+) -> models.CveRecord:
+    cve = mkCveRecord(data["cveMetadata"], cve=record)
+    cve.triaged = triaged
+    cve.save()
+
+    if record is not None:
+        # TODO: Remove stale data to prevent overgrowth
+        pass
 
     mkContainer(data["containers"]["cna"], _type=models.Container.Type.CNA, cve=cve)
 
