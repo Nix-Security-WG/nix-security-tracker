@@ -193,7 +193,7 @@ class BulkSave(object):
             if "op_pos" not in model.__dict__.keys():
                 raise RuntimeError(
                     "Temporary model id cannot be set. "
-                    + "Check that all `save` operations set a temporary if "
+                    + "Check that all `save` operations set a temporary id "
                     + "inside `model.op_pos`."
                 )
             mid = model.op_pos
