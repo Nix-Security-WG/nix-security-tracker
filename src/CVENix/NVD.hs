@@ -170,35 +170,63 @@ keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 cveSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
+cacheDirectory :: IO String
+cacheDirectory = do
+    xdg_cache <- getEnv "XDG_CACHE_HOME"
+    cachedir <- case xdg_cache of
+      Just dir -> pure $ dir <> "/CVENix/NVD/"
+      Nothing -> do
+        home <- getEnv "HOME"
+        pure $ case home of
+          Just h -> h <> "/.cache/CVENix/NVD/"
+          Nothing -> "./CVENix-cache/NVD/"
+    createDirectoryIfMissing True cachedir
+    pure cachedir
 
 writeToDisk :: LogT m ann => NVDResponse -> ReaderT Parameters m ()
 writeToDisk resp = do
     let t = map (_nvdwrapper_cve) $ _nvdresponse_vulnerabilities resp
     flip mapM_ t $ \x -> do
         let id' = _nvdcve_id x
-        liftIO $ encodeFile ("localtmp/" <> T.unpack id' <> ".json") x
+        liftIO $ do
+          cachedir <- cacheDirectory
+          encodeFile (cachedir <> T.unpack id' <> ".json") x
+
+showDuration :: NominalDiffTime -> String
+showDuration diff =
+  showDur $ floor diff
+  where
+    showDur :: Integer -> String
+    showDur s =
+      if s < 60
+      then (show s) <> "s"
+      else (show $ div s 60) <> "m" <> (showDur $ mod s 60)
 
 getEverything :: LogT m ann => ReaderT Parameters m [NVDResponse]
 getEverything = do
   env <- ask
   let debug' = debug env
   when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Getting first response from NVD"
+  start <- liftIO getCurrentTime
   response1 <- nvdApi mempty
   let st = _nvdresponse_totalResults response1
       results = _nvdresponse_resultsPerPage response1
       (numOfPages, _) = properFraction $ ((fromIntegral st / fromIntegral results) :: Double)
-  go [] (numOfPages, results)
+  go [] start numOfPages (numOfPages, results)
   where
-    go :: LogT m ann => [NVDResponse] -> (Int, Int) -> ReaderT Parameters m [NVDResponse]
-    go acc (pages, results) = do
-        env <- ask
-        let debug' = debug env
-        when debug' $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "[NVD] Got partial data, " <> (show pages) <> " pages to go"
-        let st = pages * results
+    go :: LogT m ann => [NVDResponse] -> UTCTime -> Int -> (Int, Int) -> ReaderT Parameters m [NVDResponse]
+    go acc start total (pagesToGo, results) = do
+        logMessage $ colorize $ WithSeverity Informational $ pretty $ "[NVD] Got partial data, " <> (show pagesToGo) <> "/" <> (show total) <> " pages to go"
+        current <- liftIO getCurrentTime
+        let pagesRemaining = total - pagesToGo + 1
+        let remaining = (diffUTCTime current start) * (fromIntegral pagesToGo) / (fromIntegral pagesRemaining)
+        -- TODO show in minutes
+        logMessage $ colorize $ WithSeverity Informational $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
+        let st = pagesToGo * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
-        if pages <= 0 then
+        if pagesToGo <= 0 then
             pure acc
-        else go (acc <> [resp]) (pages - 1, results)
+        else go (acc <> [resp]) start total (pagesToGo - 1, results)
 
 data NVDException = CacheMalformed !FilePath
   deriving (Show)
@@ -206,13 +234,17 @@ instance Exception NVDException
 
 loadCacheStatus :: IO (Maybe CacheStatus)
 loadCacheStatus = do
-  exists <- doesFileExist "localtmp/status.json"
-  if exists then decodeFileStrict "localtmp/status.json" :: IO (Maybe CacheStatus)
+  cachedir <- cacheDirectory
+  let filename = cachedir <> "/status.json"
+  exists <- doesFileExist $ filename
+  if exists then decodeFileStrict filename :: IO (Maybe CacheStatus)
   else pure Nothing
 
 writeCacheStatus :: UTCTime -> IO ()
 writeCacheStatus startTime = do
-  encodeFile "localtmp/status.json" $ CacheStatus startTime
+  cachedir <- cacheDirectory
+  let filename = cachedir <> "/status.json"
+  encodeFile filename $ CacheStatus startTime
 
 loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEs = do
@@ -224,19 +256,20 @@ loadNVDCVEs = do
       logMessage $ colorize $ WithSeverity Informational $ "Loading NVD data from cache"
       logMessage $ colorize $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ _cachestatus_last_updated status)
       -- TODO if the cache is stale, fetch updates via the cvehistory API
-      files' <- liftIO $ listDirectory "localtmp"
+      files' <- liftIO $ do
+        cachedir <- cacheDirectory
+        listDirectory cachedir
       let files = filter (\x -> not (x == "status.json")) files'
       mapM (\filename -> do
-        parsed <- liftIO $ (decodeFileStrict' $ "localtmp/" <> filename :: IO (Maybe NVDCVE))
+        parsed <- liftIO $ do
+          cachedir <- cacheDirectory
+          (decodeFileStrict' $ cachedir <> filename :: IO (Maybe NVDCVE))
         case parsed of
           Just cve -> pure cve
           Nothing -> throw $ CacheMalformed filename) files
     Nothing -> do
-      logMessage $ colorize $ WithSeverity Informational $ "Data not yet cached, fetching. This will take considerable time for the first import."
+      logMessage $ colorize $ WithSeverity Informational $ "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."
       startTime <- liftIO $ getCurrentTime
-
-      exists <- liftIO $ doesDirectoryExist "localtmp"
-      when (not exists) $ liftIO $ createDirectory "localtmp"
 
       everything <- getEverything
       when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Got everything, writing to cache"
