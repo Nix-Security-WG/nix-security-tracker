@@ -1,6 +1,5 @@
-from typing import Any, Generator, Tuple
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from typing import Any, Generator
+from django.core.management.base import BaseCommand
 import json
 from tqdm import tqdm
 
