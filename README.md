@@ -130,3 +130,23 @@ manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-u
 ```
 
 Not passing `--subset N` will take about an hour and produce ~600 MB of data.
+
+## Running tests
+
+Run all integration tests:
+
+```console
+nix-build -A tests
+```
+
+Run a smoke test:
+
+```console
+nix-build -A tests.basic
+```
+
+Interact with the virtual machines in a test:
+
+```
+$(nix-build -A tests.basic.driverInteractive)/bin/nixos-test-driver
+```
