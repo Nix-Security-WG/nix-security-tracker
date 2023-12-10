@@ -28,7 +28,7 @@ admin.site.register(Description, DescriptionAdmin)
 
 
 class NixpkgsIssueAdmin(admin.ModelAdmin):
-    autocomplete_fields = ["description", "cve"]
+    autocomplete_fields = ["description"]
     readonly_fields = ["code"]
     exclude = ["number"]
 
