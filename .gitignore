@@ -4,6 +4,5 @@ __pycache__
 *.sqlite3
 .credentials
 *.jsonl # Evaluation results
-CACHE
 /**/.data_cache
 src/website/static
