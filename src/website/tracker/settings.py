@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "debug_toolbar",
-    "compressor",
     # AllAuth config
     "allauth",
     "allauth.account",
@@ -82,19 +81,6 @@ MIDDLEWARE = [
     # Allauth account middleware
     "allauth.account.middleware.AccountMiddleware",
 ]
-
-COMPRESS_PRECOMPILERS = [
-    ("text/x-sass", "django_libsass.SassCompiler"),
-]
-
-STATICFILES_FINDERS = [
-    "django.contrib.staticfiles.finders.FileSystemFinder",
-    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-    "compressor.finders.CompressorFinder",
-]
-
-
-STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 ROOT_URLCONF = "tracker.urls"
 
@@ -187,7 +173,14 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# needed for debug_toolbar
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "[::1]",
+]
+
 # Customization via user settings
+# This must be at the end, as it must be able to override the above
 user_settings_file = env.get("USER_SETTINGS_FILE", None)
 if user_settings_file is not None:
     spec = importlib.util.spec_from_file_location("user_settings", user_settings_file)
@@ -197,9 +190,3 @@ if user_settings_file is not None:
     spec.loader.exec_module(module)
     sys.modules["user_settings"] = module
     from user_settings import *  # noqa: F403 # pyright: ignore [reportMissingImports]
-
-# needed for debug_toolbar
-INTERNAL_IPS = [
-    "127.0.0.1",
-    "[::1]",
-]

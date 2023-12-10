@@ -34,9 +34,7 @@ in
       dataclass-wizard
       dj-database-url
       django-allauth
-      django-compressor
       django-debug-toolbar
-      django-libsass
       django-types
       django_4
       djangorestframework

@@ -99,6 +99,4 @@ def override(model_class):
 
 @admin.register(NixpkgsIssue)
 class NixpkgsIssueAdmin(AutocompleteMixin, admin.ModelAdmin):
-    autocomplete_fields = ["description", "cve"]
     readonly_fields = ["code"]
-    exclude = ["number"]

@@ -6,6 +6,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
+from .nix_evaluation import NixDerivation
+
 
 def text_length(choices: Type[models.TextChoices]):
     return max(map(len, choices.values))
@@ -312,6 +314,8 @@ class NixpkgsIssue(models.Model):
         choices=IssueStatus.choices,
         default=IssueStatus.UNKNOWN,
     )
+
+    derivations = models.ManyToManyField(NixDerivation)
 
     def __str__(self):
         return self.code
