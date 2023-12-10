@@ -470,6 +470,7 @@ class MetadataAttribute(JSONWizard, LoadMixin, DumpMixin):
     maintainers: list[MaintainerAttribute] = field(default_factory=list)
     license: list[LicenseAttribute] = field(default_factory=list)
     platforms: list[str] = field(default_factory=list)
+    knownVulnerabilities: list[str] = field(default_factory=list)
 
     def __pre_as_dict__(self):
         linearized_maintainers = []
@@ -670,6 +671,7 @@ class BulkEvaluationIngestion:
             description=metadata.description,
             main_program=metadata.mainProgram,
             position=metadata.position,
+            known_vulnerabilities=metadata.knownVulnerabilities,
         )
         self.bs.add_insert(meta)
         self.bs.set_m2m(meta, "maintainers", maintainers)
