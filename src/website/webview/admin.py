@@ -1,14 +1,12 @@
 # Register your models here.
 
 from django.contrib import admin
-
 from shared.models import (
-    NixpkgsIssue,
-    Description,
     CveRecord,
+    Description,
     NixChannel,
+    NixpkgsIssue,
 )
-
 
 admin.site.register(NixChannel)
 
