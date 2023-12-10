@@ -1,12 +1,16 @@
-from typing import Any, Generator
-from django.core.management.base import BaseCommand
+import contextlib
+import hashlib
 import json
-from tqdm import tqdm
-
-from shared.models import NixEvaluation, NixChannel, NixMaintainer
+import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
-from dataclass_wizard import JSONWizard, LoadMeta, LoadMixin, DumpMixin
+from decimal import Decimal
+from typing import Any, Generator
 
+from dataclass_wizard import DumpMixin, JSONWizard, LoadMeta, LoadMixin
+from django.core.management.base import BaseCommand
+from django.db.models import DecimalField, ForeignKey
+from shared.models import NixChannel, NixEvaluation, NixMaintainer
 from shared.models.nix_evaluation import (
     NixDerivation,
     NixDerivationMeta,
@@ -16,14 +20,7 @@ from shared.models.nix_evaluation import (
     NixPlatform,
     NixStorePathOutput,
 )
-
-import contextlib
-import hashlib
-import logging
-from collections import defaultdict
-from decimal import Decimal
-
-from django.db.models import DecimalField, ForeignKey
+from tqdm import tqdm
 
 log = logging.getLogger(__name__)
 

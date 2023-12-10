@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from django.utils.timezone import make_aware
 from requests import get
+
 from shared import models
 
 

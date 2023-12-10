@@ -1,6 +1,6 @@
 from django.urls import path, re_path
 
-from webview.views import HomeView, NixpkgsIssueView, NixpkgsIssueListView
+from webview.views import HomeView, NixpkgsIssueListView, NixpkgsIssueView
 
 app_name = "webview"
 

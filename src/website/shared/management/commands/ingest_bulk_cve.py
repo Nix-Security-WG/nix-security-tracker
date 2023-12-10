@@ -5,12 +5,12 @@ import tempfile
 import zipfile
 from datetime import date
 from glob import glob
-from os import environ as env, mkdir, path
+from os import environ as env
+from os import mkdir, path
 
 import requests
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-
 from shared.fetchers import mkCve
 from shared.models import CveIngestion
 from shared.utils import get_gh
