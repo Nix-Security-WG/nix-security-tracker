@@ -6,7 +6,6 @@ import zipfile
 from datetime import date
 from glob import glob
 from os import environ as env, mkdir, path
-from typing import Optional
 
 import requests
 from django.core.management.base import BaseCommand, CommandError
