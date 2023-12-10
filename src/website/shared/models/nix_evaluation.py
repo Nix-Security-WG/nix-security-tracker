@@ -20,6 +20,9 @@ class NixMaintainer(models.Model):
     matrix = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, null=True)
 
+    def __str__(self):
+        return f"@{self.github}"
+
 
 class NixLicense(models.Model):
     """
@@ -37,6 +40,9 @@ class NixLicense(models.Model):
 
     class Meta:
         unique_together = ("full_name", "short_name", "spdx_id", "url")
+
+    def __str__(self):
+        return f"{self.spdx_id}"
 
 
 class NixSourceProvenance(models.Model):
@@ -57,6 +63,9 @@ class NixPlatform(models.Model):
     """
 
     system_double = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.system_double
 
 
 class NixDerivationMeta(models.Model):
@@ -89,6 +98,9 @@ class NixDerivationMeta(models.Model):
 
     position = models.URLField(null=True)
 
+    def __str__(self):
+        return self.description
+
 
 class NixOutput(models.Model):
     """
@@ -96,6 +108,9 @@ class NixOutput(models.Model):
     """
 
     output_name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.output_name
 
 
 class NixStorePathOutput(models.Model):
@@ -166,7 +181,7 @@ class NixChannel(models.Model):
     repository = models.CharField(max_length=255)
 
     def __str__(self) -> str:
-        return f"<Nix channel {self.staging_branch} -> {self.channel_branch} ({self.state}, release: {self.release_version}) from repository {self.repository}>"
+        return f"{self.staging_branch} -> {self.channel_branch} (Release: {self.release_version})"
 
 
 class NixEvaluation(models.Model):
@@ -183,6 +198,9 @@ class NixEvaluation(models.Model):
     )
     # Commit SHA1 on which the evaluation was done precisely.
     commit_sha1 = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.channel} {self.commit_sha1[:8]}"
 
 
 class NixDerivation(models.Model):
@@ -211,3 +229,7 @@ class NixDerivation(models.Model):
     parent_evaluation = models.ForeignKey(
         NixEvaluation, related_name="derivations", on_delete=models.CASCADE
     )
+
+    def __str__(self):
+        hash = self.derivation_path.split("-")[0].split("/")[-1]
+        return f"{self.name} {hash[:8]}"
