@@ -78,8 +78,8 @@ class BulkSave(object):
         klass = model.__class__
         opts = klass._meta
         self.snapshots[klass][model.pk] = {}
-        for field in opts.fields:
-            atn = field.get_attname()
+        for f in opts.fields:
+            atn = f.get_attname()
             val = getattr(model, atn)
             self.snapshots[klass][model.pk][atn] = val
 
@@ -95,8 +95,8 @@ class BulkSave(object):
         qwargs = {}
         klass = model.__class__
         opts = klass._meta
-        for field in opts.fields:
-            atn = field.get_attname()
+        for f in opts.fields:
+            atn = f.get_attname()
             val = getattr(model, atn)
             try:
                 prev = self.snapshots[klass][model.pk][atn]
@@ -126,8 +126,8 @@ class BulkSave(object):
         """
         klass = model.__class__
         opts = klass._meta
-        for field in opts.fields:
-            atn = field.get_attname()
+        for f in opts.fields:
+            atn = f.get_attname()
             val = getattr(model, atn)
             prev = self.snapshots[klass][model.pk][atn]
             if val and (isinstance(field, DecimalField)):
@@ -253,12 +253,12 @@ class BulkSave(object):
     def save_inserts_for_model(self, klass, models):
         opts = klass._meta
         for model in models:
-            for field in opts.fields:
+            for f in opts.fields:
                 # if the foreign key field to an unsaved object
                 # but now the object has been saved
                 # then it still has no {fk}_id set
                 # so set it now with that id
-                if isinstance(field, ForeignKey):
+                if isinstance(f, ForeignKey):
                     atn = field.get_attname()
                     val = getattr(model, atn)
                     if val is None:
@@ -326,11 +326,11 @@ class BulkSave(object):
                 raise Exception(
                     "No pk for model %s. cannot save m2m %s" % (model, fields_ids)
                 )
-            for field, _ in list(fields_ids.items()):
-                fields_models_to_lookup[field].add(model)
+            for f, _ in list(fields_ids.items()):
+                fields_models_to_lookup[f].add(model)
 
-        for field, models_to_lookup in list(fields_models_to_lookup.items()):
-            self.save_m2m_for_field(klass, field, models_to_lookup, models_fields_ids)
+        for f, models_to_lookup in list(fields_models_to_lookup.items()):
+            self.save_m2m_for_field(klass, f, models_to_lookup, models_fields_ids)
 
     def save_m2m_for_field(self, klass, field, models_to_lookup, models_fields_ids):
         opts = klass._meta
