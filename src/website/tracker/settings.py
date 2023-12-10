@@ -87,9 +87,14 @@ COMPRESS_PRECOMPILERS = [
     ("text/x-sass", "django_libsass.SassCompiler"),
 ]
 
-STATICFILES_FINDERS = ["compressor.finders.CompressorFinder"]
+STATICFILES_FINDERS = [
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+    "compressor.finders.CompressorFinder",
+]
 
-STATIC_ROOT = os.path.join(BASE_DIR, "shared/static/")
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 ROOT_URLCONF = "tracker.urls"
 
