@@ -21,8 +21,13 @@
       deadnix.enable = true;
 
       # Python setup
-      # TODO: ruff.enable = true; -- re-enable only when F403 is disabled. It is too noisy otherwise.
-      black.enable = true;
+      ruff.enable = true;
+      ruff-format = {
+        enable = true;
+        name = "Format python code with ruff";
+        types = [ "text" "python" ];
+        entry = "${pkgs.lib.getExe pkgs.ruff} format";
+      };
       pyright.enable = true;
 
       # Global setup
