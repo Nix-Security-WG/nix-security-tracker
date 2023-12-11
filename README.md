@@ -53,9 +53,9 @@ Replace `youruser` with your own user. Afterwards you can export `DATABASE_URL` 
 DATABASE_URL=postgres:///youruser manage migrate
 ```
 
-Call `manage runserver` and open <https://localhost:8000>.
+Call `manage runserver` and open <http://localhost:8000>.
 
-Run `manage createsuperuser` to access the admin panel at <https://localhost:8000/admin> and manually edit database entries.
+Run `manage createsuperuser` to access the admin panel at <http://localhost:8000/admin> and manually edit database entries.
 
 Whenever you add a field in the database schema, call `makemigrations`.
 Then run `migrate` before starting the server again.
