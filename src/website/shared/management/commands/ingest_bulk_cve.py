@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import shutil
@@ -7,10 +8,12 @@ from datetime import date
 from glob import glob
 from os import environ as env
 from os import mkdir, path
+from typing import Any
 
 import requests
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from github.GitRelease import GitRelease
 from shared.fetchers import make_cve
 from shared.models import CveIngestion
 from shared.utils import get_gh
@@ -21,7 +24,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Ingest CVEs in bulk using the Mitre CVE repo"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             "-s",
             "--subset",
@@ -37,7 +40,7 @@ class Command(BaseCommand):
             help="Ignore the local data cache content and download the CVEs zip again.",
         )
 
-    def _download_gh_bundle(self, data_cache_dir):
+    def _download_gh_bundle(self, data_cache_dir: str) -> GitRelease:
         # Initialize a GitHub connection
         g = get_gh()
 
@@ -85,7 +88,7 @@ class Command(BaseCommand):
 
         return release
 
-    def _set_cve_data_cache_dir(self):
+    def _set_cve_data_cache_dir(self) -> tuple[str, str]:
         data_cache_dir = env.get("DATA_CACHE_DIRECTORY")
 
         if data_cache_dir is None:
@@ -100,7 +103,7 @@ class Command(BaseCommand):
 
         return data_cache_dir, path.join(data_cache_dir, "cves")
 
-    def handle(self, *args, **kwargs) -> None:  # pyright: ignore reportUnusedVariable
+    def handle(self, *args: str, **kwargs: Any) -> None:  # pyright: ignore reportUnusedVariable
         data_cache_dir, cve_data_cache_dir = self._set_cve_data_cache_dir()
 
         # delete if force-download

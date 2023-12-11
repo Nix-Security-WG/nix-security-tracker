@@ -1,9 +1,11 @@
 [tool.ruff]
 target-version = "py311"
-select = ["E", "F", "I", "N", "U"]
+select = ["E", "F", "I", "N", "U", "ANN"]
 ignore = [
   "F403",
   "E501", # line too long
+  "ANN101", # Missing type annotation for `self` in method
+  "ANN401" # Dynamically typed expressions (typing.Any) are disallowed
 ]
 exclude = ["src/website/shared/migrations/*.py"] # auto-generated code
 

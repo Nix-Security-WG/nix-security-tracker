@@ -1,9 +1,11 @@
+import argparse
 import datetime
 import json
 import logging
 import tempfile
 import zipfile
 from glob import glob
+from typing import Any
 
 import requests
 from django.core.management.base import BaseCommand, CommandError
@@ -20,10 +22,10 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Ingest CVEs in bulk using the Mitre CVE repo"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("date", help="Date of the delta to download.")
 
-    def handle(self, *args, **kwargs) -> None:
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         _date = kwargs["date"]
 
         try:

@@ -1,9 +1,10 @@
+import argparse
 import contextlib
 import hashlib
 import json
 import logging
 from collections import defaultdict
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
@@ -59,7 +60,7 @@ class BulkSave:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.snapshots = defaultdict(dict)
         self.updates = defaultdict(dict)
         self.inserts = defaultdict(list)
@@ -68,7 +69,7 @@ class BulkSave:
         self.m2m_models = defaultdict(dict)
         self.saved = False
 
-    def take_snapshot(self, model):
+    def take_snapshot(self, model: Any) -> None:
         """
         Take a snapshot of all field values on a model,
         prior to possibly setting some of those fields.
@@ -84,7 +85,7 @@ class BulkSave:
             val = getattr(model, atn)
             self.snapshots[klass][model.pk][atn] = val
 
-    def add_changed_fields(self, model):
+    def add_changed_fields(self, model: Any) -> None:
         """
         Having taken a snapshot of model
         previously, add any changed fields
@@ -119,7 +120,7 @@ class BulkSave:
             self.set(model, qwargs)
         del self.snapshots[klass][model.pk]
 
-    def has_changed(self, model):
+    def has_changed(self, model: Any) -> bool:
         """
         Having previously called take_snapshot(model),
         determine if any fields have been changed since then.
@@ -141,7 +142,7 @@ class BulkSave:
                 return True
         return False
 
-    def add_insert(self, model):
+    def add_insert(self, model: Any) -> None:
         """
         Add an unsaved model (with no pk) to be inserted.
         """
@@ -151,13 +152,13 @@ class BulkSave:
         # Check `set_m2m` for the reason why this is needed.
         model.op_pos = f"insert-{pos}"
 
-    def add_delete(self, model):
+    def add_delete(self, model: Any) -> None:
         """
         Add a model to be deleted.
         """
         self.deletes[model.__class__].append(model)
 
-    def set(self, model, qwargs):
+    def set(self, model: Any, qwargs: dict) -> None:
         """
         Set fields update for a model using a dict
         """
@@ -167,7 +168,7 @@ class BulkSave:
 
         self.updates[klass][model.pk].update(qwargs)
 
-    def set_m2m(self, model, attname, objects):
+    def set_m2m(self, model: Any, attname: str, objects: list[Any]) -> None:
         """
         Set many-to-many objects for a model.
 
@@ -208,7 +209,7 @@ class BulkSave:
         self.m2m_models[klass][mid] = model
 
     @contextlib.contextmanager
-    def changing(self, obj):
+    def changing(self, obj: Any) -> Iterator[None]:
         """
         Set fields on an object regardless of whether
         it is updating or inserting the object.
@@ -232,7 +233,7 @@ class BulkSave:
         else:
             self.add_insert(obj)
 
-    def save(self):
+    def save(self) -> None:
         """
         Perform all updates/inserts/deletes and m2m changes.
         """
@@ -246,11 +247,11 @@ class BulkSave:
         self.save_m2m()
         self.saved = True
 
-    def save_inserts(self):
+    def save_inserts(self) -> None:
         for klass, models in list(self.inserts.items()):
             self.save_inserts_for_model(klass, models)
 
-    def save_inserts_for_model(self, klass, models):
+    def save_inserts_for_model(self, klass: Any, models: list[Any]) -> None:
         opts = klass._meta
         for model in models:
             for f in opts.fields:
@@ -273,7 +274,7 @@ class BulkSave:
             # report what the model and db error message was
             raise Exception(f"{e!r} while saving models: {klass}")
 
-    def save_updates(self):
+    def save_updates(self) -> None:
         """
         Batch updates where possible.
 
@@ -294,11 +295,11 @@ class BulkSave:
                 pkwargs = dict(pk__in=pks) if len(pks) > 1 else dict(pk=pks[0])
                 klass.objects.filter(**pkwargs).update(**qwargs)
 
-    def save_deletes(self):
+    def save_deletes(self) -> None:
         for klass, models in list(self.deletes.items()):
             klass.objects.filter(pk__in=[model.pk for model in models]).delete()
 
-    def save_m2m(self):
+    def save_m2m(self) -> None:
         """
         self.m2m::
 
@@ -313,7 +314,7 @@ class BulkSave:
         for klass in list(self.m2m.keys()):
             self.save_m2m_for_model(klass)
 
-    def save_m2m_for_model(self, klass):
+    def save_m2m_for_model(self, klass: Any) -> None:
         models_fields_ids = self.m2m[klass]
 
         # model to get
@@ -398,7 +399,7 @@ class BulkSave:
 
 
 @contextlib.contextmanager
-def bulk_saver(maybe=None):
+def bulk_saver(maybe: Any = None) -> Iterator[BulkSave]:
     """
     Context manager to perform a bulk save operation.
 
@@ -416,7 +417,7 @@ def bulk_saver(maybe=None):
             saver.save()
 
 
-def dict_hash(qwargs):
+def dict_hash(qwargs: dict) -> str | int:
     """
     Generate a unique hash for the dictionary
 
@@ -429,7 +430,7 @@ def dict_hash(qwargs):
         items = sorted(qwargs.items())
         return hash(frozenset(items))
     except TypeError:
-        return hashlib.sha1(qwargs).hexdigest()
+        return hashlib.sha1(qwargs).hexdigest()  # type: ignore
 
 
 @dataclass
@@ -470,7 +471,7 @@ class MetadataAttribute(JSONWizard, LoadMixin, DumpMixin):
     platforms: list[str] = field(default_factory=list)
     known_vulnerabilities: list[str] = field(default_factory=list)
 
-    def __pre_as_dict__(self):
+    def __pre_as_dict__(self) -> None:
         linearized_maintainers = []
         for maintainer in self.maintainers:
             if maintainer.get("scope") is not None:  # pyright: ignore generalTypeIssue
@@ -517,7 +518,7 @@ class PartialEvaluatedAttribute:
     evaluation: EvaluatedAttribute | None = None
 
 
-def parse_total_evaluation(raw: dict[str, Any]):
+def parse_total_evaluation(raw: dict[str, Any]) -> EvaluatedAttribute:
     # Various fixups to deal with... things.
     # my lord...
     if raw.get("meta", {}) is None:
@@ -551,7 +552,9 @@ def parse_total_evaluation(raw: dict[str, Any]):
     return EvaluatedAttribute.from_dict(raw)
 
 
-def parse_evaluation_results(lines) -> Generator[PartialEvaluatedAttribute, None, None]:
+def parse_evaluation_results(
+    lines: list[str]
+) -> Generator[PartialEvaluatedAttribute, None, None]:
     for line in lines:
         raw = json.loads(line)
         if raw.get("error") is not None:
@@ -566,7 +569,7 @@ def parse_evaluation_results(lines) -> Generator[PartialEvaluatedAttribute, None
 
 
 class BulkEvaluationIngestion:
-    def __init__(self, bs: BulkSave):
+    def __init__(self, bs: BulkSave) -> None:
         self.maintainers = NixMaintainer.objects.all()
         self.licenses = NixLicense.objects.all()
         self.platforms = {
@@ -747,7 +750,7 @@ class BulkEvaluationIngestion:
 class Command(BaseCommand):
     help = "Ingest a manual evaluation JSONL from nix-eval-jobs, assume from nixpkgs"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("commit_sha1", type=str)
         parser.add_argument("channel_branch", type=str)
         parser.add_argument("evaluation_result_file", type=str)
@@ -762,7 +765,7 @@ class Command(BaseCommand):
             default=0,
         )
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         quiet = kwargs.get("quiet", True)
         channel = NixChannel.objects.get(channel_branch=kwargs["channel_branch"])
         filename = kwargs["evaluation_result_file"]

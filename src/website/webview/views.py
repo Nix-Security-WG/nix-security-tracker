@@ -1,5 +1,7 @@
-import re
+from typing import Any
 
+from django.db.models import Model
+from django.db.models.manager import BaseManager
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView, TemplateView
 from shared.models import Container, CveRecord, NixpkgsIssue
@@ -42,5 +44,5 @@ class NixpkgsIssueListView(ListView):
     template_name = "issue_list.html"
     model = NixpkgsIssue
 
-    def get_queryset(self):
+    def get_queryset(self) -> BaseManager[NixpkgsIssue]:
         return NixpkgsIssue.objects.all()
