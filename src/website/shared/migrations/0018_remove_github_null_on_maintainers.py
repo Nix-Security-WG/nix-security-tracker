@@ -17,10 +17,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.SeparateDatabaseAndState(
-            database_operations=[
+            state_operations=[
                 migrations.RunPython(drop_improper_maintainers),
             ],
-            state_operations=[
+            database_operations=[
                 migrations.AlterField(
                     model_name="nixmaintainer",
                     name="github",
