@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-def text_length(choices: type[models.TextChoices]):
+def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
 

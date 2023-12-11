@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_save
@@ -7,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from .nix_evaluation import NixDerivation
 
 
-def text_length(choices: type[models.TextChoices]):
+def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
 
@@ -319,7 +321,7 @@ class NixpkgsIssue(models.Model):
         return self.code
 
     @property
-    def status_string(self):
+    def status_string(self) -> str:
         mapping = {
             IssueStatus.UNKNOWN: "unknown",
             IssueStatus.AFFECTED: "affected",
@@ -331,7 +333,9 @@ class NixpkgsIssue(models.Model):
 
 
 @receiver(post_save, sender=NixpkgsIssue)
-def generate_code(sender, instance, created, **kwargs):
+def generate_code(
+    sender: type[NixpkgsIssue], instance: NixpkgsIssue, created: bool, **kwargs: Any
+) -> None:
     if created:
         number = sender.objects.filter(
             created__year=instance.created.year, pk__lte=instance.pk
