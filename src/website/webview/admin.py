@@ -2,7 +2,7 @@
 
 from typing import Type
 from django.contrib import admin
-from django.db.models import Model
+from django.db import models
 from django.db.models import ForeignKey, ManyToManyField, CharField, TextField
 from django.apps import apps
 
@@ -28,13 +28,25 @@ class ReadOnlyMixin:
     No idea why it has to be done this way, but it works.
     """
 
-    model: Type[Model]
+    model: Type[models.Model]
 
     def get_fields(self, request, obj=None):
         return [field.name for field in self.model._meta.fields]
 
     def get_readonly_fields(self, request, obj=None):
-        return self.get_fields(request, obj)
+        # existing objects are read-only
+        if obj:
+            return self.get_fields(request, obj)
+        # all fields, except automatic ones, are writeable on creation (for debugging)
+        else:
+            return [
+                field.name
+                for field in self.model._meta.fields
+                if (
+                    isinstance(field, models.AutoField)
+                    or (isinstance(field, models.DateTimeField) and field.auto_now_add)
+                )
+            ]
 
 
 class AutocompleteMixin:
