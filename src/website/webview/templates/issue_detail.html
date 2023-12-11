@@ -27,7 +27,7 @@
 
 <h2>Related derivations</h2>
 <ul>
-    {% for drv in object.derivations.all %}
+    {% for drv in object.derivations_with_cves %}
       <li>
         {{ drv.name }} (<a href="{{drv.metadata.position}}">source</a>)
         {% if drv.metadata.maintainers.all %}
@@ -36,6 +36,17 @@
           <ul>
             {% for maintainer in drv.metadata.maintainers.all %}
               <li><a href="https://github.com/{{ maintainer.github }}">@{{ maintainer.github }}</a></li>
+            {% endfor %}
+          </ul>
+        </figure>
+        {% endif %}
+
+        {% if drv.known_cves %}
+        <figure>
+          <figcaption>Known vulnerabilities</figcaption>
+          <ul>
+            {% for cve in drv.known_cves %}
+              <li>{{ cve.cve.cve_id }}</li>
             {% endfor %}
           </ul>
         </figure>
