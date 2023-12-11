@@ -1,8 +1,21 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   inherit (lib)
-    types mkIf mkEnableOption mkPackageOptionMD mkOption mapAttrsToList
-    mkDefault concatStringsSep optional;
+    types
+    mkIf
+    mkEnableOption
+    mkPackageOptionMD
+    mkOption
+    mapAttrsToList
+    mkDefault
+    concatStringsSep
+    optional
+    ;
   inherit (pkgs) writeScriptBin stdenv;
   cfg = config.services.web-security-tracker;
   pythonFmt = pkgs.formats.pythonVars { };
@@ -13,9 +26,17 @@ let
     text = cfg.extraConfig;
   };
 
-  configFile =
-    pkgs.concatText "configuration.py" [ settingsFile extraConfigFile ];
-  pythonEnv = pkgs.python3.withPackages (ps: with ps; [ cfg.package daphne ]);
+  configFile = pkgs.concatText "configuration.py" [
+    settingsFile
+    extraConfigFile
+  ];
+  pythonEnv = pkgs.python3.withPackages (
+    ps:
+    with ps; [
+      cfg.package
+      daphne
+    ]
+  );
   wstManageScript = writeScriptBin "wst-manage" ''
     #!${stdenv.shell}
     sudo=exec
@@ -25,8 +46,7 @@ let
     export PYTHONPATH=${toString cfg.package.pythonPath}
     $sudo ${cfg.package}/bin/manage.py "$@"
   '';
-  credentials =
-    mapAttrsToList (name: secretPath: "${name}:${secretPath}") cfg.secrets;
+  credentials = mapAttrsToList (name: secretPath: "${name}:${secretPath}") cfg.secrets;
   databaseUrl = "postgres:///web-security-tracker";
   # This script has access to the credentials, no matter where it is.
   wstExternalManageScript = writeScriptBin "wst-manage" ''
@@ -40,17 +60,14 @@ let
       --unit "wst-manage.service" \
       --property "User=web-security-tracker" \
       --property "Group=web-security-tracker" \
-      ${
-        concatStringsSep "\n"
-        (map (cred: "--property 'LoadCredential=${cred}' \\") credentials)
-      }
+      ${concatStringsSep "\n" (map (cred: "--property 'LoadCredential=${cred}' \\") credentials)}
       --property "Environment=DATABASE_URL=${databaseUrl} USER_SETTINGS_FILE=${settingsFile}" \
       "${wstManageScript}/bin/wst-manage" "$@"
   '';
-in {
+in
+{
   options.services.web-security-tracker = {
-    enable =
-      mkEnableOption "web security tracker for Nixpkgs and similar monorepo";
+    enable = mkEnableOption "web security tracker for Nixpkgs and similar monorepo";
 
     package = mkPackageOptionMD pkgs "web-security-tracker" { };
     domain = mkOption {
@@ -84,10 +101,15 @@ in {
     services.web-security-tracker.settings = {
       STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
       DEBUG = mkDefault false;
-      ALLOWED_HOSTS = mkDefault ((optional (cfg.domain != null) cfg.domain)
-        ++ [ "localhost" "127.0.0.1" "[::1]" ]);
-      CSRF_TRUSTED_ORIGINS =
-        mkIf (cfg.domain != null) [ "https://${cfg.domain}" ];
+      ALLOWED_HOSTS = mkDefault (
+        (optional (cfg.domain != null) cfg.domain)
+        ++ [
+          "localhost"
+          "127.0.0.1"
+          "[::1]"
+        ]
+      );
+      CSRF_TRUSTED_ORIGINS = mkIf (cfg.domain != null) [ "https://${cfg.domain}" ];
     };
 
     users.users.web-security-tracker = {
@@ -97,10 +119,12 @@ in {
     users.groups.web-security-tracker = { };
     services.postgresql = {
       enable = true;
-      ensureUsers = [{
-        name = "web-security-tracker";
-        ensureDBOwnership = true;
-      }];
+      ensureUsers = [
+        {
+          name = "web-security-tracker";
+          ensureDBOwnership = true;
+        }
+      ];
       ensureDatabases = [ "web-security-tracker" ];
     };
 
@@ -116,10 +140,16 @@ in {
     systemd.services = {
       web-security-tracker-server = {
         description = "A web security tracker ASGI server";
-        after = [ "network.target" "postgresql.service" ];
+        after = [
+          "network.target"
+          "postgresql.service"
+        ];
         requires = [ "postgresql.service" ];
         wantedBy = [ "multi-user.target" ];
-        path = [ pythonEnv wstManageScript ];
+        path = [
+          pythonEnv
+          wstManageScript
+        ];
         serviceConfig = {
           User = "web-security-tracker";
           Restart = "always";
@@ -141,15 +171,15 @@ in {
             echo ${cfg.package} > "$versionFile"
           fi
         '';
-        script = let
-          networking = if cfg.unixSocket != null then
-            "-u ${cfg.unixSocket}"
-          else
-            "-b 127.0.0.1 -p ${toString cfg.port}";
-        in ''
-          daphne ${networking} \
-            tracker.asgi:application
-        '';
+        script =
+          let
+            networking =
+              if cfg.unixSocket != null then "-u ${cfg.unixSocket}" else "-b 127.0.0.1 -p ${toString cfg.port}";
+          in
+          ''
+            daphne ${networking} \
+              tracker.asgi:application
+          '';
       };
 
       web-security-tracker-delta = {
@@ -160,7 +190,10 @@ in {
           "web-security-tracker-server.service"
         ];
         requires = [ "postgresql.service" ];
-        path = [ pythonEnv wstManageScript ];
+        path = [
+          pythonEnv
+          wstManageScript
+        ];
         serviceConfig = {
           User = "web-security-tracker";
           WorkingDirectory = "/var/lib/web-security-tracker";

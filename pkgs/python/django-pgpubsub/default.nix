@@ -1,5 +1,11 @@
-{ lib, buildPythonPackage, fetchFromGitHub, poetry-core, django
-, django-pgtrigger }:
+{
+  lib,
+  buildPythonPackage,
+  fetchFromGitHub,
+  poetry-core,
+  django,
+  django-pgtrigger,
+}:
 
 buildPythonPackage rec {
   pname = "django-pgpubsub";
@@ -21,16 +27,17 @@ buildPythonPackage rec {
 
   nativeBuildInputs = [ poetry-core ];
 
-  propagatedBuildInputs = [ django django-pgtrigger ];
+  propagatedBuildInputs = [
+    django
+    django-pgtrigger
+  ];
 
   pythonImportsCheck = [ "pgpubsub" ];
 
   meta = with lib; {
-    description =
-      "Lightweight background tasks using Django Channels and PostgreSQL NOTIFY/LISTEN";
+    description = "Lightweight background tasks using Django Channels and PostgreSQL NOTIFY/LISTEN";
     homepage = "https://github.com/Opus10/django-pgpubsub";
-    changelog =
-      "https://github.com/Opus10/django-pgpubsub/blob/${src.rev}/CHANGELOG.md";
+    changelog = "https://github.com/Opus10/django-pgpubsub/blob/${src.rev}/CHANGELOG.md";
     license = licenses.bsd3;
     maintainers = with maintainers; [ raitobezarius ];
   };

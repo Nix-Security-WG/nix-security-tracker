@@ -1,4 +1,11 @@
-{ lib, buildPythonPackage, fetchFromGitHub, poetry-core, django, psycopg2 }:
+{
+  lib,
+  buildPythonPackage,
+  fetchFromGitHub,
+  poetry-core,
+  django,
+  psycopg2,
+}:
 
 buildPythonPackage rec {
   pname = "django-pgtrigger";
@@ -14,15 +21,17 @@ buildPythonPackage rec {
 
   nativeBuildInputs = [ poetry-core ];
 
-  propagatedBuildInputs = [ django psycopg2 ];
+  propagatedBuildInputs = [
+    django
+    psycopg2
+  ];
 
   pythonImportsCheck = [ "pgtrigger" ];
 
   meta = with lib; {
     description = "";
     homepage = "https://github.com/Opus10/django-pgtrigger";
-    changelog =
-      "https://github.com/Opus10/django-pgtrigger/blob/${src.rev}/CHANGELOG.md";
+    changelog = "https://github.com/Opus10/django-pgtrigger/blob/${src.rev}/CHANGELOG.md";
     license = licenses.bsd3;
     maintainers = with maintainers; [ raitobezarius ];
   };

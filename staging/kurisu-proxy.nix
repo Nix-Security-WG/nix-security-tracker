@@ -5,7 +5,8 @@
 let
   withFirewall = true;
   allowedUpstream = "2001:bc8:38ee:99::1/128";
-in {
+in
+{
   services.nginx = {
     # IPv6-only server
     defaultListen = [
