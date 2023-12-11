@@ -24,12 +24,12 @@ class Migration(migrations.Migration):
                 migrations.AlterField(
                     model_name="nixmaintainer",
                     name="github",
-                    field=models.CharField(max_length=200, unique=True),
+                    field=models.CharField(max_length=200, unique=True, default=None),
                 ),
                 migrations.AlterField(
                     model_name="nixmaintainer",
                     name="github_id",
-                    field=models.IntegerField(unique=True),
+                    field=models.IntegerField(unique=True, default=None),
                 ),
             ],
         ),
