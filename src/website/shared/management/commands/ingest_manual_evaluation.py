@@ -436,31 +436,31 @@ def dict_hash(qwargs):
 class MaintainerAttribute(JSONWizard):
     name: str
     github: str | None = None
-    githubId: int | None = None
+    github_id: int | None = None
     email: str | None = None
     matrix: str | None = None
 
 
 @dataclass
 class LicenseAttribute(JSONWizard):
-    fullName: str | None = None
+    full_name: str | None = None
     deprecated: bool = False
     free: bool = False
     redistributable: bool = False
-    shortName: str | None = None
-    spdxId: str | None = None
+    short_name: str | None = None
+    spdx_id: str | None = None
     url: str | None = None
 
 
 @dataclass
 class MetadataAttribute(JSONWizard, LoadMixin, DumpMixin):
-    outputsToInstall: list[str] = field(default_factory=list)
+    outputs_to_install: list[str] = field(default_factory=list)
     available: bool = True
     broken: bool = False
     unfree: bool = False
     unsupported: bool = False
     insecure: bool = False
-    mainProgram: str | None = None
+    main_program: str | None = None
     position: str | None = None
     homepage: str | None = None
     description: str | None = None
@@ -468,7 +468,7 @@ class MetadataAttribute(JSONWizard, LoadMixin, DumpMixin):
     maintainers: list[MaintainerAttribute] = field(default_factory=list)
     license: list[LicenseAttribute] = field(default_factory=list)
     platforms: list[str] = field(default_factory=list)
-    knownVulnerabilities: list[str] = field(default_factory=list)
+    known_vulnerabilities: list[str] = field(default_factory=list)
 
     def __pre_as_dict__(self):
         linearized_maintainers = []
@@ -493,11 +493,11 @@ class EvaluatedAttribute(JSONWizard):
     """
 
     attr: str
-    attrPath: list[str]
+    attr_path: list[str]
     name: str
-    drvPath: str
+    drv_path: str
     # drv -> list of outputs.
-    inputDrvs: dict[str, list[str]]
+    input_drvs: dict[str, list[str]]
     meta: MetadataAttribute | None
     outputs: dict[str, str]
     system: str
@@ -512,7 +512,7 @@ class PartialEvaluatedAttribute:
     """
 
     attr: str
-    attrPath: list[str]
+    attr_path: list[str]
     error: str | None = None
     evaluation: EvaluatedAttribute | None = None
 
@@ -559,7 +559,7 @@ def parse_evaluation_results(lines) -> Generator[PartialEvaluatedAttribute, None
         else:
             yield PartialEvaluatedAttribute(
                 attr=raw.get("attr"),
-                attrPath=raw.get("attrPath"),
+                attr_path=raw.get("attrPath"),
                 error=None,
                 evaluation=parse_total_evaluation(raw),
             )
@@ -591,7 +591,7 @@ class BulkEvaluationIngestion:
             # This unfortunately creates a partial view of all maintainers of a
             # given package. If you want to fix this, you can start from
             # looking around https://github.com/NixOS/nixpkgs/pull/273220.
-            if m.github is None or m.githubId is None:
+            if m.github is None or m.github_id is None:
                 continue
 
             # Duplicate...
@@ -602,7 +602,7 @@ class BulkEvaluationIngestion:
                 NixMaintainer(
                     email=m.email,
                     github=m.github,
-                    github_id=m.githubId,
+                    github_id=m.github_id,
                     matrix=m.matrix,
                     name=m.name,
                 )
@@ -638,9 +638,9 @@ class BulkEvaluationIngestion:
                         "free": lic.free,
                         "redistributable": lic.redistributable,
                     },
-                    full_name=lic.fullName,
-                    short_name=lic.shortName,
-                    spdx_id=lic.spdxId,
+                    full_name=lic.full_name,
+                    short_name=lic.short_name,
+                    spdx_id=lic.spdx_id,
                     url=lic.url,
                 )[0]
             )
@@ -675,9 +675,9 @@ class BulkEvaluationIngestion:
             unsupported=metadata.unsupported,
             homepage=metadata.homepage,
             description=metadata.description,
-            main_program=metadata.mainProgram,
+            main_program=metadata.main_program,
             position=metadata.position,
-            known_vulnerabilities=metadata.knownVulnerabilities,
+            known_vulnerabilities=metadata.known_vulnerabilities,
         )
         self.bs.add_insert(meta)
         self.bs.set_m2m(meta, "maintainers", maintainers)
@@ -726,12 +726,12 @@ class BulkEvaluationIngestion:
         meta = None
         if drv.meta is not None:
             meta = self.ingest_meta(drv.meta)
-        dependencies = self.ingest_dependencies(drv.inputDrvs)
+        dependencies = self.ingest_dependencies(drv.input_drvs)
         outputs = self.ingest_outputs(drv.outputs)
 
         derivation = NixDerivation(
             attribute=drv.attr,
-            derivation_path=drv.drvPath,
+            derivation_path=drv.drv_path,
             name=drv.name,
             metadata=meta,
             system=self.platforms[drv.system],

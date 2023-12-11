@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from github import UnknownObjectException
 from shared import models
-from shared.fetchers import mkCve
+from shared.fetchers import make_cve
 from shared.models import CveIngestion
 from shared.utils import get_gh
 
@@ -93,7 +93,7 @@ class Command(BaseCommand):
                         data = json.load(fc)
                         cve_id = data["cveMetadata"]["cveId"]
 
-                        mkCve(
+                        make_cve(
                             data,
                             record=models.CveRecord.objects.filter(
                                 cve_id=cve_id
