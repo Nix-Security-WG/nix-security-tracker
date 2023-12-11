@@ -1,8 +1,11 @@
 _: {
   boot.loader.systemd-boot.enable = true;
 
-  boot.initrd.kernelModules =
-    [ "virtio_balloon" "virtio_console" "virtio_rng" ];
+  boot.initrd.kernelModules = [
+    "virtio_balloon"
+    "virtio_console"
+    "virtio_rng"
+  ];
 
   boot.initrd.availableKernelModules = [
     "9p"
@@ -24,7 +27,7 @@ _: {
     fsType = "vfat";
   };
 
-  swapDevices = [{ device = "/dev/disk/by-label/swap"; }];
+  swapDevices = [ { device = "/dev/disk/by-label/swap"; } ];
 
   boot.initrd.luks.devices.root = {
     device = "/dev/disk/by-label/root";
@@ -44,33 +47,52 @@ _: {
   fileSystems."/" = {
     device = "/dev/mapper/root";
     fsType = "btrfs";
-    options = [ "subvol=root" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=root"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/home" = {
     device = "/dev/mapper/root";
     fsType = "btrfs";
-    options = [ "subvol=home" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=home"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/nix" = {
     device = "/dev/mapper/root";
     fsType = "btrfs";
-    options = [ "subvol=nix" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=nix"
+      "compress=zstd"
+      "noatime"
+    ];
     neededForBoot = true;
   };
 
   fileSystems."/etc" = {
     device = "/dev/mapper/root";
     fsType = "btrfs";
-    options = [ "subvol=etc" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=etc"
+      "compress=zstd"
+      "noatime"
+    ];
   };
 
   fileSystems."/var" = {
     device = "/dev/mapper/root";
     fsType = "btrfs";
-    options = [ "subvol=var" "compress=zstd" "noatime" ];
+    options = [
+      "subvol=var"
+      "compress=zstd"
+      "noatime"
+    ];
     neededForBoot = true;
   };
-
 }

@@ -2,4 +2,7 @@
 let
   utils = import ./utils.nix { inherit pkgs wstModule; };
   inherit (utils) mkVMTest;
-in { basic = mkVMTest { name = "basic"; }; }
+in
+{
+  basic = mkVMTest { name = "basic"; };
+}

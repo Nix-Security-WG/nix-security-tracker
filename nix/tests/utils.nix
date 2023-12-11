@@ -1,5 +1,16 @@
-{ pkgs, wstModule, defaultTimeout ? 60 * 1024 }: {
-  mkVMTest = { name, machine ? { }, testScript ? "", ... }:
+{
+  pkgs,
+  wstModule,
+  defaultTimeout ? 60 * 1024,
+}:
+{
+  mkVMTest =
+    {
+      name,
+      machine ? { },
+      testScript ? "",
+      ...
+    }:
     pkgs.nixosTest {
       inherit name;
       globalTimeout = defaultTimeout;
@@ -13,18 +24,22 @@
         ${testScript}
       '';
 
-      nodes.machine = { ... }: {
-        imports = [ wstModule machine ];
+      nodes.machine =
+        { ... }:
+        {
+          imports = [
+            wstModule
+            machine
+          ];
 
-        services.web-security-tracker = {
-          enable = true;
-          secrets = {
-            SECRET_KEY = pkgs.writeText "secret.key" "aaaaaaaaaaaaaaaaaaaa";
-            GH_CLIENT_ID = pkgs.writeText "gh_client" "bonjour";
-            GH_SECRET = pkgs.writeText "gh_secret" "secret";
+          services.web-security-tracker = {
+            enable = true;
+            secrets = {
+              SECRET_KEY = pkgs.writeText "secret.key" "aaaaaaaaaaaaaaaaaaaa";
+              GH_CLIENT_ID = pkgs.writeText "gh_client" "bonjour";
+              GH_SECRET = pkgs.writeText "gh_secret" "secret";
+            };
           };
         };
-      };
     };
 }
-

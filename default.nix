@@ -20,46 +20,48 @@ rec {
       "/nix/web-security-tracker.nix"
     ];
 
-    hooks = let
-      pythonExcludes = [
-        "$src/website/shared/migrations/.*\\.py^" # auto-generated code
-      ];
-    in {
-      # Nix setup
-      nixfmt.enable = true;
-      statix.enable = true;
-      deadnix.enable = true;
-
-      # Python setup
-      ruff = {
-        enable = true;
-        excludes = pythonExcludes;
-      };
-      ruff-format = {
-        enable = true;
-        name = "Format python code with ruff";
-        types = [
-          "text"
-          "python"
+    hooks =
+      let
+        pythonExcludes = [
+          "$src/website/shared/migrations/.*\\.py^" # auto-generated code
         ];
-        entry = "${pkgs.lib.getExe pkgs.ruff} format";
-        excludes = pythonExcludes;
-      };
-      pyright = {
-        enable = true;
-        excludes = pythonExcludes;
-      };
+      in
+      {
+        # Nix setup
+        nixfmt.enable = true;
+        statix.enable = true;
+        deadnix.enable = true;
 
-      # Global setup
-      prettier = {
-        enable = true;
-        excludes = [
-          "\\.min.css$"
-          "\\.html$"
-        ];
+        # Python setup
+        ruff = {
+          enable = true;
+          excludes = pythonExcludes;
+        };
+        ruff-format = {
+          enable = true;
+          name = "Format python code with ruff";
+          types = [
+            "text"
+            "python"
+          ];
+          entry = "${pkgs.lib.getExe pkgs.ruff} format";
+          excludes = pythonExcludes;
+        };
+        pyright = {
+          enable = true;
+          excludes = pythonExcludes;
+        };
+
+        # Global setup
+        prettier = {
+          enable = true;
+          excludes = [
+            "\\.min.css$"
+            "\\.html$"
+          ];
+        };
+        commitizen.enable = true;
       };
-      commitizen.enable = true;
-    };
   };
 
   shell = pkgs.mkShell {
