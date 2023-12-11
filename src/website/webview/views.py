@@ -1,6 +1,6 @@
+import re
 from typing import Any
 
-from django.db.models import Model
 from django.db.models.manager import BaseManager
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView, TemplateView
@@ -17,7 +17,7 @@ class NixpkgsIssueView(DetailView):
 
     pattern = re.compile(CveRecord._meta.get_field("cve_id").validators[0].regex)
 
-    def get_object(self, queryset=None):
+    def get_object(self, queryset: Any = None) -> Any:
         issue = get_object_or_404(self.model, code=self.kwargs.get("code"))
         derivations = issue.derivations.all()  # type: ignore
         for drv in derivations:
@@ -28,7 +28,7 @@ class NixpkgsIssueView(DetailView):
 
         return issue
 
-    def get_cves_for_derivation(self, drv):
+    def get_cves_for_derivation(self, drv: Any) -> Any:
         known_vulnerabilities = drv.metadata.known_vulnerabilities
         if not known_vulnerabilities:
             return None
