@@ -3,9 +3,10 @@ import hashlib
 import json
 import logging
 from collections import defaultdict
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any, Generator
+from typing import Any
 
 from dataclass_wizard import DumpMixin, JSONWizard, LoadMeta, LoadMixin
 from django.core.management.base import BaseCommand
@@ -25,7 +26,7 @@ from tqdm import tqdm
 log = logging.getLogger(__name__)
 
 
-class BulkSave(object):
+class BulkSave:
 
     """
     Batches inserts, deletions and updates together to perform the minimum number of
@@ -102,14 +103,13 @@ class BulkSave(object):
                 prev = self.snapshots[klass][model.pk][atn]
             except KeyError:
                 raise Exception(
-                    "No snapshot found for %s pk=%s attribute=%s"
-                    % (klass, model.pk, atn)
+                    f"No snapshot found for {klass} pk={model.pk} attribute={atn}"
                 )
             if val and (isinstance(f, DecimalField)):
                 if not isinstance(val, Decimal):
-                    if not isinstance(val, (int, float, str)):
+                    if not isinstance(val, int | float | str):
                         raise Exception(
-                            "%s %s is not a number, is: %s" % (model, val, type(val))
+                            f"{model} {val} is not a number, is: {type(val)}"
                         )
                     val = Decimal(str(round(float(val), f.decimal_places)))
             if prev != val:
@@ -132,9 +132,9 @@ class BulkSave(object):
             prev = self.snapshots[klass][model.pk][atn]
             if val and (isinstance(f, DecimalField)):
                 if not isinstance(val, Decimal):
-                    if isinstance(val, (int, float)):
+                    if isinstance(val, int | float):
                         raise Exception(
-                            "%s %s is not a number, is: %s" % (model, val, type(val))
+                            f"{model} {val} is not a number, is: {type(val)}"
                         )
                     val = Decimal(str(round(val, f.decimal_places)))
             if prev != val:
@@ -271,7 +271,7 @@ class BulkSave(object):
         except Exception as e:
             # an IntegrityError or something
             # report what the model and db error message was
-            raise Exception("%r while saving models: %s" % (e, klass))
+            raise Exception(f"{e!r} while saving models: {klass}")
 
     def save_updates(self):
         """
@@ -324,7 +324,7 @@ class BulkSave(object):
             # model, {field: [id, id, ...], ...}
             if model.pk is None:
                 raise Exception(
-                    "No pk for model %s. cannot save m2m %s" % (model, fields_ids)
+                    f"No pk for model {model}. cannot save m2m {fields_ids}"
                 )
             for f, _ in list(fields_ids.items()):
                 fields_models_to_lookup[f].add(model)
@@ -385,7 +385,7 @@ class BulkSave(object):
                                 ff.m2m_reverse_name(): a,
                             }
                             assert a and model.pk, Exception(
-                                "null id for join: %s %s" % (join_model, join_params)
+                                f"null id for join: {join_model} {join_params}"
                             )
                             joins_to_add[join_model].append(join_params)
 
@@ -701,7 +701,7 @@ class BulkEvaluationIngestion:
                     self.outputs[output] = output_model
             # New outputs created
             self.created += sum(
-                (1 for output in outputs_raw if output not in self.outputs)
+                1 for output in outputs_raw if output not in self.outputs
             )
             drv_out = NixDerivationOutput(derivation_path=drvpath)
             self.bs.add_insert(drv_out)
@@ -775,7 +775,7 @@ class Command(BaseCommand):
             channel=channel, commit_sha1=kwargs["commit_sha1"]
         )
 
-        with open(filename, "r") as f:
+        with open(filename) as f:
             with bulk_saver() as bs:
                 ingester = BulkEvaluationIngestion(bs)
                 lines = f.readlines()

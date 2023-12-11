@@ -1,6 +1,5 @@
 import logging
 from os import environ as env
-from typing import Optional
 
 from github import Auth, Github
 
@@ -14,7 +13,7 @@ def get_gh() -> Github:
 
     credentials_dir = env.get("CREDENTIALS_DIRECTORY")
 
-    gh_auth: Optional[Auth.Auth] = None
+    gh_auth: Auth.Auth | None = None
 
     if credentials_dir is None:
         logger.warn("No credentials directory available, using unauthenticated API.")
