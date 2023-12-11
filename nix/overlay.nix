@@ -18,7 +18,10 @@ in
   # inputs we want
   pre-commit-hooks = final.callPackage "${sources.pre-commit-hooks}/nix/run.nix" {
     tools = import "${sources.pre-commit-hooks}/nix/call-tools.nix" final;
-    gitignore-nix-src = sources.gitignore;
+    # wat
+    gitignore-nix-src = {
+      lib = import sources.gitignore { inherit (final) lib; };
+    };
     isFlakes = false;
   };
 
