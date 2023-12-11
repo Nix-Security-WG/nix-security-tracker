@@ -7,7 +7,9 @@ from collections import defaultdict
 from collections.abc import Generator, Iterator
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any
+
+# pyright doesn't know about set as a type yet
+from typing import Any, Set  # noqa: UP035
 
 from dataclass_wizard import DumpMixin, JSONWizard, LoadMeta, LoadMixin
 from django.core.management.base import BaseCommand
@@ -334,8 +336,12 @@ class BulkSave:
             self.save_m2m_for_field(klass, f, models_to_lookup, models_fields_ids)
 
     def save_m2m_for_field(
-        self, klass, field_name, models_to_lookup, models_fields_ids
-    ):
+        self,
+        klass: Any,
+        field_name: str,
+        models_to_lookup: Set[str],  # noqa: UP006
+        models_fields_ids: dict[Any, dict[str, list[Any]]],
+    ) -> None:
         opts = klass._meta
 
         # joins that will need to be made
@@ -553,7 +559,7 @@ def parse_total_evaluation(raw: dict[str, Any]) -> EvaluatedAttribute:
 
 
 def parse_evaluation_results(
-    lines: list[str]
+    lines: list[str],
 ) -> Generator[PartialEvaluatedAttribute, None, None]:
     for line in lines:
         raw = json.loads(line)
@@ -598,7 +604,7 @@ class BulkEvaluationIngestion:
                 continue
 
             # Duplicate...
-            if m.githubId in seen:
+            if m.github_id in seen:
                 continue
 
             ms.append(
@@ -610,7 +616,7 @@ class BulkEvaluationIngestion:
                     name=m.name,
                 )
             )
-            seen.add(m.githubId)
+            seen.add(m.github_id)
 
         NixMaintainer.objects.bulk_create(
             ms,

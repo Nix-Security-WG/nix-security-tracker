@@ -18,7 +18,7 @@ class NixMaintainer(models.Model):
     matrix = models.CharField(max_length=200, null=True)
     name = models.CharField(max_length=200, null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"@{self.github}"
 
 
@@ -39,7 +39,7 @@ class NixLicense(models.Model):
     class Meta:
         unique_together = ("full_name", "short_name", "spdx_id", "url")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.spdx_id}"
 
 
@@ -62,7 +62,7 @@ class NixPlatform(models.Model):
 
     system_double = models.CharField(max_length=255, unique=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.system_double
 
 
@@ -96,7 +96,7 @@ class NixDerivationMeta(models.Model):
 
     position = models.URLField(null=True)
 
-    def __str__(self):
+    def __str__(self) -> str | None:
         return self.description
 
 
@@ -107,7 +107,7 @@ class NixOutput(models.Model):
 
     output_name = models.CharField(max_length=255, unique=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.output_name
 
 
@@ -197,7 +197,7 @@ class NixEvaluation(models.Model):
     # Commit SHA1 on which the evaluation was done precisely.
     commit_sha1 = models.CharField(max_length=255)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.channel} {self.commit_sha1[:8]}"
 
 
@@ -228,6 +228,6 @@ class NixDerivation(models.Model):
         NixEvaluation, related_name="derivations", on_delete=models.CASCADE
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         hash = self.derivation_path.split("-")[0].split("/")[-1]
         return f"{self.name} {hash[:8]}"
