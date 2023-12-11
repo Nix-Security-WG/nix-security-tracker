@@ -31,15 +31,15 @@ data WebAppResponse = WebAppResponse
 
 mconcat <$> sequence (deriveJSON stripType' <$> [ ''WebAppResponse ])
 
-webAppApi :: LogT m ann => Map Text Text -> ReaderT Parameters m WebAppResponse
+webAppApi :: LogT m ann => Map Text Text -> ReaderT Parameters m [WebAppResponse]
 webAppApi r = go 0
   where
-      go :: LogT m ann => Int -> ReaderT Parameters m WebAppResponse
+      go :: LogT m ann => Int -> ReaderT Parameters m [WebAppResponse]
       go count = do
           let baseURL = "TODO"
               url = baseURL <> (convertToApi $ toList r)
           debug <- debug <$> ask
-          v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException WebAppResponse)
+          v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
           when debug $ logMessage $ WithSeverity Debug $ pretty $ show url
           case v of
             Left e -> do
