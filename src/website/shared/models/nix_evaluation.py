@@ -168,6 +168,8 @@ class NixChannel(models.Model):
     # `nixos-unstable(-small)` for unstable(-small). Not to confuse with the
     # channel tarballs and scripts from releases.nixos.org.
     channel_branch = models.CharField(max_length=255, primary_key=True)
+    # The currently known HEAD SHA1 commit of that channel.
+    head_sha1_commit = models.CharField(max_length=255)
     state = models.CharField(
         max_length=text_length(ChannelState), choices=ChannelState.choices
     )
