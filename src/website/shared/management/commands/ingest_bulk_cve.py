@@ -11,7 +11,7 @@ from os import mkdir, path
 import requests
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from shared.fetchers import mkCve
+from shared.fetchers import make_cve
 from shared.models import CveIngestion
 from shared.utils import get_gh
 
@@ -122,7 +122,7 @@ class Command(BaseCommand):
 
             for j_cve in cve_list:
                 with open(j_cve) as fc:
-                    mkCve(json.load(fc), triaged=True)
+                    make_cve(json.load(fc), triaged=True)
 
         if not path.exists(cve_data_cache_dir):
             # Record the ingestion

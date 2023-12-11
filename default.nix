@@ -20,14 +20,21 @@ rec {
       "/nix/web-security-tracker.nix"
     ];
 
-    hooks = {
+    hooks = let
+      pythonExcludes = [
+        "$src/website/shared/migrations/.*\\.py^" # auto-generated code
+      ];
+    in {
       # Nix setup
       nixfmt.enable = true;
       statix.enable = true;
       deadnix.enable = true;
 
       # Python setup
-      ruff.enable = true;
+      ruff = {
+        enable = true;
+        excludes = pythonExcludes;
+      };
       ruff-format = {
         enable = true;
         name = "Format python code with ruff";
@@ -36,8 +43,12 @@ rec {
           "python"
         ];
         entry = "${pkgs.lib.getExe pkgs.ruff} format";
+        excludes = pythonExcludes;
       };
-      pyright.enable = true;
+      pyright = {
+        enable = true;
+        excludes = pythonExcludes;
+      };
 
       # Global setup
       prettier = {

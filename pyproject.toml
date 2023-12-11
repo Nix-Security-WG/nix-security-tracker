@@ -1,10 +1,11 @@
 [tool.ruff]
 target-version = "py311"
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "N"]
 ignore = [
   "F403",
-  "E501" # line too long
+  "E501", # line too long
 ]
+exclude = ["src/website/shared/migrations/*.py"] # auto-generated code
 
 [tool.commitizen]
 name = "cz_conventional_commits"

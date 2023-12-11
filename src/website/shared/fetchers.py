@@ -9,7 +9,7 @@ from requests import get
 from shared import models
 
 
-def mkOrganization(
+def make_organization(
     uuid: Optional[str], short_name: Optional[str] = None
 ) -> Optional[models.Organization]:
     if uuid is None:
@@ -24,7 +24,7 @@ def mkOrganization(
     return org
 
 
-def mkDate(date: Optional[str]) -> Optional[datetime]:
+def make_date(date: Optional[str]) -> Optional[datetime]:
     if date is None:
         return None
 
@@ -36,7 +36,7 @@ def mkDate(date: Optional[str]) -> Optional[datetime]:
     return time
 
 
-def mkMedia(data: Dict[str, str]) -> models.SupportingMedia:
+def make_media(data: Dict[str, str]) -> models.SupportingMedia:
     ctx: Dict[str, Any] = dict()
     ctx["_type"] = data["type"]
     ctx["base64"] = data["base64"]
@@ -45,83 +45,83 @@ def mkMedia(data: Dict[str, str]) -> models.SupportingMedia:
     return models.SupportingMedia.objects.create(**ctx)
 
 
-def mkDescription(data: Dict[str, Any]) -> models.Description:
+def make_description(data: Dict[str, Any]) -> models.Description:
     ctx: Dict[str, Any] = dict()
     ctx["lang"] = data["lang"]
     ctx["value"] = data["value"]
 
     obj = models.Description.objects.create(**ctx)
-    obj.media.set(map(mkMedia, data.get("supportingMedia", [])))
+    obj.media.set(map(make_media, data.get("supportingMedia", [])))
 
     return obj
 
 
-def mkTag(name: str) -> models.Tag:
+def make_tag(name: str) -> models.Tag:
     obj, _ = models.Tag.objects.get_or_create(value=name)
 
     return obj
 
 
-def mkReference(data: Dict[str, Any]) -> models.Reference:
+def make_reference(data: Dict[str, Any]) -> models.Reference:
     ctx: Dict[str, Any] = dict()
     ctx["url"] = data["url"]
     ctx["name"] = data.get("name", "")
 
     obj = models.Reference.objects.create(**ctx)
-    obj.tags.set(map(mkTag, data.get("tags", [])))
+    obj.tags.set(map(make_tag, data.get("tags", [])))
 
     return obj
 
 
-def mkProblemType(data: Dict[str, Any]) -> models.ProblemType:
+def make_problem_type(data: Dict[str, Any]) -> models.ProblemType:
     ctx: Dict[str, Any] = dict()
     ctx["cwe_id"] = data.get("cweId")
     ctx["_type"] = data.get("type")
 
     obj = models.ProblemType.objects.create(**ctx)
     obj.description.set(
-        [mkDescription({"lang": data["lang"], "value": data["description"]})]
+        [make_description({"lang": data["lang"], "value": data["description"]})]
     )
-    obj.references.set(map(mkReference, data.get("references", [])))
+    obj.references.set(map(make_reference, data.get("references", [])))
 
     return obj
 
 
-def mkMetric(data: Dict[str, Any]) -> models.Metric:
+def make_metric(data: Dict[str, Any]) -> models.Metric:
     ctx: Dict[str, Any] = dict()
     ctx["format"] = "cvssV3_1"
     ctx["content"] = data.get("cvssV3_1", {})
 
     obj = models.Metric.objects.create(**ctx)
-    obj.scenarios.set(map(mkDescription, data.get("scenarios", [])))
+    obj.scenarios.set(map(make_description, data.get("scenarios", [])))
 
     return obj
 
 
-def mkEvent(data: Dict[str, Any]) -> models.Event:
+def make_event(data: Dict[str, Any]) -> models.Event:
     ctx: Dict[str, Any] = dict()
-    ctx["time"] = mkDate(data["time"])
-    ctx["description"] = mkDescription(data)
+    ctx["time"] = make_date(data["time"])
+    ctx["description"] = make_description(data)
 
     return models.Event.objects.create(**ctx)
 
 
-def mkCredit(data: Dict[str, Any]) -> models.Credit:
+def make_credit(data: Dict[str, Any]) -> models.Credit:
     ctx: Dict[str, Any] = dict()
     ctx["_type"] = data.get("type", "finder")
-    ctx["user"] = mkOrganization(uuid=data.get("user"))
-    ctx["description"] = mkDescription(data)
+    ctx["user"] = make_organization(uuid=data.get("user"))
+    ctx["description"] = make_description(data)
 
     return models.Credit.objects.create(**ctx)
 
 
-def mkPlatform(name: str) -> models.Platform:
+def make_platform(name: str) -> models.Platform:
     obj, _ = models.Platform.objects.get_or_create(name=name)
 
     return obj
 
 
-def mkVersion(data: Dict[str, Any]) -> models.Version:
+def make_version(data: Dict[str, Any]) -> models.Version:
     ctx: Dict[str, Any] = dict()
     ctx["version"] = data.get("version")
     ctx["status"] = data.get("status", models.Version.Status.UNKNOWN)
@@ -132,31 +132,31 @@ def mkVersion(data: Dict[str, Any]) -> models.Version:
     return models.Version.objects.create(**ctx)
 
 
-def mkCpe(name: str) -> models.Cpe:
+def make_cpe(name: str) -> models.Cpe:
     obj, _ = models.Cpe.objects.get_or_create(name=name)
 
     return obj
 
 
-def mkModule(name: str) -> models.Module:
+def make_module(name: str) -> models.Module:
     obj, _ = models.Module.objects.get_or_create(name=name)
 
     return obj
 
 
-def mkProgramFile(name: str) -> models.ProgramFile:
+def make_program_file(name: str) -> models.ProgramFile:
     obj, _ = models.ProgramFile.objects.get_or_create(name=name)
 
     return obj
 
 
-def mkProgramRoutine(name: str) -> models.ProgramRoutine:
+def make_program_routine(name: str) -> models.ProgramRoutine:
     obj, _ = models.ProgramRoutine.objects.get_or_create(name=name)
 
     return obj
 
 
-def mkAffectedProduct(data: Dict[str, Any]) -> models.AffectedProduct:
+def make_affected_product(data: Dict[str, Any]) -> models.AffectedProduct:
     ctx: Dict[str, Any] = dict()
     ctx["vendor"] = data.get("vendor")
     ctx["product"] = data.get("product")
@@ -168,17 +168,17 @@ def mkAffectedProduct(data: Dict[str, Any]) -> models.AffectedProduct:
     )
 
     obj = models.AffectedProduct.objects.create(**ctx)
-    obj.platforms.set(map(mkPlatform, data.get("platforms", [])))
-    obj.versions.set(map(mkVersion, data.get("versions", [])))
-    obj.cpes.set(map(mkCpe, data.get("cpes", [])))
-    obj.modules.set(map(mkModule, data.get("modules", [])))
-    obj.program_files.set(map(mkProgramFile, data.get("programFiles", [])))
-    obj.program_routines.set(map(mkProgramRoutine, data.get("programRoutines", [])))
+    obj.platforms.set(map(make_platform, data.get("platforms", [])))
+    obj.versions.set(map(make_version, data.get("versions", [])))
+    obj.cpes.set(map(make_cpe, data.get("cpes", [])))
+    obj.modules.set(map(make_module, data.get("modules", [])))
+    obj.program_files.set(map(make_program_file, data.get("programFiles", [])))
+    obj.program_routines.set(map(make_program_routine, data.get("programRoutines", [])))
 
     return obj
 
 
-def mkCveRecord(
+def make_cve_record(
     data: Dict[str, Any], cve: Optional[models.CveRecord] = None
 ) -> models.CveRecord:
     if cve is None:
@@ -187,69 +187,69 @@ def mkCveRecord(
     cve.cve_id = data["cveId"]
     cve.state = data["state"]
 
-    org = mkOrganization(
+    org = make_organization(
         uuid=data["assignerOrgId"], short_name=data.get("assignerShortName")
     )
 
     assert org is not None, "Organisation cannot be empty"
 
     cve.assigner = org
-    cve.requester = mkOrganization(uuid=data.get("requesterUserId"))
+    cve.requester = make_organization(uuid=data.get("requesterUserId"))
 
-    cve.date_reserved = mkDate(data.get("dateReserved"))
-    cve.date_updated = mkDate(data.get("dateUpdated"))
-    cve.date_published = mkDate(data.get("datePublished"))
+    cve.date_reserved = make_date(data.get("dateReserved"))
+    cve.date_updated = make_date(data.get("dateUpdated"))
+    cve.date_published = make_date(data.get("datePublished"))
     cve.serial = data.get("serial", 1)
 
     return cve
 
 
-def mkContainer(
+def make_container(
     data: Dict[str, Any], _type: str, cve: models.CveRecord
 ) -> models.Container:
     ctx: Dict[str, Any] = {"_type": _type, "cve": cve}
-    ctx["provider"] = mkOrganization(
+    ctx["provider"] = make_organization(
         uuid=data["providerMetadata"].get("orgId"),
         short_name=data["providerMetadata"].get("shortName"),
     )
     ctx["title"] = data.get("title", "")
 
     if _type == models.Container.Type.CNA:
-        ctx["date_assigned"] = mkDate(data.get("dateAssigned"))
+        ctx["date_assigned"] = make_date(data.get("dateAssigned"))
 
-    ctx["date_public"] = mkDate(data.get("datePublic"))
+    ctx["date_public"] = make_date(data.get("datePublic"))
     ctx["source"] = data.get("source", dict())
 
     obj = models.Container.objects.create(**ctx)
-    obj.descriptions.set(map(mkDescription, data.get("descriptions", [])))
+    obj.descriptions.set(map(make_description, data.get("descriptions", [])))
 
-    obj.affected.set(map(mkAffectedProduct, data.get("affected", [])))
+    obj.affected.set(map(make_affected_product, data.get("affected", [])))
     # Map problem types from the terrible definition to our models
     problems = [
         desc
         for problem in data.get("problemTypes", [])
         for desc in problem.get("description", [])
     ]
-    obj.problem_types.set(map(mkProblemType, problems))
-    obj.references.set(map(mkReference, data.get("references", [])))
-    obj.metrics.set(map(mkMetric, data.get("metrics", [])))
-    obj.configurations.set(map(mkDescription, data.get("configurations", [])))
-    obj.workarounds.set(map(mkDescription, data.get("workarounds", [])))
-    obj.solutions.set(map(mkDescription, data.get("solutions", [])))
-    obj.exploits.set(map(mkDescription, data.get("exploits", [])))
-    obj.timeline.set(map(mkEvent, data.get("timeline", [])))
-    obj.tags.set(map(mkTag, data.get("tags", [])))
-    obj.credits.set(map(mkCredit, data.get("credits", [])))
+    obj.problem_types.set(map(make_problem_type, problems))
+    obj.references.set(map(make_reference, data.get("references", [])))
+    obj.metrics.set(map(make_metric, data.get("metrics", [])))
+    obj.configurations.set(map(make_description, data.get("configurations", [])))
+    obj.workarounds.set(map(make_description, data.get("workarounds", [])))
+    obj.solutions.set(map(make_description, data.get("solutions", [])))
+    obj.exploits.set(map(make_description, data.get("exploits", [])))
+    obj.timeline.set(map(make_event, data.get("timeline", [])))
+    obj.tags.set(map(make_tag, data.get("tags", [])))
+    obj.credits.set(map(make_credit, data.get("credits", [])))
 
     return obj
 
 
-def mkCve(
+def make_cve(
     data: Dict[str, Any],
     record: Optional[models.CveRecord] = None,
     triaged: bool = False,
 ) -> models.CveRecord:
-    cve = mkCveRecord(data["cveMetadata"], cve=record)
+    cve = make_cve_record(data["cveMetadata"], cve=record)
     cve.triaged = triaged
     cve.save()
 
@@ -257,10 +257,10 @@ def mkCve(
         # TODO: Remove stale data to prevent overgrowth
         pass
 
-    mkContainer(data["containers"]["cna"], _type=models.Container.Type.CNA, cve=cve)
+    make_container(data["containers"]["cna"], _type=models.Container.Type.CNA, cve=cve)
 
     for adp in data["containers"].get("adp", []):
-        mkContainer(adp, _type=models.Container.Type.ADP, cve=cve)
+        make_container(adp, _type=models.Container.Type.ADP, cve=cve)
 
     return cve
 
@@ -285,4 +285,4 @@ def fetch_cve_gh(cve_id: str) -> Optional[models.CveRecord]:
 
     data = json.loads(r.text)
 
-    return mkCve(data)
+    return make_cve(data)
