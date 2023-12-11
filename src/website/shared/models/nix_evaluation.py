@@ -14,11 +14,11 @@ class NixMaintainer(models.Model):
     This represents a maintainer in the `maintainers` field of a package.
     """
 
-    email = models.CharField(max_length=200, null=True)
-    github = models.CharField(max_length=200, unique=True)
     github_id = models.IntegerField(unique=True)
+    github = models.CharField(max_length=200, unique=True)
+    email = models.CharField(max_length=200, null=True)
     matrix = models.CharField(max_length=200, null=True)
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200, null=True)
 
 
 class NixLicense(models.Model):
