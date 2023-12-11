@@ -90,7 +90,7 @@ match inventory params = do
           debug' <- debug <$> ask
           case elem (pname, version) acc of
             True -> do
-                when (debug') $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
+                when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
                 pure acc
             False -> timeLog $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
@@ -104,13 +104,13 @@ match inventory params = do
                 Nothing -> pure ()
                 Just (cid, severity, v, rangeEnd) -> timeLog $ do
                     liftIO $ putStrLn ""
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack pname
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack cid
+                    logMessage $ WithSeverity Warning $ pretty $ T.unpack pname
+                    logMessage $ WithSeverity Warning $ pretty $ T.unpack cid
                     case severity of
-                      Just s -> logMessage $ colorize $ WithSeverity Warning $ pretty $ T.unpack s
+                      Just s -> logMessage $ WithSeverity Warning $ pretty $ T.unpack s
                       Nothing -> pure ()
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> prettySemVer rangeEnd
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Version in inventory: " <> prettySemVer v
-                    logMessage $ colorize $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
+                    logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> prettySemVer rangeEnd
+                    logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> prettySemVer v
+                    logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
                     liftIO $ putStrLn ""
               pure $ acc <> [(pname, version)]

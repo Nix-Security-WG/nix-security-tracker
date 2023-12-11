@@ -206,7 +206,7 @@ getEverything :: LogT m ann => ReaderT Parameters m [NVDResponse]
 getEverything = do
   env <- ask
   let debug' = debug env
-  when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Getting first response from NVD"
+  when debug' $ logMessage $ WithSeverity Debug $ "Getting first response from NVD"
   start <- liftIO getCurrentTime
   response1 <- nvdApi mempty
   let st = _nvdresponse_totalResults response1
@@ -216,12 +216,12 @@ getEverything = do
   where
     go :: LogT m ann => [NVDResponse] -> UTCTime -> Int -> (Int, Int) -> ReaderT Parameters m [NVDResponse]
     go acc start total (pagesToGo, results) = do
-        logMessage $ colorize $ WithSeverity Informational $ pretty $ "[NVD] Got partial data, " <> (show pagesToGo) <> "/" <> (show total) <> " pages to go"
+        logMessage $ WithSeverity Informational $ pretty $ "[NVD] Got partial data, " <> (show pagesToGo) <> "/" <> (show total) <> " pages to go"
         current <- liftIO getCurrentTime
         let pagesRemaining = total - pagesToGo + 1
         let remaining = (diffUTCTime current start) * (fromIntegral pagesToGo) / (fromIntegral pagesRemaining)
         -- TODO show in minutes
-        logMessage $ colorize $ WithSeverity Informational $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
+        logMessage $ WithSeverity Informational $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
         let st = pagesToGo * results
         resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
         if pagesToGo <= 0 then
@@ -253,8 +253,8 @@ loadNVDCVEs = do
   let debug' = debug env
   case cacheStatus of
     Just status -> do
-      logMessage $ colorize $ WithSeverity Informational $ "Loading NVD data from cache"
-      logMessage $ colorize $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ _cachestatus_last_updated status)
+      logMessage $ WithSeverity Informational $ "Loading NVD data from cache"
+      logMessage $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ _cachestatus_last_updated status)
       -- TODO if the cache is stale, fetch updates via the cvehistory API
       files' <- liftIO $ do
         cachedir <- cacheDirectory
@@ -268,11 +268,11 @@ loadNVDCVEs = do
           Just cve -> pure cve
           Nothing -> throw $ CacheMalformed filename) files
     Nothing -> do
-      logMessage $ colorize $ WithSeverity Informational $ "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."
+      logMessage $ WithSeverity Informational $ "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."
       startTime <- liftIO $ getCurrentTime
 
       everything <- getEverything
-      when debug' $ logMessage $ colorize $ WithSeverity Debug $ "Got everything, writing to cache"
+      when debug' $ logMessage $ WithSeverity Debug $ "Got everything, writing to cache"
       mapM_ (writeToDisk) everything
       liftIO $ writeCacheStatus startTime
       pure $ map _nvdwrapper_cve $ concatMap _nvdresponse_vulnerabilities everything
@@ -290,12 +290,12 @@ nvdApi r = go 0
         let debug' = debug env
         v <- liftIO $ (try (withApiKey (get' url jsonHandler) $ \key ->
             getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler)) :: LogT m ann => m (Either SomeException NVDResponse)
-        when debug' $ logMessage $ colorize $  WithSeverity Debug $ pretty $ show url
+        when debug' $ logMessage $  WithSeverity Debug $ pretty $ show url
         case v of
           Left e -> do
-              when debug' $ logMessage $ colorize $ WithSeverity Debug $ pretty $ show e
-              logMessage $ colorize $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
-              logMessage $ colorize $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
+              when debug' $ logMessage $ WithSeverity Debug $ pretty $ show e
+              logMessage $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
+              logMessage $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
               liftIO $ threadDelay $ 1000000 * 10
               go (count + 1)
           Right c -> pure c

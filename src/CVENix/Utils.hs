@@ -63,7 +63,7 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
     replaceUnderScores a = flip map a $ \x -> if x == '_' then '-' else x
 
 withApp :: r -> ReaderT r (LoggingT (WithSeverity (Doc ann)) IO) a -> IO a
-withApp params f = runLoggingT (runReaderT f params) (print . renderWithSeverity id)
+withApp params f = runLoggingT (runReaderT f params) (print . renderWithSeverity id . colorize)
 
 timeLog :: forall a m ann. LogT m ann => (ReaderT Parameters m a) -> ReaderT Parameters m a
 timeLog f = do
@@ -71,7 +71,7 @@ timeLog f = do
     time <- liftIO $ getCurrentTime
     o <- f
     time' <- liftIO $ getCurrentTime
-    when debug' $ logMessage $ colorize $ WithSeverity Debug $ pretty $ "Time to run: " <> (show $ diffUTCTime time' time)
+    when debug' $ logMessage $ WithSeverity Debug $ pretty $ "Time to run: " <> (show $ diffUTCTime time' time)
     pure o
 
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a
