@@ -23,10 +23,14 @@ class NixpkgsIssueViewSet(viewsets.ReadOnlyModelViewSet):
 
     class Serializer(serializers.ModelSerializer):
         status = serializers.CharField(source="get_status_display")
+        cve = serializers.SerializerMethodField()
+
+        def get_cve(self, obj: NixpkgsIssue) -> list[str]:
+            return [cve.cve_id for cve in obj.cve.iterator()]
 
         class Meta:
             model = NixpkgsIssue
-            fields = ["code", "status"]
+            fields = ["code", "cve", "status"]
 
     filterset_class = Filter
 
