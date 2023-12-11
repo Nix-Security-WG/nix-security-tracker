@@ -109,6 +109,28 @@ def override(model_class):
     return decorator
 
 
+@override(NixDerivationMeta)
+class NixDerivationMetaAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
+    search_fields = ["known_vulnerabilities"]
+
+
+@admin.register(Container)
+class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
+    search_fields = ["title"]
+
+    def get_search_results(self, request, queryset, search_term):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term
+        )
+
+        if search_term:
+            # allow search in nested CVE objectss
+            queryset |= self.model.objects.filter(cve__cve_id__icontains=search_term)
+            use_distinct = True
+
+        return queryset, use_distinct
+
+
 @admin.register(NixpkgsIssue)
 class NixpkgsIssueAdmin(AutocompleteMixin, admin.ModelAdmin):
     readonly_fields = ["code"]
