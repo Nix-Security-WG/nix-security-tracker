@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import importlib.util
-import os
 import sys
 from os import environ as env
 from pathlib import Path
@@ -58,6 +57,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_filters",
     "debug_toolbar",
     # AllAuth config
     "allauth",
@@ -124,7 +124,6 @@ AUTH_PASSWORD_VALIDATORS = [
     ]
 ]
 
-
 AUTHENTICATION_BACKENDS = [
     # Needed to login by username in Django admin, regardless of `allauth`
     "django.contrib.auth.backends.ModelBackend",
@@ -145,6 +144,10 @@ SOCIALACCOUNT_PROVIDERS = {
             }
         ],
     }
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"]
 }
 
 SITE_ID = 1

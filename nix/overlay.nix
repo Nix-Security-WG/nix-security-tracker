@@ -35,6 +35,7 @@ in
       dj-database-url
       django-allauth
       django-debug-toolbar
+      django-filter
       django-types
       django_4
       djangorestframework
