@@ -12,7 +12,11 @@
     project = self: self.callCabal2nix "CVENix" ./. {};
     haskellPackages = pkgs: pkgs.haskell.packages.ghc947.override {
       overrides = self: super: {
-        CVENix = project self;
+        CVENix = pkgs.haskell.lib.overrideCabal (project self) (drv: {
+          libraryHaskellDepends = (drv.libraryHaskellDepends or []) ++ [
+            inputs.sbomnix.packages."${pkgs.system}".sbomnix
+          ];
+        });
       };
     };
     supportedSystems = lib.genAttrs

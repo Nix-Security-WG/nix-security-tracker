@@ -43,7 +43,8 @@ library
                       logging-effect,
                       prettyprinter,
                       logging-effect-colors,
-                      transformers
+                      transformers,
+                      which
 
 
     hs-source-dirs:   src

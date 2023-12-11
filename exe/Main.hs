@@ -10,6 +10,7 @@ import CVENix.Matching
 import CVENix.Types
 import System.Process
 import System.Posix.Files
+import CVENix.Utils
 
 
 programOptions :: Parser Parameters
@@ -42,7 +43,7 @@ main = do
       True -> go params
       False -> case (path params) of
           Just drv' -> do
-            callProcess "sbomnix" [drv', "--type", "runtime"]
+            callProcess (sbomnixExe) [drv', "--type", "runtime"]
             go params
           _ -> error "Please specify drv file"
 

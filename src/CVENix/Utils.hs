@@ -15,6 +15,7 @@ import Data.Aeson
 import Network.Http.Client
 import System.IO.Streams (InputStream)
 import Data.ByteString (ByteString)
+import System.Which
 
 import OpenSSL
 import qualified Data.Text as T
@@ -35,6 +36,10 @@ import Control.Monad.Log.Colors
 import Prettyprinter
 import Control.Monad.IO.Class
 import Control.Monad
+
+sbomnixExe :: FilePath
+sbomnixExe = $(staticWhich "sbomnix")
+
 
 stripType :: Options
 stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
