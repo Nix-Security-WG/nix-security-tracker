@@ -28,7 +28,10 @@ rec {
       in
       {
         # Nix setup
-        nixfmt.enable = true;
+        nixfmt = {
+          enable = true;
+          entry = pkgs.lib.mkForce "${pkgs.lib.getExe pkgs.nixfmt}";
+        };
         statix.enable = true;
         deadnix.enable = true;
 
