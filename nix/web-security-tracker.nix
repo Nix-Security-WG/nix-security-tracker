@@ -14,7 +14,6 @@ let
     mapAttrsToList
     mkDefault
     concatStringsSep
-    optional
     ;
   inherit (pkgs) writeScriptBin stdenv;
   cfg = config.services.web-security-tracker;
@@ -70,10 +69,11 @@ in
     enable = mkEnableOption "web security tracker for Nixpkgs and similar monorepo";
 
     package = mkPackageOptionMD pkgs "web-security-tracker" { };
-    domain = mkOption {
-      type = types.nullOr types.str;
-      default = null;
+    production = mkOption {
+      type = types.bool;
+      default = true;
     };
+    domain = mkOption { type = types.str; };
     port = mkOption {
       type = types.port;
       default = 8000;
@@ -101,15 +101,13 @@ in
     services.web-security-tracker.settings = {
       STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
       DEBUG = mkDefault false;
-      ALLOWED_HOSTS = mkDefault (
-        (optional (cfg.domain != null) cfg.domain)
-        ++ [
-          "localhost"
-          "127.0.0.1"
-          "[::1]"
-        ]
-      );
-      CSRF_TRUSTED_ORIGINS = mkIf (cfg.domain != null) [ "https://${cfg.domain}" ];
+      ALLOWED_HOSTS = mkDefault [
+        cfg.domain
+        "localhost"
+        "127.0.0.1"
+        "[::1]"
+      ];
+      CSRF_TRUSTED_ORIGINS = mkDefault [ "https://${cfg.domain}" ];
     };
 
     users.users.web-security-tracker = {
@@ -128,13 +126,19 @@ in
       ensureDatabases = [ "web-security-tracker" ];
     };
 
-    services.nginx.virtualHosts = lib.mkIf (cfg.domain != null) {
-      "${cfg.domain}" = {
-        enableACME = true;
-        forceSSL = true;
-        locations."/".proxyPass = "http://localhost:${toString cfg.port}";
-        locations."/static/".alias = "/var/lib/web-security-tracker/static/";
-      };
+    services.nginx.enable = true;
+    services.nginx.virtualHosts = {
+      ${cfg.domain} =
+        {
+          locations = {
+            "/".proxyPass = "http://localhost:${toString cfg.port}";
+            "/static/".alias = "/var/lib/web-security-tracker/static/";
+          };
+        }
+        // lib.optionalAttrs cfg.production {
+          enableACME = true;
+          forceSSL = true;
+        };
     };
 
     systemd.services = {
