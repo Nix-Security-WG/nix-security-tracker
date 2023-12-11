@@ -50,6 +50,8 @@ in
       pyngo
       django-ninja
       django-pgpubsub
+      django-pghistory
+      django-pgtrigger
     ];
 
     postInstall = ''
