@@ -23,7 +23,7 @@ rec {
     hooks =
       let
         pythonExcludes = [
-          "$src/website/shared/migrations/.*\\.py^" # auto-generated code
+          "/migrations/" # auto-generated code
         ];
       in
       {
@@ -47,10 +47,22 @@ rec {
           entry = "${pkgs.lib.getExe pkgs.ruff} format";
           excludes = pythonExcludes;
         };
-        pyright = {
-          enable = true;
-          excludes = pythonExcludes;
-        };
+
+        pyright =
+          let
+            pyEnv = pkgs.python3.withPackages (_: pkgs.web-security-tracker.propagatedBuildInputs);
+            wrappedPyright = pkgs.runCommand "pyright" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
+              makeWrapper ${pkgs.pyright}/bin/pyright $out \
+                --set PYTHONPATH ${pyEnv}/${pyEnv.sitePackages} \
+                --prefix PATH : ${pyEnv}/bin \
+                --set PYTHONHOME ${pyEnv}
+            '';
+          in
+          {
+            enable = true;
+            entry = pkgs.lib.mkForce (builtins.toString wrappedPyright);
+            excludes = pythonExcludes;
+          };
 
         # Global setup
         prettier = {
