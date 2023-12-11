@@ -1,10 +1,11 @@
 final: prev:
 let
   inherit (final) python3;
-  extraPython3Packages = import ../pkgs {
+  extraPackages = import ../pkgs {
     pkgs = prev;
     inherit python3;
   };
+  extraPython3Packages = extraPackages.python3Packages;
   sources = import ../npins;
 in
 {
