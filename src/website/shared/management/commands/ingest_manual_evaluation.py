@@ -587,15 +587,15 @@ class BulkEvaluationIngestion:
         ms = []
         seen = set()
         for m in maintainers:
-            # Duplicate...
-            if m.name in seen:
-                continue
-
             # Maintainers without a GitHub or a GitHub ID cannot be reconciled.
             # This unfortunately creates a partial view of all maintainers of a
             # given package. If you want to fix this, you can start from
             # looking around https://github.com/NixOS/nixpkgs/pull/273220.
             if m.github is None or m.githubId is None:
+                continue
+
+            # Duplicate...
+            if m.githubId in seen:
                 continue
 
             ms.append(
@@ -607,13 +607,13 @@ class BulkEvaluationIngestion:
                     name=m.name,
                 )
             )
-            seen.add(m.name)
+            seen.add(m.githubId)
 
         NixMaintainer.objects.bulk_create(
             ms,
             update_conflicts=True,
             unique_fields=["github_id"],  # pyright: ignore generalTypeIssue
-            update_fields=["email", "github", "matrix"],
+            update_fields=["email", "github", "matrix", "name"],
         )
 
         # HACK HACK HACK
