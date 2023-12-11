@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from django.utils.timezone import make_aware
 from requests import get
@@ -10,8 +10,8 @@ from shared import models
 
 
 def make_organization(
-    uuid: Optional[str], short_name: Optional[str] = None
-) -> Optional[models.Organization]:
+    uuid: str | None, short_name: str | None = None
+) -> models.Organization | None:
     if uuid is None:
         return None
 
@@ -24,7 +24,7 @@ def make_organization(
     return org
 
 
-def make_date(date: Optional[str]) -> Optional[datetime]:
+def make_date(date: str | None) -> datetime | None:
     if date is None:
         return None
 
@@ -36,8 +36,8 @@ def make_date(date: Optional[str]) -> Optional[datetime]:
     return time
 
 
-def make_media(data: Dict[str, str]) -> models.SupportingMedia:
-    ctx: Dict[str, Any] = dict()
+def make_media(data: dict[str, str]) -> models.SupportingMedia:
+    ctx: dict[str, Any] = dict()
     ctx["_type"] = data["type"]
     ctx["base64"] = data["base64"]
     ctx["value"] = data["value"]
@@ -45,8 +45,8 @@ def make_media(data: Dict[str, str]) -> models.SupportingMedia:
     return models.SupportingMedia.objects.create(**ctx)
 
 
-def make_description(data: Dict[str, Any]) -> models.Description:
-    ctx: Dict[str, Any] = dict()
+def make_description(data: dict[str, Any]) -> models.Description:
+    ctx: dict[str, Any] = dict()
     ctx["lang"] = data["lang"]
     ctx["value"] = data["value"]
 
@@ -62,8 +62,8 @@ def make_tag(name: str) -> models.Tag:
     return obj
 
 
-def make_reference(data: Dict[str, Any]) -> models.Reference:
-    ctx: Dict[str, Any] = dict()
+def make_reference(data: dict[str, Any]) -> models.Reference:
+    ctx: dict[str, Any] = dict()
     ctx["url"] = data["url"]
     ctx["name"] = data.get("name", "")
 
@@ -73,8 +73,8 @@ def make_reference(data: Dict[str, Any]) -> models.Reference:
     return obj
 
 
-def make_problem_type(data: Dict[str, Any]) -> models.ProblemType:
-    ctx: Dict[str, Any] = dict()
+def make_problem_type(data: dict[str, Any]) -> models.ProblemType:
+    ctx: dict[str, Any] = dict()
     ctx["cwe_id"] = data.get("cweId")
     ctx["_type"] = data.get("type")
 
@@ -87,8 +87,8 @@ def make_problem_type(data: Dict[str, Any]) -> models.ProblemType:
     return obj
 
 
-def make_metric(data: Dict[str, Any]) -> models.Metric:
-    ctx: Dict[str, Any] = dict()
+def make_metric(data: dict[str, Any]) -> models.Metric:
+    ctx: dict[str, Any] = dict()
     ctx["format"] = "cvssV3_1"
     ctx["content"] = data.get("cvssV3_1", {})
 
@@ -98,16 +98,16 @@ def make_metric(data: Dict[str, Any]) -> models.Metric:
     return obj
 
 
-def make_event(data: Dict[str, Any]) -> models.Event:
-    ctx: Dict[str, Any] = dict()
+def make_event(data: dict[str, Any]) -> models.Event:
+    ctx: dict[str, Any] = dict()
     ctx["time"] = make_date(data["time"])
     ctx["description"] = make_description(data)
 
     return models.Event.objects.create(**ctx)
 
 
-def make_credit(data: Dict[str, Any]) -> models.Credit:
-    ctx: Dict[str, Any] = dict()
+def make_credit(data: dict[str, Any]) -> models.Credit:
+    ctx: dict[str, Any] = dict()
     ctx["_type"] = data.get("type", "finder")
     ctx["user"] = make_organization(uuid=data.get("user"))
     ctx["description"] = make_description(data)
@@ -121,8 +121,8 @@ def make_platform(name: str) -> models.Platform:
     return obj
 
 
-def make_version(data: Dict[str, Any]) -> models.Version:
-    ctx: Dict[str, Any] = dict()
+def make_version(data: dict[str, Any]) -> models.Version:
+    ctx: dict[str, Any] = dict()
     ctx["version"] = data.get("version")
     ctx["status"] = data.get("status", models.Version.Status.UNKNOWN)
     ctx["version_type"] = data.get("versionType")
@@ -156,8 +156,8 @@ def make_program_routine(name: str) -> models.ProgramRoutine:
     return obj
 
 
-def make_affected_product(data: Dict[str, Any]) -> models.AffectedProduct:
-    ctx: Dict[str, Any] = dict()
+def make_affected_product(data: dict[str, Any]) -> models.AffectedProduct:
+    ctx: dict[str, Any] = dict()
     ctx["vendor"] = data.get("vendor")
     ctx["product"] = data.get("product")
     ctx["collection_url"] = data.get("collectionURL")
@@ -179,7 +179,7 @@ def make_affected_product(data: Dict[str, Any]) -> models.AffectedProduct:
 
 
 def make_cve_record(
-    data: Dict[str, Any], cve: Optional[models.CveRecord] = None
+    data: dict[str, Any], cve: models.CveRecord | None = None
 ) -> models.CveRecord:
     if cve is None:
         cve = models.CveRecord()
@@ -205,9 +205,9 @@ def make_cve_record(
 
 
 def make_container(
-    data: Dict[str, Any], _type: str, cve: models.CveRecord
+    data: dict[str, Any], _type: str, cve: models.CveRecord
 ) -> models.Container:
-    ctx: Dict[str, Any] = {"_type": _type, "cve": cve}
+    ctx: dict[str, Any] = {"_type": _type, "cve": cve}
     ctx["provider"] = make_organization(
         uuid=data["providerMetadata"].get("orgId"),
         short_name=data["providerMetadata"].get("shortName"),
@@ -245,8 +245,8 @@ def make_container(
 
 
 def make_cve(
-    data: Dict[str, Any],
-    record: Optional[models.CveRecord] = None,
+    data: dict[str, Any],
+    record: models.CveRecord | None = None,
     triaged: bool = False,
 ) -> models.CveRecord:
     cve = make_cve_record(data["cveMetadata"], cve=record)
@@ -265,7 +265,7 @@ def make_cve(
     return cve
 
 
-def fetch_cve_gh(cve_id: str) -> Optional[models.CveRecord]:
+def fetch_cve_gh(cve_id: str) -> models.CveRecord | None:
     """Fetch a cve from the cvelistV5 github repository."""
 
     m = re.fullmatch(

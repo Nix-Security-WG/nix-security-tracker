@@ -1,5 +1,3 @@
-from typing import Type
-
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_save
@@ -9,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from .nix_evaluation import NixDerivation
 
 
-def text_length(choices: Type[models.TextChoices]):
+def text_length(choices: type[models.TextChoices]):
     return max(map(len, choices.values))
 
 

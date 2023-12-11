@@ -1,6 +1,6 @@
 [tool.ruff]
 target-version = "py311"
-select = ["E", "F", "I", "N"]
+select = ["E", "F", "I", "N", "U"]
 ignore = [
   "F403",
   "E501", # line too long

@@ -1,11 +1,9 @@
-from typing import Type
-
 from django.contrib.postgres import fields
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-def text_length(choices: Type[models.TextChoices]):
+def text_length(choices: type[models.TextChoices]):
     return max(map(len, choices.values))
 
 
