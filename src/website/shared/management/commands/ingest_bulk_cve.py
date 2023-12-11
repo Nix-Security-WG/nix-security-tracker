@@ -30,7 +30,7 @@ class Command(BaseCommand):
             "--subset",
             nargs="?",
             type=int,
-            help="Integer value reprepathsenting the N subset of total entries. "
+            help="Integer value representing the last N subset of total entries. "
             + " Useful to generate a small dataset for development.",
             default=0,
         )
@@ -115,12 +115,13 @@ class Command(BaseCommand):
             self.release = self._download_gh_bundle(data_cache_dir)
 
         # Traverse the tree and import cves if they already exist
-        cve_list = glob(f"{cve_data_cache_dir}/*/*/*.json")
+        # Return the list in lexicographical order
+        cve_list = sorted(glob(f"{cve_data_cache_dir}/*/*/*.json"), key=path.basename)
 
         # Open a single transaction for the db
         with transaction.atomic():
             if kwargs["subset"] > 0:
-                cve_list = cve_list[: kwargs["subset"]]
+                cve_list = cve_list[-kwargs["subset"] :]
             logger.warn(f"{len(cve_list)} CVEs to ingest.")
 
             for j_cve in cve_list:
