@@ -38,14 +38,11 @@ parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Secu
 main :: IO ()
 main = do
     params <- execParser parameterInfo
-    exists <- fileExist (sbom params)
-    case exists of
-      True -> go params
-      False -> case (path params) of
-          Just drv' -> do
-            callProcess (sbomnixExe) [drv', "--type", "runtime"]
-            go params
-          _ -> error "Please specify drv file"
+    case (path params) of
+      Just drv' -> do
+        callProcess (sbomnixExe) [drv', "--type", "runtime"]
+        go params
+      _ -> error "Please specify drv file"
 
  where
      go params = do
