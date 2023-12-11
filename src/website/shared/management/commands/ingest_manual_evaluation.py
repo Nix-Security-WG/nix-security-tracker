@@ -105,16 +105,16 @@ class BulkSave(object):
                     "No snapshot found for %s pk=%s attribute=%s"
                     % (klass, model.pk, atn)
                 )
-            if val and (isinstance(field, DecimalField)):
+            if val and (isinstance(f, DecimalField)):
                 if not isinstance(val, Decimal):
                     if not isinstance(val, (int, float, str)):
                         raise Exception(
                             "%s %s is not a number, is: %s" % (model, val, type(val))
                         )
-                    val = Decimal(str(round(float(val), field.decimal_places)))
+                    val = Decimal(str(round(float(val), f.decimal_places)))
             if prev != val:
                 # print "CHANGED (%s).%s %s => %s" % (model, atn, prev, val)
-                qwargs[field.name] = getattr(model, field.name)
+                qwargs[f.name] = getattr(model, f.name)
         if qwargs:
             self.set(model, qwargs)
         del self.snapshots[klass][model.pk]
@@ -130,13 +130,13 @@ class BulkSave(object):
             atn = f.get_attname()
             val = getattr(model, atn)
             prev = self.snapshots[klass][model.pk][atn]
-            if val and (isinstance(field, DecimalField)):
+            if val and (isinstance(f, DecimalField)):
                 if not isinstance(val, Decimal):
                     if isinstance(val, (int, float)):
                         raise Exception(
                             "%s %s is not a number, is: %s" % (model, val, type(val))
                         )
-                    val = Decimal(str(round(val, field.decimal_places)))
+                    val = Decimal(str(round(val, f.decimal_places)))
             if prev != val:
                 return True
         return False
@@ -259,13 +259,13 @@ class BulkSave(object):
                 # then it still has no {fk}_id set
                 # so set it now with that id
                 if isinstance(f, ForeignKey):
-                    atn = field.get_attname()
+                    atn = f.get_attname()
                     val = getattr(model, atn)
                     if val is None:
-                        fk = getattr(model, field.get_cache_name(), None)
+                        fk = getattr(model, f.get_cache_name(), None)
                         if fk:
                             val = fk.pk
-                            setattr(model, field.get_attname(), val)
+                            setattr(model, f.get_attname(), val)
         try:
             klass.objects.bulk_create(models, 100)
         except Exception as e:
@@ -332,7 +332,9 @@ class BulkSave(object):
         for f, models_to_lookup in list(fields_models_to_lookup.items()):
             self.save_m2m_for_field(klass, f, models_to_lookup, models_fields_ids)
 
-    def save_m2m_for_field(self, klass, field, models_to_lookup, models_fields_ids):
+    def save_m2m_for_field(
+        self, klass, field_name, models_to_lookup, models_fields_ids
+    ):
         opts = klass._meta
 
         # joins that will need to be made
@@ -341,7 +343,7 @@ class BulkSave(object):
         # {join.objects: join_id[]}
         joins_to_delete = defaultdict(list)
 
-        ff = opts.get_field(field)
+        ff = opts.get_field(field_name)
         # apt_contacts
         join_objects = ff.remote_field.through.objects
         # apt__in
@@ -368,7 +370,7 @@ class BulkSave(object):
             model = self.m2m_models[klass][mid]
             current = set(existing[model.id])
             for fg, shoulds in list(fields_ids.items()):
-                if fg == field:
+                if fg == field_name:
                     shoulds = set(shoulds)
                     to_remove = current.difference(shoulds)
                     if to_remove:
