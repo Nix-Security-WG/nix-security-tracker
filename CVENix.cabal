@@ -24,7 +24,8 @@ library
                       CVENix.Matching,
                       CVENix.Examples,
                       CVENix.Types,
-                      CVENix.NVD
+                      CVENix.NVD,
+                      CVENix.WebData
 
     build-depends:    base ^>=4.17.2.0,
                       aeson,

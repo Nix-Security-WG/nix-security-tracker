@@ -19,6 +19,7 @@ import System.Which
 
 import OpenSSL
 import qualified Data.Text as T
+import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import Control.Exception
 import Data.Word
@@ -40,6 +41,8 @@ import Control.Monad
 sbomnixExe :: FilePath
 sbomnixExe = $(staticWhich "sbomnix")
 
+convertToApi :: [(Text, Text)] -> ByteString
+convertToApi = TE.encodeUtf8 . T.intercalate "&" . map (\(x, y) -> x <> "=" <> y)
 
 stripType :: Options
 stripType = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }

@@ -300,8 +300,7 @@ nvdApi r = go 0
               go (count + 1)
           Right c -> pure c
 
-      convertToApi :: [(Text, Text)] -> ByteString
-      convertToApi = TE.encodeUtf8 . T.intercalate "&" . map (\(x, y) -> x <> "=" <> y)
+
 
 withApiKey
     :: IO a
