@@ -1,25 +1,12 @@
 # Register your models here.
 
-from typing import Type
+from collections.abc import Callable
+from typing import Any
+
 from django.contrib import admin
 from django.db import models
-from django.db.models import ForeignKey, ManyToManyField, CharField, TextField
-from django.apps import apps
-
-from shared.models import (
-    NixpkgsIssue,
-    Description,
-    Container,
-    CveRecord,
-    Description,
-    NixChannel,
-    NixEvaluation,
-    NixDerivation,
-    NixDerivationMeta,
-    NixDerivationOutput,
-    NixStorePathOutput,
-    NixMaintainer,
-)
+from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
+from shared.models import Container, NixDerivationMeta, NixpkgsIssue
 
 
 class ReadOnlyMixin:
@@ -28,12 +15,14 @@ class ReadOnlyMixin:
     No idea why it has to be done this way, but it works.
     """
 
-    model: Type[models.Model]
+    model: type[models.Model]
 
-    def get_fields(self, request, obj=None):
+    def get_fields(self, request: object, obj: models.Model | None = None) -> list[str]:
         return [field.name for field in self.model._meta.fields]
 
-    def get_readonly_fields(self, request, obj=None):
+    def get_readonly_fields(
+        self, request: object, obj: models.Model | None = None
+    ) -> list[str]:
         # existing objects are read-only
         if obj:
             return self.get_fields(request, obj)
@@ -55,13 +44,13 @@ class AutocompleteMixin:
     This requires setting search fields on the related models.
     """
 
-    def __init__(self, model, admin_site):
+    def __init__(self, model: type[models.Model], admin_site: Any) -> None:
         super().__init__(model, admin_site)  # type: ignore
         self.set_autocomplete_fields(model)
 
-    def set_autocomplete_fields(self, model):
+    def set_autocomplete_fields(self, model: type[models.Model]) -> None:
         for field in model._meta.get_fields():
-            if isinstance(field, (ForeignKey, ManyToManyField)):
+            if isinstance(field, ForeignKey | ManyToManyField):
                 # Update autocomplete_fields
                 self.autocomplete_fields = list(
                     getattr(self, "autocomplete_fields", [])
@@ -76,7 +65,7 @@ class AutocompleteMixin:
                     related_admin = self.create_related_admin(related_model)
                 self.set_search_fields(related_model, related_admin)
 
-    def create_related_admin(self, related_model):
+    def create_related_admin(self, related_model: type[models.Model]) -> type[Any]:
         related_admin = type(
             f"{related_model.__name__}Admin",
             (ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin),
@@ -85,11 +74,15 @@ class AutocompleteMixin:
         admin.site.register(related_model, related_admin)
         return related_admin
 
-    def set_search_fields(self, model, admin_class):
+    def set_search_fields(
+        self,
+        model: type[models.Model],
+        admin_class: type[admin.ModelAdmin] | admin.ModelAdmin,
+    ) -> None:
         search_fields = [
             field.name
             for field in model._meta.get_fields()
-            if isinstance(field, (CharField, TextField))
+            if isinstance(field, CharField | TextField)
         ]
         if search_fields == []:
             search_fields = ["__str__"]
@@ -99,8 +92,8 @@ class AutocompleteMixin:
             admin_class.search_fields = search_fields
 
 
-def override(model_class):
-    def decorator(admin_class):
+def override(model_class: type[Any]) -> Callable[[type[Any]], type[Any]]:
+    def decorator(admin_class: type[Any]) -> type[Any]:
         if admin.site.is_registered(model_class):
             admin.site.unregister(model_class)
         admin.site.register(model_class, admin_class)
@@ -118,7 +111,9 @@ class NixDerivationMetaAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin)
 class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
     search_fields = ["title"]
 
-    def get_search_results(self, request, queryset, search_term):
+    def get_search_results(
+        self, request: Any, queryset: Any, search_term: str
+    ) -> tuple[Any, bool]:
         queryset, use_distinct = super().get_search_results(
             request, queryset, search_term
         )

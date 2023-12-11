@@ -19,7 +19,7 @@ class Organization(models.Model):
     uuid = models.UUIDField(primary_key=True)
     short_name = models.CharField(max_length=32, null=True, default=None)
 
-    def __str__(self):
+    def __str__(self) -> str | None:
         return self.short_name
 
 
@@ -54,7 +54,7 @@ class CveRecord(models.Model):
 
     triaged = models.BooleanField(default=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.cve_id
 
 
@@ -86,7 +86,7 @@ class Description(models.Model):
     value = models.TextField()
     media = models.ManyToManyField(SupportingMedia)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.value[:32]}..."
 
 
@@ -267,7 +267,7 @@ class Container(models.Model):
     credits = models.ManyToManyField(Credit)
     source = models.JSONField(default=dict)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.cve.cve_id
 
 
@@ -317,7 +317,7 @@ class NixpkgsIssue(models.Model):
 
     derivations = models.ManyToManyField(NixDerivation)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.code
 
     @property
