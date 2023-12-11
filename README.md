@@ -36,7 +36,22 @@ echo baz > .credentials/GH_SECRET
 You only need actual GitHub credentials to use the OAuth login feature.
 
 On the first start, run `manage migrate` to create the schema.
-The database is written to `./tracker.sqlite3`.
+Currently only postgresql is supported as a datbase. You can setup a database in NixOS like this:
+
+```
+services.postgresql.enable = true;
+services.postgresql.ensureDatabases = [ "youruser" ];
+services.postgresql.ensureUsers = [{
+  name = "youruser";
+  ensureDBOwnership = true;
+}];
+```
+
+Replace `youruser` with your own user. Afterwards you can export `DATABASE_URL` like this:
+
+```
+DATABASE_URL=postgres:///youruser manage migrate
+```
 
 Call `manage runserver` and open <https://localhost:8000>.
 
