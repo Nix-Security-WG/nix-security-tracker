@@ -98,8 +98,11 @@ rec {
     '';
   };
 
-  tests = import ./nix/tests/vm-basic.nix {
-    inherit pkgs;
-    wstModule = module;
-  };
+  inherit
+    (import ./nix/tests/vm-basic.nix {
+      inherit pkgs;
+      wstModule = module;
+    })
+    vm-basic
+    ;
 }
