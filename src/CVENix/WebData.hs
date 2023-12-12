@@ -39,18 +39,21 @@ webAppApi r = do
   where
       go :: LogT m ann => Int -> ReaderT Parameters m [WebAppResponse]
       go count = do
-          baseURL <- securityTrackerUrl <$> ask
-          let url = (TE.encodeUtf8 $ T.pack baseURL) <> "?" <> (convertToApi $ toList r)
-          debug <- debug <$> ask
-          v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
-          when debug $ logMessage $ WithSeverity Debug $ pretty $ show url
-          case v of
-            Left e -> do
-                when debug $ logMessage $ WithSeverity Debug $ pretty $ show e
-                logMessage $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
-                logMessage $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
-                liftIO $ threadDelay $ 1000000 * 10
-                go (count + 1)
-            Right c -> pure c
+          baseURL' <- securityTrackerUrl <$> ask
+          case baseURL' of
+            Nothing -> pure []
+            Just baseURL -> do
+              let url = (TE.encodeUtf8 $ T.pack baseURL) <> "?" <> (convertToApi $ toList r)
+              debug <- debug <$> ask
+              v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
+              when debug $ logMessage $ WithSeverity Debug $ pretty $ show url
+              case v of
+                Left e -> do
+                    when debug $ logMessage $ WithSeverity Debug $ pretty $ show e
+                    logMessage $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
+                    logMessage $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
+                    liftIO $ threadDelay $ 1000000 * 10
+                    go (count + 1)
+                Right c -> pure c
 
 
