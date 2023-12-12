@@ -45,10 +45,10 @@ Set up the database with known-good values to play around with:
 ./contrib/reset.sh
 ```
 
-Start the server:
+Start the server and its workers:
 
 ```console
-manage runserver
+hivemind
 ```
 
 ## Running tests

@@ -93,6 +93,7 @@ let
           pkgs.commitizen
           pkgs.npins
           pkgs.nixfmt
+          pkgs.hivemind
         ];
 
         shellHook = ''
