@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
 module CVENix.Matching where
 
 import CVENix.SBOM
@@ -72,12 +73,12 @@ match inventory params = do
       Nothing -> putStrLn "No known deps?"
       Just s -> do
           let d = filter (\(InventoryDependency pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getDeps s
-          withApp params $ timeLog $ Named "Matching" $ do
+          withApp params $ timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
-                nvdCVEs <- timeLog $ Named "LoadNVDCVEs" $ loadNVDCVEs
+                nvdCVEs <- timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ loadNVDCVEs
                 advisories <- convertToLocal nvdCVEs
-                (_, matches) <- timeLog $ Named "PerformMatching" $ foldM (performMatching (asLookup advisories)) ([], []) d
-                matchesWithStatus <- timeLog $ Named "getStatuses" $ getStatuses matches
+                (_, matches) <- timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ foldM (performMatching (asLookup advisories)) ([], []) d
+                matchesWithStatus <- timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__))$ getStatuses matches
                 flip mapM_ matchesWithStatus $ \(match, status) -> do
                     liftIO $ putStrLn ""
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match
@@ -120,7 +121,7 @@ match inventory params = do
             True -> do
                 when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
                 pure (seenSoFar, matchedSoFar)
-            False -> timeLog $ Named "performMatching" $ do
+            False -> timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
               let vulns' = flip mapMaybe (Set.toList $ SetMultimap.lookup pname vulns) $ \vuln -> versionInRange vuln version
               let matches = flip map vulns' $ \(cid, severity, v, rangeEnd) -> Match pname cid severity rangeEnd v drv
