@@ -47,6 +47,8 @@ CHANNEL_LAYERS = {
 }
 
 ## Logging settings
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -67,10 +69,10 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",
             "filters": ["require_debug_true"],
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "verbose",
         },
         "mail_admins": {
             "level": "ERROR",
@@ -89,7 +91,7 @@ LOGGING = {
         },
         "shared": {
             "handlers": ["console", "mail_admins"],
-            "level": "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",
             "filters": [],
         },
     },
@@ -101,15 +103,35 @@ GIT_CLONE_URL = "https://github.com/NixOS/nixpkgs"
 # will be instantiated for this application's needs.
 # By default, in the root of this Git repository.
 LOCAL_NIXPKGS_CHECKOUT = (BASE_DIR / ".." / ".." / "nixpkgs").resolve()
+# If you have a reference Nixpkgs, you better set this
+# so you can benefit from faster cloning.
+NIXPKGS_REFERENCE_CHECKOUT = None
+# Evaluation concurrency
+# Do not go overboard with this, as Nixpkgs evaluation
+# is _very_ expensive.
+# The more cores you have, the more RAM you will consume.
+# TODO(raitobezarius): implement fine-grained tuning on `nix-eval-jobs`.
+MAX_PARALLEL_EVALUATION = 3
+# Where are stored the evaluation gc roots directory
+EVALUATION_GC_ROOTS_DIRECTORY: str = str(Path(
+    BASE_DIR / ".." / ".." / "nixpkgs-gc-roots"
+).resolve())
+# Where are the stderr of each `nix-eval-jobs` stored.
+EVALUATION_LOGS_DIRECTORY: str = str(Path(
+    BASE_DIR / ".." / ".." / "nixpkgs-evaluation-logs"
+).resolve())
+# This can be tuned for your specific deployment,
+# this is used to wait for an evaluation slot to be available
+# It should be around the average evaluation time on your machine.
+# in seconds.
+# By default: 25 minutes.
+DEFAULT_SLEEP_WAITING_FOR_EVALUATION_SLOT = 25 * 60
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = get_secret("SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
