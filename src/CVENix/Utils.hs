@@ -77,11 +77,14 @@ withApp params f = runLoggingT (runReaderT f params) (print . renderWithSeverity
 timeLog :: forall a m ann. LogT m ann => Named (ReaderT Parameters m a) -> ReaderT Parameters m a
 timeLog f = do
     debug' <- timeInfo <$> ask
-    time <- liftIO $ getCurrentTime
-    o <- _f f
-    time' <- liftIO $ getCurrentTime
-    when debug' $ logMessage $ WithSeverity Debug $ pretty $ "[" <> (T.unpack $ _fname f) <> "] Time to run: " <> (show $ diffUTCTime time' time)
-    pure o
+    case debug' of
+      False -> pure =<< _f f
+      True -> do
+        time <- liftIO $ getCurrentTime
+        o <- _f f
+        time' <- liftIO $ getCurrentTime
+        when debug' $ logMessage $ WithSeverity Debug $ pretty $ "[" <> (T.unpack $ _fname f) <> "] Time to run: " <> (show $ diffUTCTime time' time)
+        pure o
 
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a
 getWithHeaders' headers r' handler = withOpenSSL $ getWithHeaders 0 r' handler headers
