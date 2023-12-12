@@ -12,11 +12,12 @@ import CVENix.Utils
 
 import Data.Maybe
 import Data.Char (isDigit)
+import qualified Data.Set as Set
+import qualified Data.Multimap.Set as SetMultimap
 import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Monad
 import Control.Monad.Log
-import Control.Monad.Log.Colors
 import Control.Monad.IO.Class
 import Prettyprinter
 import Control.Monad.Trans.Reader
@@ -56,7 +57,6 @@ versionInRange vuln version =
 
 match :: SBOM -> Parameters -> IO ()
 match inventory params = do
-    putStrLn "Matched advisories:"
     case _sbom_dependencies inventory of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
@@ -64,8 +64,9 @@ match inventory params = do
           withApp params $ timeLog $ do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ loadNVDCVEs
-                matches <- convertToLocal nvdCVEs
-                timeLog $ foldM_ (getFromNVD (concat matches)) ([] :: [(Text, Maybe Text)]) d
+                advisories <- convertToLocal nvdCVEs
+                timeLog $ foldM_ (performMatching (asLookup advisories)) ([] :: [(Text, Maybe Text)]) d
+                pure ()
 
     where
       getDeps :: [SBOMDependency] -> [InventoryDependency]
@@ -85,8 +86,8 @@ match inventory params = do
                               (InventoryDependency pname version drvpath)
                   in map split deps
 
-      getFromNVD :: LogT m ann => [LocalVuln] -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
-      getFromNVD vulns acc (InventoryDependency pname version drv) = do
+      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
+      performMatching vulns acc (InventoryDependency pname version drv) = do
           debug' <- debug <$> ask
           case elem (pname, version) acc of
             True -> do
@@ -94,15 +95,8 @@ match inventory params = do
                 pure acc
             False -> timeLog $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
-              let  vulns' = flip map vulns $ \vuln -> do
-                    case (_vuln_product vuln) of
-                      (Just name) ->
-                        if name == pname then versionInRange vuln version else Nothing
-                      _ -> Nothing
-
-              timeLog $ flip mapM_ vulns' $ \case
-                Nothing -> pure ()
-                Just (cid, severity, v, rangeEnd) -> timeLog $ do
+              let vulns' = flip mapMaybe (Set.toList $ SetMultimap.lookup pname vulns) $ \vuln -> versionInRange vuln version
+              timeLog $ flip mapM_ vulns' $ \(cid, severity, v, rangeEnd) -> timeLog $ do
                     liftIO $ putStrLn ""
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack pname
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack cid
@@ -114,3 +108,12 @@ match inventory params = do
                     logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
                     liftIO $ putStrLn ""
               pure $ acc <> [(pname, version)]
+
+      asLookup :: [[LocalVuln]] -> SetMultimap.SetMultimap Text LocalVuln
+      asLookup vulns =
+            SetMultimap.fromList $ mapMaybe asTuple $ concat vulns
+            where
+              asTuple :: LocalVuln -> Maybe (Text, LocalVuln)
+              asTuple vuln = case _vuln_product vuln of
+                Just v -> Just (v, vuln)
+                Nothing -> Nothing
