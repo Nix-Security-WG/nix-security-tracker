@@ -1,8 +1,10 @@
-# NixOS Security Tracker
+# Nixpkgs Security Tracker
 
-The **NixOS Security Tracker** is a django based application for following vulnerabilities in NixOS packages, displaying their details.
+The **Nixpkgs Security Tracker** is a web service for managing information on vulnerabilities in software distributed through Nixpkgs.
 
 # Hacking
+
+The service is implemented in Python using [Django](https://www.djangoproject.com/).
 
 Start a development shell:
 
@@ -36,11 +38,11 @@ echo baz > .credentials/GH_SECRET
 You only need actual GitHub credentials to use the OAuth login feature.
 
 On the first start, run `manage migrate` to create the schema.
-Currently only postgresql is supported as a datbase. You can setup a database in NixOS like this:
+Currently only [PostgreSQL](https://www.postgresql.org/) is supported as a datbase. You can set up a database on NixOS like this:
 
 ```
 services.postgresql.enable = true;
-services.postgresql.ensureDatabases = [ "youruser" ];
+services.postgresql.ensureDatabases = [ "nix-security-tracker" ];
 services.postgresql.ensureUsers = [{
   name = "youruser";
   ensureDBOwnership = true;
@@ -50,15 +52,15 @@ services.postgresql.ensureUsers = [{
 Replace `youruser` with your own user. Afterwards you can export `DATABASE_URL` like this:
 
 ```
-DATABASE_URL=postgres:///youruser manage migrate
+DATABASE_URL=postgres:///nix-security-tracker manage migrate
 ```
+
+Run `manage createsuperuser` to be able to access the admin panel at <http://localhost:8000/admin> and manually edit database entries.
 
 Call `manage runserver` and open <http://localhost:8000>.
 
-Run `manage createsuperuser` to access the admin panel at <http://localhost:8000/admin> and manually edit database entries.
-
-Whenever you add a field in the database schema, call `makemigrations`.
-Then run `migrate` before starting the server again.
+Whenever you add a field in the database schema, call `manage makemigrations`.
+Then run `manage migrate` before starting the server again.
 This is the default Django workflow.
 
 # Ingesting data for testing
@@ -132,7 +134,7 @@ zstd -d evaluation.jsonl.zst
 Before ingesting, call `manage runsever` and manually create a "Nix channel":
 
 ```console
-src/website/manage.py register_channel <null> nixos-unstable UNSTABLE
+manage register_channel '<null>' nixos-unstable UNSTABLE
 ```
 
 The "Channel branch" field must match the parameter passed to `ingest_manual_evaluation`, which is `nixos-unstable` here.
