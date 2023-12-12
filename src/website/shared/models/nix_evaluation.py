@@ -232,6 +232,8 @@ class NixEvaluation(TimeStampMixin):
     # How many times have been we trying to evaluate
     # this? We use it for the crash backoff loop.
     attempt = models.IntegerField(default=0)
+    # Time elapsed in seconds for this evaluation.
+    elapsed = models.FloatField(null=True)
 
     def __str__(self) -> str:
         return f"{self.channel} {self.commit_sha1[:8]}"

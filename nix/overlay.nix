@@ -52,6 +52,7 @@ in
       django-pgpubsub
       daphne
       channels
+      aiofiles
     ];
 
     postInstall = ''
