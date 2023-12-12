@@ -28,6 +28,15 @@ data InventoryDependency = InventoryDependency
   , _inventorydependency_drv :: Text
   } deriving (Show)
 
+data Match = Match
+  { _match_name :: Text
+  , _match_advisory_id :: Text
+  , _match_severity :: Maybe Text
+  , _match_advisory_range_end :: SemVer
+  , _match_matched_version :: SemVer
+  , _match_drv_path :: Text
+  } deriving (Show)
+
 versionInRange :: LocalVuln -> Maybe Text -> Maybe (Text, Maybe Text, SemVer, SemVer)
 versionInRange vuln version =
   let advisoryId = _vuln_cveId vuln
@@ -65,7 +74,19 @@ match inventory params = do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ loadNVDCVEs
                 advisories <- convertToLocal nvdCVEs
-                timeLog $ foldM_ (performMatching (asLookup advisories)) ([] :: [(Text, Maybe Text)]) d
+                (_, matches) <- timeLog $ foldM (performMatching (asLookup advisories)) ([], []) d
+                flip mapM_ matches $ \match -> do
+                    liftIO $ putStrLn ""
+                    logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match
+                    logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_advisory_id match
+                    case (_match_severity match) of
+                      Just s -> logMessage $ WithSeverity Warning $ pretty $ T.unpack s
+                      Nothing -> pure ()
+                    logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> (prettySemVer $ _match_advisory_range_end match)
+                    logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> (prettySemVer $ _match_matched_version match)
+                    logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> (T.unpack $ _match_drv_path match)
+                    liftIO $ putStrLn ""
+
                 pure ()
 
     where
@@ -86,28 +107,18 @@ match inventory params = do
                               (InventoryDependency pname version drvpath)
                   in map split deps
 
-      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> [(Text, Maybe Text)] -> InventoryDependency -> ReaderT Parameters m [(Text, Maybe Text)]
-      performMatching vulns acc (InventoryDependency pname version drv) = do
+      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> ([(Text, Maybe Text)], [Match]) -> InventoryDependency -> ReaderT Parameters m ([(Text, Maybe Text)], [Match])
+      performMatching vulns (seenSoFar, matchedSoFar) (InventoryDependency pname version drv) = do
           debug' <- debug <$> ask
-          case elem (pname, version) acc of
+          case elem (pname, version) seenSoFar of
             True -> do
                 when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
-                pure acc
+                pure (seenSoFar, matchedSoFar)
             False -> timeLog $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
               let vulns' = flip mapMaybe (Set.toList $ SetMultimap.lookup pname vulns) $ \vuln -> versionInRange vuln version
-              timeLog $ flip mapM_ vulns' $ \(cid, severity, v, rangeEnd) -> timeLog $ do
-                    liftIO $ putStrLn ""
-                    logMessage $ WithSeverity Warning $ pretty $ T.unpack pname
-                    logMessage $ WithSeverity Warning $ pretty $ T.unpack cid
-                    case severity of
-                      Just s -> logMessage $ WithSeverity Warning $ pretty $ T.unpack s
-                      Nothing -> pure ()
-                    logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> prettySemVer rangeEnd
-                    logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> prettySemVer v
-                    logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> T.unpack drv
-                    liftIO $ putStrLn ""
-              pure $ acc <> [(pname, version)]
+              let matches = flip map vulns' $ \(cid, severity, v, rangeEnd) -> Match pname cid severity rangeEnd v drv
+              pure $ (seenSoFar <> [(pname, version)], matchedSoFar <> matches)
 
       asLookup :: [[LocalVuln]] -> SetMultimap.SetMultimap Text LocalVuln
       asLookup vulns =
