@@ -6,3 +6,5 @@ __pycache__
 *.jsonl # Evaluation results
 /**/.data_cache
 src/website/static
+# A shallow checkout of nixpkgs
+nixpkgs/
