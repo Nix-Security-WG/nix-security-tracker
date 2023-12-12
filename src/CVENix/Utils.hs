@@ -38,6 +38,12 @@ import Prettyprinter
 import Control.Monad.IO.Class
 import Control.Monad
 
+-- Gross workaround to show function names
+data Named f = Named
+  { _fname :: Text
+  , _f :: f
+  }
+
 sbomnixExe :: FilePath
 sbomnixExe = $(staticWhich "sbomnix")
 
@@ -68,13 +74,13 @@ stripType' = defaultOptions { fieldLabelModifier = stripTypeNamePrefix }
 withApp :: r -> ReaderT r (LoggingT (WithSeverity (Doc ann)) IO) a -> IO a
 withApp params f = runLoggingT (runReaderT f params) (print . renderWithSeverity id . colorize)
 
-timeLog :: forall a m ann. LogT m ann => (ReaderT Parameters m a) -> ReaderT Parameters m a
+timeLog :: forall a m ann. LogT m ann => Named (ReaderT Parameters m a) -> ReaderT Parameters m a
 timeLog f = do
     debug' <- timeInfo <$> ask
     time <- liftIO $ getCurrentTime
-    o <- f
+    o <- _f f
     time' <- liftIO $ getCurrentTime
-    when debug' $ logMessage $ WithSeverity Debug $ pretty $ "Time to run: " <> (show $ diffUTCTime time' time)
+    when debug' $ logMessage $ WithSeverity Debug $ pretty $ "[" <> (T.unpack $ _fname f) <> "] Time to run: " <> (show $ diffUTCTime time' time)
     pure o
 
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a
