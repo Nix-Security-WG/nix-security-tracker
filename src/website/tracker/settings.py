@@ -36,6 +36,16 @@ def get_secret(name: str, encoding: str = "utf-8") -> str:
     return secret
 
 
+## Channel setup
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": list(filter(None, [env.get("REDIS_UNIX_SOCKET")])),
+        },
+    },
+}
+
 ## Logging settings
 LOGGING = {
     "version": 1,
@@ -105,8 +115,9 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
+ASGI_APPLICATION = "tracker.asgi.application"
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -120,6 +131,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
+    "channels",
     "pgpubsub",
     "pgtrigger",
     "rest_framework",
@@ -160,6 +172,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "tracker.wsgi.application"
 
+## Realtime events configuration
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
