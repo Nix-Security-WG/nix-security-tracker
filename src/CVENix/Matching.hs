@@ -9,10 +9,12 @@ import CVENix.SBOM
 import CVENix.Types
 import CVENix.NVD
 import CVENix.Utils
+import CVENix.WebData
 
-import Data.Maybe
 import Data.Char (isDigit)
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Maybe
 import qualified Data.Multimap.Set as SetMultimap
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -75,12 +77,16 @@ match inventory params = do
                 nvdCVEs <- timeLog $ loadNVDCVEs
                 advisories <- convertToLocal nvdCVEs
                 (_, matches) <- timeLog $ foldM (performMatching (asLookup advisories)) ([], []) d
-                flip mapM_ matches $ \match -> do
+                matchesWithStatus <- timeLog $ getStatuses matches
+                flip mapM_ matchesWithStatus $ \(match, status) -> do
                     liftIO $ putStrLn ""
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_advisory_id match
                     case (_match_severity match) of
-                      Just s -> logMessage $ WithSeverity Warning $ pretty $ T.unpack s
+                      Just s -> logMessage $ WithSeverity Warning $ pretty $ "Severity: " <> (T.unpack s)
+                      Nothing -> pure ()
+                    case status of
+                      Just s -> logMessage $ WithSeverity Warning $ pretty $ "Status: " <> (T.unpack s)
                       Nothing -> pure ()
                     logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> (prettySemVer $ _match_advisory_range_end match)
                     logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> (prettySemVer $ _match_matched_version match)
@@ -119,6 +125,17 @@ match inventory params = do
               let vulns' = flip mapMaybe (Set.toList $ SetMultimap.lookup pname vulns) $ \vuln -> versionInRange vuln version
               let matches = flip map vulns' $ \(cid, severity, v, rangeEnd) -> Match pname cid severity rangeEnd v drv
               pure $ (seenSoFar <> [(pname, version)], matchedSoFar <> matches)
+
+      getStatuses :: LogT m ann => [Match] -> ReaderT Parameters m [(Match, Maybe Text)]
+      getStatuses matches = do
+          responses <- webAppApi $ Map.fromList $ map (\m -> ("cve", _match_advisory_id m)) matches
+          pure $ map (statusByMatch responses) matches
+          where
+            statusByMatch :: [WebAppResponse] -> Match -> (Match, Maybe Text)
+            statusByMatch [] match = (match, Nothing)
+            statusByMatch (x:xs) match =
+              if (elem (_match_advisory_id match) (_webappresponse_cve x)) then (match, Just $ _webappresponse_status x)
+              else statusByMatch xs match
 
       asLookup :: [[LocalVuln]] -> SetMultimap.SetMultimap Text LocalVuln
       asLookup vulns =

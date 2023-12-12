@@ -36,7 +36,7 @@ webAppApi r = go 0
   where
       go :: LogT m ann => Int -> ReaderT Parameters m [WebAppResponse]
       go count = do
-          let baseURL = "TODO"
+          let baseURL = "http://localhost:8000/api/v1/issues/?"
               url = baseURL <> (convertToApi $ toList r)
           debug <- debug <$> ask
           v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
