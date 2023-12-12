@@ -50,6 +50,8 @@ in
       pyngo
       django-ninja
       django-pgpubsub
+      daphne
+      channels
     ];
 
     postInstall = ''
