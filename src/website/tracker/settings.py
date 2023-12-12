@@ -36,6 +36,13 @@ def get_secret(name: str, encoding: str = "utf-8") -> str:
     return secret
 
 
+## Evaluation settings
+
+GIT_CLONE_URL = "https://github.com/NixOS/nixpkgs"
+# This is the path where a local checkout of Nixpkgs
+# will be instantiated for this application's needs.
+# By default, in the root of this Git repository.
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
