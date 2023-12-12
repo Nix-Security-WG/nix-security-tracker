@@ -4,5 +4,5 @@ let
   inherit (utils) mkVMTest;
 in
 {
-  basic = mkVMTest { name = "basic"; };
+  vm-basic = mkVMTest { name = "basic"; };
 }
