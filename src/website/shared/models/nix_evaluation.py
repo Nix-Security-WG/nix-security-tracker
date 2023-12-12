@@ -7,6 +7,14 @@ def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
 
+class TimeStampMixin(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
 class NixMaintainer(models.Model):
     """
     This represents a maintainer in the `maintainers` field of a package.
@@ -140,7 +148,7 @@ class NixDerivationOutput(models.Model):
     derivation_path = models.CharField(max_length=255)
 
 
-class NixChannel(models.Model):
+class NixChannel(TimeStampMixin):
     """
     This represents a "Nixpkgs" (*) channel, e.g.
     - a Git object representing a branch that moves regularly.
@@ -184,13 +192,32 @@ class NixChannel(models.Model):
         return f"{self.staging_branch} -> {self.channel_branch} (Release: {self.release_version})"
 
 
-class NixEvaluation(models.Model):
+class NixEvaluation(TimeStampMixin):
     """
-    This is a complete Nix evaluation of a repository.
+    This is a Nix evaluation of a repository,
+    potentially ongoing.
 
     It contains its derivations via `derivations` attribute
     set by the `NixDerivation` model.
     """
+
+    class EvaluationState(models.TextChoices):
+        COMPLETED = "COMPLETED", _("Completed")
+        WAITING = (
+            "WAITING",
+            _("Waiting to be started"),
+        )
+        IN_PROGRESS = (
+            "IN_PROGRESS",
+            _("In progress"),
+        )
+        # Crash means resource exhaustion
+        CRASHED = (
+            "CRASHED",
+            _("Crashed"),
+        )
+        # Failed means critical evaluation errors
+        FAILED = "FAILED", _("Failed")
 
     # Parent channel of that evaluation.
     channel = models.ForeignKey(
@@ -198,6 +225,13 @@ class NixEvaluation(models.Model):
     )
     # Commit SHA1 on which the evaluation was done precisely.
     commit_sha1 = models.CharField(max_length=255)
+    # State in which the evaluation is in.
+    state = models.CharField(
+        max_length=text_length(EvaluationState), choices=EvaluationState.choices
+    )
+    # How many times have been we trying to evaluate
+    # this? We use it for the crash backoff loop.
+    attempt = models.IntegerField(default=0)
 
     def __str__(self) -> str:
         return f"{self.channel} {self.commit_sha1[:8]}"
