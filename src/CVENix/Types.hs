@@ -22,7 +22,7 @@ data Parameters = Parameters
   , path :: !(Maybe String)
   , timeInfo :: Bool
   , excludeVendors :: Maybe [String]
-  , securityTrackerUrl :: String
+  , securityTrackerUrl :: Maybe String
   } deriving (Show, Eq, Ord)
 
 
@@ -49,7 +49,7 @@ data SemVer = SemVer
   } deriving (Show, Eq, Ord)
 
 instance Default Parameters where
-    def = Parameters False "test.sbom" Nothing False Nothing "http://localhost:8000/api/v1/issues/"
+    def = Parameters False "test.sbom" Nothing False Nothing Nothing
 
 
 prettySemVer :: SemVer -> String
