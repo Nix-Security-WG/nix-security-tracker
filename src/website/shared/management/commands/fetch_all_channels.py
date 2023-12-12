@@ -1,10 +1,15 @@
+import asyncio
+import sys
 from argparse import ArgumentParser
+from collections.abc import Coroutine
 from dataclasses import dataclass
 from pprint import pprint
 from typing import Any
 
 import requests
+from django.conf import settings
 from django.core.management.base import BaseCommand
+from shared.git import GitRepo
 from shared.models.nix_evaluation import NixChannel
 
 
@@ -80,6 +85,12 @@ def fetch_from_monitoring() -> dict[str, MonitoredChannel]:
     return aggregate_by_channels(resp.json()["data"]["result"])
 
 
+async def wait_for_parallel_fetches(
+    parallel_fetches: list[Coroutine[Any, Any, bool]]
+) -> list[Any]:
+    return await asyncio.gather(*parallel_fetches, return_exceptions=True)
+
+
 class Command(BaseCommand):
     help = "Register Nix channels"
 
@@ -108,3 +119,15 @@ class Command(BaseCommand):
             NixChannel.objects.update_or_create(
                 branch_info, channel_branch=channel_branch
             )
+
+        repo = GitRepo(
+            settings.LOCAL_NIXPKGS_CHECKOUT,
+            stdout=sys.stdout.fileno(),
+            stderr=sys.stderr.fileno(),
+        )
+        parallel_fetches = []
+        for channel in NixChannel.objects.iterator():
+            parallel_fetches.append(repo.update_from_ref(channel.head_sha1_commit))
+
+        results = asyncio.run(wait_for_parallel_fetches(parallel_fetches))
+        print("Parallel fetches results", results)
