@@ -30,6 +30,12 @@ programOptions = Parameters
                 ))
   <*> switch (long "timeinfo")
   <*> (optional $ many (strOption (long "exclude-vendor")))
+  <*> strOption (  long "security-tracker-url"
+                <> value "http://localhost:8000/api/v1/issues/"
+                <> help "Web Tracker to ingest from"
+                <> metavar "URL"
+                <> showDefault
+                )
 
 parameterInfo :: ParserInfo Parameters
 parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")

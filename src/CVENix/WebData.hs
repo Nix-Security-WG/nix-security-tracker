@@ -20,6 +20,8 @@ import GHC.Generics
 import Control.Concurrent
 import Prettyprinter
 import Control.Monad
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text as T
 
 import Network.Http.Client
 
@@ -32,12 +34,13 @@ data WebAppResponse = WebAppResponse
 mconcat <$> sequence (deriveJSON stripType' <$> [ ''WebAppResponse ])
 
 webAppApi :: LogT m ann => Map Text Text -> ReaderT Parameters m [WebAppResponse]
-webAppApi r = go 0
+webAppApi r = do
+    go 0
   where
       go :: LogT m ann => Int -> ReaderT Parameters m [WebAppResponse]
       go count = do
-          let baseURL = "http://localhost:8000/api/v1/issues/?"
-              url = baseURL <> (convertToApi $ toList r)
+          baseURL <- securityTrackerUrl <$> ask
+          let url = (TE.encodeUtf8 $ T.pack baseURL) <> "?" <> (convertToApi $ toList r)
           debug <- debug <$> ask
           v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
           when debug $ logMessage $ WithSeverity Debug $ pretty $ show url
