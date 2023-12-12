@@ -316,7 +316,7 @@ withApiKey f1 f = do
 convertToLocal :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
 convertToLocal nvds = do
     excludeVendors' <- excludeVendors <$> ask
-    timeLog $ flip mapM nvds $ \x -> do
+    timeLog $ Named "convertToLocal" $ flip mapM nvds $ \x -> do
       let configs = _nvdcve_configurations x
           -- TODO support for multiple or non-cvss-v31 severities
           (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe
