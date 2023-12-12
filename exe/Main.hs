@@ -8,8 +8,8 @@ import Options.Applicative
 import CVENix.SBOM
 import CVENix.Matching
 import CVENix.Types
+import System.Directory
 import System.Process
-import System.Posix.Files
 import CVENix.Utils
 
 
@@ -38,15 +38,18 @@ parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Secu
 main :: IO ()
 main = do
     params <- execParser parameterInfo
-    case (path params) of
+    case path params of
       Just drv' -> do
         callProcess (sbomnixExe) [drv', "--type", "runtime"]
-        go params
-      _ -> error "Please specify drv file"
+        go params "./sbom.cdx.json"
+      _ -> do
+        let sbomFile = sbom params
+        sbomExists <- doesFileExist $ sbomFile
+        if sbomExists then go params sbomFile
+        else error "Please specify drv path or sbom file to analyze"
 
  where
-     go params = do
-       let sbom' = sbom params
+     go params sbom' = do
        sbom'' <- parseSBOM $ sbom'
        case sbom'' of
          Nothing ->

@@ -75,6 +75,7 @@ executable CVENix
         optparse-applicative,
         unix,
         process,
+        directory,
         CVENix
 
     hs-source-dirs:   exe
