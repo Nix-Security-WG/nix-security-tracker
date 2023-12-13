@@ -26,7 +26,7 @@ import qualified Data.Text as T
 import Network.Http.Client
 
 data WebAppResponse = WebAppResponse
-  { _webappresponse_id :: Text
+  { _webappresponse_code :: Text
   , _webappresponse_cve :: [Text]
   , _webappresponse_status :: Text
   } deriving (Show, Eq, Ord, Generic)
@@ -34,7 +34,7 @@ data WebAppResponse = WebAppResponse
 mconcat <$> sequence (deriveJSON stripType' <$> [ ''WebAppResponse ])
 
 webAppApi :: LogT m ann => Map Text Text -> ReaderT Parameters m [WebAppResponse]
-webAppApi r = do
+webAppApi queryString = do
     go 0
   where
       go :: LogT m ann => Int -> ReaderT Parameters m [WebAppResponse]
@@ -43,7 +43,7 @@ webAppApi r = do
           case baseURL' of
             Nothing -> pure []
             Just baseURL -> do
-              let url = (TE.encodeUtf8 $ T.pack baseURL) <> "?" <> (convertToApi $ toList r)
+              let url = (TE.encodeUtf8 $ T.pack baseURL) <> "/api/v1/issues?" <> (convertToApi $ toList queryString)
               debug <- debug <$> ask
               v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
               when debug $ logMessage $ WithSeverity Debug $ pretty $ show url
