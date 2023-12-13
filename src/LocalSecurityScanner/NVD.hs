@@ -16,6 +16,7 @@ import qualified Data.Text as T
 import Data.Text(Text)
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock
+import Data.Time.Format.ISO8601
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Maybe
@@ -202,13 +203,13 @@ showDuration diff =
       then (show s) <> "s"
       else (show $ div s 60) <> "m" <> (showDur $ mod s 60)
 
-getEverything :: LogT m ann => ReaderT Parameters m [NVDResponse]
-getEverything = do
+getPages :: LogT m ann => [(Text, Text)] -> ReaderT Parameters m [NVDResponse]
+getPages params = do
   env <- ask
   let debug' = debug env
   when debug' $ logMessage $ WithSeverity Debug $ "Getting first response from NVD"
   start <- liftIO getCurrentTime
-  response1 <- nvdApi mempty
+  response1 <- nvdApi $ fromList params
   let st = _nvdresponse_totalResults response1
       results = _nvdresponse_resultsPerPage response1
       (numOfPages, _) = properFraction $ ((fromIntegral st / fromIntegral results) :: Double)
@@ -223,10 +224,20 @@ getEverything = do
         -- TODO show in minutes
         logMessage $ WithSeverity Informational $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
         let st = pagesToGo * results
-        resp <- nvdApi (fromList [("startIndex", (tshow st))])
+        resp <- nvdApi (fromList $ ("startIndex", (tshow st)) : params)
         if pagesToGo <= 0 then
-            pure acc
+            pure (acc <> [resp])
         else go (acc <> [resp]) start total (pagesToGo - 1, results)
+
+getEverything :: LogT m ann => ReaderT Parameters m [NVDResponse]
+getEverything = getPages []
+
+getEverythingSince :: LogT m ann => UTCTime -> UTCTime -> ReaderT Parameters m [NVDResponse]
+getEverythingSince since to = do
+  -- TODO handle the case that the cache is more than 120 days old
+  getPages [
+    ("lastModStartDate", T.pack $ iso8601Show since),
+    ("lastModEndDate", T.pack $ iso8601Show to) ]
 
 data NVDException = CacheMalformed !FilePath
   deriving (Show)
@@ -246,6 +257,31 @@ writeCacheStatus startTime = do
   let filename = cachedir <> "/status.json"
   encodeFile filename $ CacheStatus startTime
 
+updateNVDCVECache :: LogT m ann => UTCTime -> ReaderT Parameters m ()
+updateNVDCVECache since = do
+  env <- ask
+  let debug' = debug env
+  startTime <- liftIO $ getCurrentTime
+
+  updated <- getEverythingSince since startTime
+  when debug' $ logMessage $ WithSeverity Debug $ "Got updates, writing to cache"
+  mapM_ writeToDisk updated
+  liftIO $ writeCacheStatus startTime
+
+loadNVDCVEsFromCache :: LogT m ann => ReaderT Parameters m [NVDCVE]
+loadNVDCVEsFromCache = do
+  files' <- liftIO $ do
+    cachedir <- cacheDirectory
+    listDirectory cachedir
+  let files = filter (\x -> not (x == "status.json")) files'
+  mapM (\filename -> do
+    parsed <- liftIO $ do
+      cachedir <- cacheDirectory
+      (decodeFileStrict' $ cachedir <> filename :: IO (Maybe NVDCVE))
+    case parsed of
+      Just cve -> pure cve
+      Nothing -> throw $ CacheMalformed filename) files
+
 loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEs = do
   cacheStatus <- liftIO loadCacheStatus
@@ -253,27 +289,23 @@ loadNVDCVEs = do
   let debug' = debug env
   case cacheStatus of
     Just status -> do
+      let lastUpdated = _cachestatus_last_updated status
+      currentTime <- liftIO getCurrentTime
       logMessage $ WithSeverity Informational $ "Loading NVD data from cache"
-      logMessage $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ _cachestatus_last_updated status)
-      -- TODO if the cache is stale, fetch updates via the cvehistory API
-      files' <- liftIO $ do
-        cachedir <- cacheDirectory
-        listDirectory cachedir
-      let files = filter (\x -> not (x == "status.json")) files'
-      mapM (\filename -> do
-        parsed <- liftIO $ do
-          cachedir <- cacheDirectory
-          (decodeFileStrict' $ cachedir <> filename :: IO (Maybe NVDCVE))
-        case parsed of
-          Just cve -> pure cve
-          Nothing -> throw $ CacheMalformed filename) files
+      logMessage $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ lastUpdated)
+      let cacheAge = diffUTCTime currentTime lastUpdated
+      let threeDays = 3 * 24 * 60 * 60
+      _ <- if (cacheAge > threeDays) then do
+        updateNVDCVECache lastUpdated
+      else pure ()
+      loadNVDCVEsFromCache
     Nothing -> do
       logMessage $ WithSeverity Informational $ "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."
       startTime <- liftIO $ getCurrentTime
 
       everything <- getEverything
       when debug' $ logMessage $ WithSeverity Debug $ "Got everything, writing to cache"
-      mapM_ (writeToDisk) everything
+      mapM_ writeToDisk everything
       liftIO $ writeCacheStatus startTime
       pure $ map _nvdwrapper_cve $ concatMap _nvdresponse_vulnerabilities everything
 
