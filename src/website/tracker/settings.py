@@ -66,6 +66,8 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.github",
     "pgpubsub",
     "pgtrigger",
+    "pghistory",
+    "pghistory.admin",
     "rest_framework",
     "shared",
     "webview",
@@ -82,6 +84,7 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     # Allauth account middleware
     "allauth.account.middleware.AccountMiddleware",
+    "pghistory.middleware.HistoryMiddleware",
 ]
 
 ROOT_URLCONF = "tracker.urls"
@@ -183,6 +186,10 @@ INTERNAL_IPS = [
     "127.0.0.1",
     "[::1]",
 ]
+
+# Make history log immutable by default
+PGHISTORY_APPEND_ONLY = True
+PGHISTORY_ADMIN_MODEL = "pghistory.MiddlewareEvents"
 
 # Customization via user settings
 # This must be at the end, as it must be able to override the above
