@@ -129,7 +129,7 @@ match inventory params = do
 
       getStatuses :: LogT m ann => [Match] -> ReaderT Parameters m [(Match, Maybe Text)]
       getStatuses matches = do
-          responses <- webAppApi $ Map.fromList $ map (\m -> ("cve", _match_advisory_id m)) matches
+          responses <- webAppApi $ Map.fromList $ [ ("cve", (T.intercalate "," $ map _match_advisory_id matches)) ]
           pure $ filter (\(_, y) -> y /= Just "notforus") $ map (statusByMatch responses) matches
           where
             statusByMatch :: [WebAppResponse] -> Match -> (Match, Maybe Text)
