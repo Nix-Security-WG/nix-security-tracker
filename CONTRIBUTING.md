@@ -1,15 +1,19 @@
 To get all development prerequisites enter `nix develop`.
 
-You can `./scan.sh /nix/var/nix/profiles/system` to run the entire process,
-but for fast(er) development round-trips you can also run part of the
-process described in that shell, such as:
+Then run the process for a given derivation path with:
 
 ```
-cabal run CVENix -- --sbom ./sbom.cdx.json
+cabal run LocalSecurityScanner -- --path /nix/var/nix/profiles/system
+```
+
+Or to skip the inventory collection and only run the advisory matching:
+
+```
+cabal run LocalSecurityScanner -- --sbom ./sbom.cdx.json
 ```
 
 To also show debug information on unmatched advisories:
 
 ```
-cabal run CVENix -- --debug --sbom ./sbom.cdx.json
+cabal run LocalSecurityScanner -- --debug --sbom ./sbom.cdx.json
 ```

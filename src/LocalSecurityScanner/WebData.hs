@@ -3,10 +3,10 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CVENix.WebData where
+module LocalSecurityScanner.WebData where
 
-import CVENix.Utils
-import CVENix.Types
+import LocalSecurityScanner.Utils
+import LocalSecurityScanner.Types
 
 import Data.Aeson
 import Data.Aeson.TH

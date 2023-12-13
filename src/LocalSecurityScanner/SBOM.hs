@@ -7,9 +7,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 
-module CVENix.SBOM where
+module LocalSecurityScanner.SBOM where
 
-import CVENix.Utils
+import LocalSecurityScanner.Utils
 import Data.Aeson.TH
 
 import GHC.Generics

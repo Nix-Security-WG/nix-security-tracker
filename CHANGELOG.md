@@ -1,4 +1,4 @@
-# Revision history for CVENix
+# Revision history for LocalSecurityScanner
 
 ## 0.1.0.0 -- YYYY-mm-dd
 

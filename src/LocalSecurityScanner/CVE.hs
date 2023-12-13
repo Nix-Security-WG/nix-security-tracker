@@ -9,9 +9,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
-module CVENix.CVE where
+module LocalSecurityScanner.CVE where
 
-import CVENix.Utils
+import LocalSecurityScanner.Utils
 
 import Data.Aeson.TH
 import Data.Aeson

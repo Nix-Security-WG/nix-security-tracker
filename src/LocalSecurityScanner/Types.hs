@@ -2,7 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
-module CVENix.Types where
+module LocalSecurityScanner.Types where
 
 import Data.Text (Text)
 import qualified Data.Text as T

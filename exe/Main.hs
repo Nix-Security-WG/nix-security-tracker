@@ -5,12 +5,12 @@ module Main where
 
 import Options.Applicative
 
-import CVENix.SBOM
-import CVENix.Matching
-import CVENix.Types
+import LocalSecurityScanner.SBOM
+import LocalSecurityScanner.Matching
+import LocalSecurityScanner.Types
+import LocalSecurityScanner.Utils
 import System.Directory
 import System.Process
-import CVENix.Utils
 
 
 programOptions :: Parser Parameters

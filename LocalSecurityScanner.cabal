@@ -1,5 +1,5 @@
 cabal-version:      3.0
-name:               CVENix
+name:               LocalSecurityScanner
 version:            0.1.0.0
 -- synopsis:
 -- description:
@@ -18,14 +18,14 @@ common warnings
 
 library
     import:           warnings
-    exposed-modules:  CVENix.CVE,
-                      CVENix.SBOM,
-                      CVENix.Utils,
-                      CVENix.Matching,
-                      CVENix.Examples,
-                      CVENix.Types,
-                      CVENix.NVD,
-                      CVENix.WebData
+    exposed-modules:  LocalSecurityScanner.CVE,
+                      LocalSecurityScanner.SBOM,
+                      LocalSecurityScanner.Utils,
+                      LocalSecurityScanner.Matching,
+                      LocalSecurityScanner.Examples,
+                      LocalSecurityScanner.Types,
+                      LocalSecurityScanner.NVD,
+                      LocalSecurityScanner.WebData
 
     build-depends:    base ^>=4.17.2.0,
                       aeson,
@@ -61,11 +61,11 @@ test-suite Tests
         hspec,
         QuickCheck,
         HUnit,
-        CVENix,
+        LocalSecurityScanner,
         aeson,
         text,
 
-executable CVENix
+executable LocalSecurityScanner
     import:           warnings
     main-is:          Main.hs
     -- other-modules:
@@ -76,7 +76,7 @@ executable CVENix
         unix,
         process,
         directory,
-        CVENix
+        LocalSecurityScanner
 
     hs-source-dirs:   exe
     default-language: Haskell2010

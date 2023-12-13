@@ -9,10 +9,10 @@
 
   outputs = inputs: let
     lib = inputs.nixpkgs.lib;
-    project = self: self.callCabal2nix "CVENix" ./. {};
+    project = self: self.callCabal2nix "LocalSecurityScanner" ./. {};
     haskellPackages = pkgs: pkgs.haskell.packages.ghc947.override {
       overrides = self: super: {
-        CVENix = pkgs.haskell.lib.overrideCabal (project self) (drv: {
+        LocalSecurityScanner = pkgs.haskell.lib.overrideCabal (project self) (drv: {
           libraryHaskellDepends = (drv.libraryHaskellDepends or []) ++ [
             inputs.sbomnix.packages."${pkgs.system}".sbomnix
           ];
@@ -26,21 +26,21 @@
   in {
     packages = supportedSystems (system: let
       pkgs = inputs.nixpkgs.legacyPackages."${system}";
-    in { default = (haskellPackages pkgs).CVENix; });
+    in { default = (haskellPackages pkgs).LocalSecurityScanner; });
 
     devShells = supportedSystems (system: let
       pkgs = inputs.nixpkgs.legacyPackages."${system}";
       hsPkgs = haskellPackages pkgs;
     in {
       default = hsPkgs.shellFor {
-        packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ];
+        packages = ps: with ps; [ LocalSecurityScanner ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ];
         propagatedBuildInputs = [ inputs.sbomnix.packages."${system}".sbomnix ];
         shellHook = ''
           # To find freshly-`cabal install`ed executables
           export PATH=~/.local/bin:$PATH
         '';
       };
-      CVENix = hsPkgs.shellFor { packages = ps: with ps; [ CVENix ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ]; };
+      LocalSecurityScanner = hsPkgs.shellFor { packages = ps: with ps; [ LocalSecurityScanner ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ]; };
     });
   };
 }

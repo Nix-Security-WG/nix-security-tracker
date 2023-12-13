@@ -4,13 +4,13 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE CPP #-}
-module CVENix.Matching where
+module LocalSecurityScanner.Matching where
 
-import CVENix.SBOM
-import CVENix.Types
-import CVENix.NVD
-import CVENix.Utils
-import CVENix.WebData
+import LocalSecurityScanner.SBOM
+import LocalSecurityScanner.Types
+import LocalSecurityScanner.NVD
+import LocalSecurityScanner.Utils
+import LocalSecurityScanner.WebData
 
 import Data.Char (isDigit)
 import qualified Data.Set as Set

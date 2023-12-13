@@ -1,3 +1,9 @@
+# Nix local security scanner
+
+Reports on which security advisories may be relevant for a given system or derivation.
+
+## Running
+
 To avoid rate limiting, request an NVD API key at https://nvd.nist.gov/developers/start-here . Then run the scanner:
 
 ```

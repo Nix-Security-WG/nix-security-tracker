@@ -8,9 +8,9 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module CVENix.Utils where
+module LocalSecurityScanner.Utils where
 
-import CVENix.Types
+import LocalSecurityScanner.Types
 import Data.Aeson
 import Network.Http.Client
 import System.IO.Streams (InputStream)

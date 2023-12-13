@@ -1,9 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CVENix.Examples where
+module LocalSecurityScanner.Examples where
 
 import Data.Aeson
-import CVENix.CVE
+import LocalSecurityScanner.CVE
 import System.Directory
 import Data.Time.Clock
 import Data.Maybe

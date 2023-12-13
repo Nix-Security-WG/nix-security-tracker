@@ -5,11 +5,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE CPP #-}
-module CVENix.NVD where
+module LocalSecurityScanner.NVD where
 
-import CVENix.Utils
-import CVENix.Types
-import qualified CVENix.CVE as CVE
+import LocalSecurityScanner.Utils
+import LocalSecurityScanner.Types
+import qualified LocalSecurityScanner.CVE as CVE
 
 import Control.Monad
 import qualified Data.Text as T
@@ -175,12 +175,12 @@ cacheDirectory :: IO String
 cacheDirectory = do
     xdg_cache <- getEnv "XDG_CACHE_HOME"
     cachedir <- case xdg_cache of
-      Just dir -> pure $ dir <> "/CVENix/NVD/"
+      Just dir -> pure $ dir <> "/NixLocalSecurityScanner/NVD/"
       Nothing -> do
         home <- getEnv "HOME"
         pure $ case home of
-          Just h -> h <> "/.cache/CVENix/NVD/"
-          Nothing -> "./CVENix-cache/NVD/"
+          Just h -> h <> "/.cache/NixLocalSecurityScanner/NVD/"
+          Nothing -> "./NixLocalSecurityScanner-cache/NVD/"
     createDirectoryIfMissing True cachedir
     pure cachedir
 

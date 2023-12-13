@@ -8,10 +8,10 @@ import Data.Aeson
 import Data.Maybe
 import qualified Data.Text as T
 
-import CVENix.NVD
-import CVENix.Types
-import CVENix.Utils
-import CVENix.Matching
+import LocalSecurityScanner.NVD
+import LocalSecurityScanner.Types
+import LocalSecurityScanner.Utils
+import LocalSecurityScanner.Matching
 
 parseNVDSpec :: SpecWith (Arg (IO ()))
 parseNVDSpec = do
