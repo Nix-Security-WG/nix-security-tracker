@@ -83,6 +83,7 @@ match inventory params = do
                     liftIO $ putStrLn ""
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match'
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_advisory_id match'
+                    logMessage $ WithSeverity Warning $ pretty $ "https://cve.org/CVERecord?id=" <> (T.unpack $ _match_advisory_id match')
                     case (_match_severity match') of
                       Just s' -> logMessage $ WithSeverity Warning $ pretty $ "Severity: " <> (T.unpack s')
                       Nothing -> pure ()
