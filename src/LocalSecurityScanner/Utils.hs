@@ -44,6 +44,9 @@ data Named f = Named
   , _f :: f
   }
 
+tshow :: Show a => a -> Text
+tshow = T.pack . show
+
 sbomnixExe :: FilePath
 sbomnixExe = $(staticWhich "sbomnix")
 

@@ -33,7 +33,6 @@ import Control.Exception
 import Control.Monad.Log
 import Prettyprinter
 import Control.Monad.IO.Class
-import Control.Monad.Log.Colors
 import Control.Monad.Trans.Reader
 
 data NVDResponse = NVDResponse
@@ -224,7 +223,7 @@ getEverything = do
         -- TODO show in minutes
         logMessage $ WithSeverity Informational $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
         let st = pagesToGo * results
-        resp <- nvdApi (fromList [("startIndex", (T.pack $ show st))])
+        resp <- nvdApi (fromList [("startIndex", (tshow st))])
         if pagesToGo <= 0 then
             pure acc
         else go (acc <> [resp]) start total (pagesToGo - 1, results)
@@ -317,7 +316,7 @@ withApiKey f1 f = do
 convertToLocal :: LogT m ann => [NVDCVE] -> ReaderT Parameters m [[LocalVuln]]
 convertToLocal nvds = do
     excludeVendors' <- excludeVendors <$> ask
-    timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ flip mapM nvds $ \x -> do
+    timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ flip mapM nvds $ \x -> do
       let configs = _nvdcve_configurations x
           -- TODO support for multiple or non-cvss-v31 severities
           (severity :: Maybe Text) = fmap _cvss31data_baseSeverity $ fmap _cvss31metric_cvssData $ (_nvdcve_metrics x) >>= _metric_cvssMetricV31 >>= listToMaybe

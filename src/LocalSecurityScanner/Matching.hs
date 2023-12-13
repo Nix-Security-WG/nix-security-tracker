@@ -73,25 +73,25 @@ match inventory params = do
       Nothing -> putStrLn "No known deps?"
       Just s -> do
           let d = filter (\(InventoryDependency pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getDeps s
-          withApp params $ timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ do
+          withApp params $ timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ do
                 when (debug params) $ logMessage $ WithSeverity Debug $ pretty $ "Known deps: " <> (show $ length d)
-                nvdCVEs <- timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ loadNVDCVEs
+                nvdCVEs <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ loadNVDCVEs
                 advisories <- convertToLocal nvdCVEs
-                (_, matches) <- timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ foldM (performMatching (asLookup advisories)) ([], []) d
-                matchesWithStatus <- timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__))$ getStatuses matches
-                flip mapM_ matchesWithStatus $ \(match, status) -> do
+                (_, matches) <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ foldM (performMatching (asLookup advisories)) ([], []) d
+                matchesWithStatus <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer)))$ getStatuses matches
+                flip mapM_ matchesWithStatus $ \(match', status) -> do
                     liftIO $ putStrLn ""
-                    logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match
-                    logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_advisory_id match
-                    case (_match_severity match) of
-                      Just s -> logMessage $ WithSeverity Warning $ pretty $ "Severity: " <> (T.unpack s)
+                    logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match'
+                    logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_advisory_id match'
+                    case (_match_severity match') of
+                      Just s' -> logMessage $ WithSeverity Warning $ pretty $ "Severity: " <> (T.unpack s')
                       Nothing -> pure ()
                     case status of
-                      Just s -> logMessage $ WithSeverity Warning $ pretty $ "Status: " <> (T.unpack s)
+                      Just s' -> logMessage $ WithSeverity Warning $ pretty $ "Status: " <> (T.unpack s')
                       Nothing -> pure ()
-                    logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> (prettySemVer $ _match_advisory_range_end match)
-                    logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> (prettySemVer $ _match_matched_version match)
-                    logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> (T.unpack $ _match_drv_path match)
+                    logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> (prettySemVer $ _match_advisory_range_end match')
+                    logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> (prettySemVer $ _match_matched_version match')
+                    logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> (T.unpack $ _match_drv_path match')
                     liftIO $ putStrLn ""
 
                 pure ()
@@ -121,7 +121,7 @@ match inventory params = do
             True -> do
                 when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
                 pure (seenSoFar, matchedSoFar)
-            False -> timeLog $ Named (__FILE__ <> ":" <> (T.pack $ show __LINE__)) $ do
+            False -> timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
               let vulns' = flip mapMaybe (Set.toList $ SetMultimap.lookup pname vulns) $ \vuln -> versionInRange vuln version
               let matches = flip map vulns' $ \(cid, severity, v, rangeEnd) -> Match pname cid severity rangeEnd v drv
@@ -133,10 +133,10 @@ match inventory params = do
           pure $ filter (\(_, y) -> y /= Just "notforus") $ map (statusByMatch responses) matches
           where
             statusByMatch :: [WebAppResponse] -> Match -> (Match, Maybe Text)
-            statusByMatch [] match = (match, Nothing)
-            statusByMatch (x:xs) match =
-              if (elem (_match_advisory_id match) (_webappresponse_cve x)) then (match, Just $ _webappresponse_status x)
-              else statusByMatch xs match
+            statusByMatch [] match' = (match', Nothing)
+            statusByMatch (x:xs) match' =
+              if (elem (_match_advisory_id match') (_webappresponse_cve x)) then (match', Just $ _webappresponse_status x)
+              else statusByMatch xs match'
 
       asLookup :: [[LocalVuln]] -> SetMultimap.SetMultimap Text LocalVuln
       asLookup vulns =

@@ -8,11 +8,10 @@ module LocalSecurityScanner.WebData where
 import LocalSecurityScanner.Utils
 import LocalSecurityScanner.Types
 
-import Data.Aeson
 import Data.Aeson.TH
 import Data.Text (Text)
 import Control.Monad.Trans.Reader
-import Data.Map (Map, fromList, toList)
+import Data.Map (Map, toList)
 import Control.Exception
 import Control.Monad.Log
 import Control.Monad.IO.Class
@@ -44,12 +43,12 @@ webAppApi queryString = do
             Nothing -> pure []
             Just baseURL -> do
               let url = (TE.encodeUtf8 $ T.pack baseURL) <> "/api/v1/issues?" <> (convertToApi $ toList queryString)
-              debug <- debug <$> ask
+              debug' <- debug <$> ask
               v <- liftIO $ (try (getWithHeaders' mempty url jsonHandler)) :: LogT m ann => m (Either SomeException [WebAppResponse])
-              when debug $ logMessage $ WithSeverity Debug $ pretty $ show url
+              when debug' $ logMessage $ WithSeverity Debug $ pretty $ show url
               case v of
                 Left e -> do
-                    when debug $ logMessage $ WithSeverity Debug $ pretty $ show e
+                    when debug' $ logMessage $ WithSeverity Debug $ pretty $ show e
                     logMessage $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
                     logMessage $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
                     liftIO $ threadDelay $ 1000000 * 10
