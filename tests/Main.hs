@@ -24,15 +24,16 @@ versionShouldNotMatch :: String -> String -> SpecWith (Arg (IO ()))
 versionShouldNotMatch version advisoryId = do
   it ("Version " <> version <> " should not match " <> advisoryId) $ do
     Just nvdcve <- decodeFileStrict $ "tests/resources/" <> advisoryId <> ".json"
-    [[advisory]] <- withApp def $ convertToLocal [nvdcve]
-    (versionInRange advisory (Just $ T.pack version)) `shouldBe` Nothing
+    [advisory_parts] <- withApp def $ convertToLocal [nvdcve]
+    flip mapM_ advisory_parts (\advisory -> (versionInRange advisory (Just $ T.pack version)) `shouldBe` Nothing)
 
 versionShouldMatch :: String -> String -> SpecWith (Arg (IO ()))
 versionShouldMatch version advisoryId = do
   it ("Version " <> version <> " should match " <> advisoryId) $ do
     Just nvdcve <- decodeFileStrict $ "tests/resources/" <> advisoryId <> ".json"
-    [[advisory]] <- withApp def $ convertToLocal [nvdcve]
-    (versionInRange advisory (Just $ T.pack version)) `shouldSatisfy` isJust
+    [advisoryParts] <- withApp def $ convertToLocal [nvdcve]
+    let matchedVersions = mapMaybe (\advisory -> versionInRange advisory (Just $ T.pack version)) advisoryParts
+    (length matchedVersions) `shouldBe` 1
 
 main :: IO ()
 main = hspec $ do
