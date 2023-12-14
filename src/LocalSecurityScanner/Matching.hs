@@ -45,28 +45,25 @@ createMatch pname version drv_path vuln =
 
 versionInRange :: Maybe Text -> LocalVuln -> Bool
 versionInRange version vuln =
-  let localver = splitSemVer <$> version
-      rangeEndIncluding = splitSemVer <$> (_vuln_endVersionIncluding vuln)
-      rangeEndExcluding = splitSemVer <$> (_vuln_endVersionExcluding vuln)
-  in case rangeEndIncluding of
-      Nothing -> case rangeEndExcluding of
-          Nothing -> False
-          Just ver' -> do
-              case (ver', localver) of
-                  (Just v, Just (Just lv)) -> do
-                      if | _semver_major v > _semver_major lv -> True
-                         | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> True
-                         | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v > _semver_patch lv -> True
-                         | otherwise -> False
-                  (_, _) -> False
-      Just ver' -> do
-          case (ver', localver) of
-              (Just v, Just (Just lv)) -> do
-                  if | _semver_major v > _semver_major lv -> True
-                     | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> True
-                     | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v >= _semver_patch lv -> True
-                     | otherwise -> False
-              (_, _) -> False
+  let localver = version >>= splitSemVer
+      rangeEndExcluding = (_vuln_endVersionExcluding vuln) >>= splitSemVer
+      rangeEndIncluding = (_vuln_endVersionIncluding vuln) >>= splitSemVer
+  in
+      and $ catMaybes [ liftM2 before localver rangeEndExcluding
+                      , liftM2 through localver rangeEndIncluding ]
+  where
+    before :: SemVer -> SemVer -> Bool
+    before one other =
+      if | _semver_major other > _semver_major one -> True
+         | _semver_major other == _semver_major one && _semver_minor other > _semver_minor one -> True
+         | _semver_major other == _semver_major one && _semver_minor other == _semver_minor one && _semver_patch other > _semver_patch one -> True
+         | otherwise -> False
+    through :: SemVer -> SemVer -> Bool
+    through version rangeEnd =
+      if | _semver_major rangeEnd > _semver_major version -> True
+         | _semver_major rangeEnd == _semver_major version && _semver_minor rangeEnd > _semver_minor version -> True
+         | _semver_major rangeEnd == _semver_major version && _semver_minor rangeEnd == _semver_minor version && _semver_patch rangeEnd >= _semver_patch version -> True
+         | otherwise -> False
 
 match :: SBOM -> Parameters -> IO ()
 match inventory params = do
