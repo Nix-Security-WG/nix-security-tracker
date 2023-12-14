@@ -46,11 +46,17 @@ createMatch pname version drv_path vuln =
 versionInRange :: Maybe Text -> LocalVuln -> Bool
 versionInRange version vuln =
   let localver = version >>= splitSemVer
-      rangeEndExcluding = (_vuln_endVersionExcluding vuln) >>= splitSemVer
+      rangeStartIncluding = (_vuln_startVersionIncluding vuln) >>= splitSemVer
+      rangeStartExcluding = (_vuln_startVersionExcluding vuln) >>= splitSemVer
       rangeEndIncluding = (_vuln_endVersionIncluding vuln) >>= splitSemVer
+      rangeEndExcluding = (_vuln_endVersionExcluding vuln) >>= splitSemVer
+      m = [ liftM2 through rangeStartIncluding localver
+          , liftM2 before rangeStartExcluding localver
+          , liftM2 through localver rangeEndIncluding
+          , liftM2 before localver rangeEndExcluding
+          ]
   in
-      and $ catMaybes [ liftM2 before localver rangeEndExcluding
-                      , liftM2 through localver rangeEndIncluding ]
+      (and $ catMaybes m) && (or $ map isJust m)
   where
     before :: SemVer -> SemVer -> Bool
     before one other =

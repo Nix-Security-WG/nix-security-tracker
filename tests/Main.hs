@@ -48,3 +48,5 @@ main = hspec $ do
         versionShouldMatch "1.23.10" "CVE-2023-5982"
         versionShouldNotMatch "1.23.11" "CVE-2023-5982"
         versionShouldNotMatch "2.0.0" "CVE-2023-5982"
+    describe "Match version ranges with 'versionStartIncluding'" $ do
+        versionShouldNotMatch "3.0.12" "CVE-2023-2975"

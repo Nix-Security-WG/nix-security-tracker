@@ -359,12 +359,14 @@ convertToLocal nvds = do
             Just cfg -> flip concatMap cfg $ \cc -> do
                 let cpeMatch = (concatMap _node_cpeMatch (_configuration_nodes cc))
                 flip concatMap cpeMatch $ \c -> do
-                    let versionEndIncluding = _cpematch_versionEndIncluding c
+                    let versionStartIncluding = _cpematch_versionStartIncluding c
+                        versionStartExcluding = _cpematch_versionStartExcluding c
+                        versionEndIncluding = _cpematch_versionEndIncluding c
                         versionEndExcluding = _cpematch_versionEndExcluding c
                         cpe = (CVE.parseCPE $ _cpematch_criteria c)
                     case excludeVendors' of
-                      Nothing -> [LocalVuln versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
+                      Nothing -> [LocalVuln versionStartIncluding versionStartExcluding versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
                       Just v -> if (CVE._cpe_vendor <$> cpe) `elem` (map (Just . T.pack) v) then
                         []
-                      else [LocalVuln versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
+                      else [LocalVuln versionStartIncluding versionStartExcluding versionEndIncluding versionEndExcluding (CVE._cpe_product <$> cpe) id' severity]
       pure versions

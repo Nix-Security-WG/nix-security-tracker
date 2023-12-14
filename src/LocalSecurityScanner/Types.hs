@@ -27,7 +27,9 @@ data Parameters = Parameters
 
 
 data LocalVuln = LocalVuln
-  { _vuln_endVersionIncluding :: Maybe Text
+  { _vuln_startVersionIncluding :: Maybe Text
+  , _vuln_startVersionExcluding :: Maybe Text
+  , _vuln_endVersionIncluding :: Maybe Text
   , _vuln_endVersionExcluding :: Maybe Text
   , _vuln_product :: Maybe Text
   , _vuln_cveId :: Text
