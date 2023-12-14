@@ -35,37 +35,38 @@ data Match = Match
   { _match_name :: Text
   , _match_advisory_id :: Text
   , _match_severity :: Maybe Text
-  , _match_advisory_range_end :: SemVer
-  , _match_matched_version :: SemVer
+  , _match_version :: Maybe Text
   , _match_drv_path :: Text
   } deriving (Show)
 
-versionInRange :: LocalVuln -> Maybe Text -> Maybe (Text, Maybe Text, SemVer, SemVer)
-versionInRange vuln version =
-  let advisoryId = _vuln_cveId vuln
-      localver = splitSemVer <$> version
+createMatch :: Text -> Maybe Text -> Text -> LocalVuln -> Match
+createMatch pname version drv_path vuln =
+  Match pname (_vuln_cveId vuln) (_vuln_severity vuln) version drv_path
+
+versionInRange :: Maybe Text -> LocalVuln -> Bool
+versionInRange version vuln =
+  let localver = splitSemVer <$> version
       rangeEndIncluding = splitSemVer <$> (_vuln_endVersionIncluding vuln)
       rangeEndExcluding = splitSemVer <$> (_vuln_endVersionExcluding vuln)
-      severity = _vuln_severity vuln
   in case rangeEndIncluding of
       Nothing -> case rangeEndExcluding of
-          Nothing -> Nothing
+          Nothing -> False
           Just ver' -> do
               case (ver', localver) of
                   (Just v, Just (Just lv)) -> do
-                      if | _semver_major v > _semver_major lv -> Just (advisoryId, severity, lv, v)
-                         | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> Just (advisoryId, severity, lv, v)
-                         | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v > _semver_patch lv -> Just (advisoryId, severity, lv, v)
-                         | otherwise -> Nothing
-                  (_, _) -> Nothing
+                      if | _semver_major v > _semver_major lv -> True
+                         | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> True
+                         | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v > _semver_patch lv -> True
+                         | otherwise -> False
+                  (_, _) -> False
       Just ver' -> do
           case (ver', localver) of
               (Just v, Just (Just lv)) -> do
-                  if | _semver_major v > _semver_major lv -> Just (advisoryId, severity, lv, v)
-                     | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> Just (advisoryId, severity, lv, v)
-                     | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v >= _semver_patch lv -> Just (advisoryId, severity, lv, v)
-                     | otherwise -> Nothing
-              (_, _) -> Nothing
+                  if | _semver_major v > _semver_major lv -> True
+                     | _semver_major v == _semver_major lv && _semver_minor v > _semver_minor lv -> True
+                     | _semver_major v == _semver_major lv && _semver_minor v == _semver_minor lv && _semver_patch v >= _semver_patch lv -> True
+                     | otherwise -> False
+              (_, _) -> False
 
 match :: SBOM -> Parameters -> IO ()
 match inventory params = do
@@ -90,8 +91,9 @@ match inventory params = do
                     case status of
                       Just s' -> logMessage $ WithSeverity Warning $ pretty $ "Status: " <> (T.unpack s')
                       Nothing -> pure ()
-                    logMessage $ WithSeverity Warning $ pretty $ "Vulnerable version range end: " <> (prettySemVer $ _match_advisory_range_end match')
-                    logMessage $ WithSeverity Warning $ pretty $ "Version in inventory: " <> (prettySemVer $ _match_matched_version match')
+                    case (_match_version match') of
+                      Just version -> logMessage $ WithSeverity Warning $ pretty $ "Version: " <> (T.unpack version)
+                      Nothing -> pure ()
                     logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> (T.unpack $ _match_drv_path match')
                     liftIO $ putStrLn ""
 
@@ -124,8 +126,8 @@ match inventory params = do
                 pure (seenSoFar, matchedSoFar)
             False -> timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ do
               when (debug') $ logMessage $ WithSeverity Debug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
-              let vulns' = flip mapMaybe (Set.toList $ SetMultimap.lookup pname vulns) $ \vuln -> versionInRange vuln version
-              let matches = flip map vulns' $ \(cid, severity, v, rangeEnd) -> Match pname cid severity rangeEnd v drv
+              let vulns' = filter (versionInRange version) (Set.toList $ SetMultimap.lookup pname vulns)
+              let matches = flip map vulns' $ \vuln -> createMatch pname version drv vuln
               pure $ (seenSoFar <> [(pname, version)], matchedSoFar <> matches)
 
       getStatuses :: LogT m ann => [Match] -> ReaderT Parameters m [(Match, Maybe Text)]
