@@ -581,8 +581,7 @@ class BulkEvaluationIngestion:
         }
         self.outputs = {model.output_name: model for model in NixOutput.objects.all()}
         self.store_path_outputs = {
-            (model.output_name, model.store_path): model
-            for model in NixStorePathOutput.objects.all()
+            model.store_path: model for model in NixStorePathOutput.objects.all()
         }
         self.bs = bs
         self.created = 0
@@ -719,13 +718,14 @@ class BulkEvaluationIngestion:
     def ingest_outputs(self, outputs: dict[str, str]) -> list[NixStorePathOutput]:
         values = []
         for key, value in outputs.items():
-            if (key, value) not in self.store_path_outputs:
+            spath = f"{value}!{key}"
+            if spath not in self.store_path_outputs:
                 self.created += 1
-                self.store_path_outputs[
-                    (key, value)
-                ] = NixStorePathOutput.objects.create(output_name=key, store_path=value)
+                self.store_path_outputs[spath] = NixStorePathOutput.objects.create(
+                    store_path=spath
+                )
 
-            values.append(self.store_path_outputs[(key, value)])
+            values.append(self.store_path_outputs[spath])
 
         return values
 

@@ -1,18 +1,24 @@
 import asyncio
+import json
 import logging
 import pathlib
 import random
 import tempfile
 import time
+from collections.abc import AsyncGenerator
 
 import aiofiles
 import pgpubsub
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.db.models import Avg
 
 from shared.channels import NixEvaluationChannel
-from shared.evaluation import AsyncAttributeIngester, parse_evaluation_result
-from shared.git import NixpkgsRepo
+from shared.evaluation import (
+    SyncBatchAttributeIngester,
+    parse_evaluation_result,
+)
+from shared.git import GitRepo
 from shared.models import NixDerivation, NixEvaluation
 
 logger = logging.getLogger(__name__)
@@ -22,11 +28,16 @@ SIGABRT = 134
 
 
 async def perform_evaluation(
-    working_tree: pathlib.Path, evaluation_log_fd: int
+    working_tree: pathlib.Path, evaluation_log_fd: int, limit: int = 16 * 1024 * 1024
 ) -> asyncio.subprocess.Process:
     """
     This will run `nix-eval-jobs` on the working tree as a nixpkgs
     input and collect all Hydra jobs, including insecure ones.
+
+    `limit` is the stream reader buffer limit.
+
+    By default, we use 16MB which should give enough time to consume all
+    the chunks in time and buffer enough of the evaluation attributes.
 
     This will return an asynchronous process you can use to control
     the execution runtime.
@@ -49,45 +60,106 @@ async def perform_evaluation(
     return await asyncio.create_subprocess_exec(
         "nix-eval-jobs",
         *arguments,
+        limit=limit,
         stdout=asyncio.subprocess.PIPE,
         stderr=evaluation_log_fd,
     )
 
 
-async def realtime_process_attribute(
-    parent_evaluation: NixEvaluation, attribute: str
-) -> NixDerivation | None:
+async def realtime_batch_process_attributes(
+    parent_evaluation: NixEvaluation, attributes: list[str]
+) -> None | list[NixDerivation]:
     """
-    Performs a real-time processing of that evaluated attribute
-    without any bulk staging operations.
+    Performs a real-time processing of a batch of attributes
+    using bulk staging operations.
     """
-    partially_evaluated_result = parse_evaluation_result(attribute)
-    logger.debug(
-        "Real-time processing attribute '%s'...", partially_evaluated_result.attr
-    )
-    # It's a broken attribute, let's move on.
-    if partially_evaluated_result.evaluation is None:
+    evaluated = []
+
+    for attribute in attributes:
+        try:
+            partial_eval = parse_evaluation_result(attribute)
+            eval_ = partial_eval.evaluation
+            if eval_ is None:
+                # Too noisy.
+                # logger.debug(
+                #    "Attribute '%s' does not have a proper evaluated body, skipping...",
+                #    partial_eval.attr,
+                # )
+                continue
+            evaluated.append(eval_)
+        except KeyError:
+            logger.exception(
+                "Attribute '%s' does not have the key 'evaluation'", attribute
+            )
+        except json.decoder.JSONDecodeError:
+            logger.exception("Attribute '%s' cannot be parsed in JSON", attribute)
+
+    # Nothing to do here.
+    if not evaluated:
         # We don't warn or error here
         # This is too noisy otherwise.
         logger.debug(
-            "Attribute '%s' does not evaluate successfully",
-            partially_evaluated_result.attr,
+            "No attribute evaluated successfully, moving on",
         )
         return None
 
     start = time.time()
-    ingester = AsyncAttributeIngester(partially_evaluated_result.evaluation)
-    await ingester.initialize()
-    nix_derivation = await ingester.ingest(parent_evaluation)
+    ingester = SyncBatchAttributeIngester(evaluated)
+    await sync_to_async(ingester.initialize)()
+    drvs = await sync_to_async(ingester.ingest)(parent_evaluation)
+
     elapsed = time.time() - start
-    logger.debug(
-        "Attribute '%s' has been ingested under Nix derivation ID '%d' (drv path: '%s') in %f seconds",
-        partially_evaluated_result.attr,
-        nix_derivation.pk,
-        nix_derivation.derivation_path,
-        elapsed,
-    )
-    return nix_derivation
+    logger.info("%d attributes were ingested in %f seconds", len(drvs), elapsed)
+
+    return drvs
+
+
+async def drain_lines(
+    stream: asyncio.StreamReader, timeout: float = 0.25, max_batch_window: int = 10_000
+) -> AsyncGenerator[list[bytes], None]:
+    """
+    This utility will perform an opportunistic line draining
+    operation on a StreamReader, the timeout will be reset
+    every time we obtain another line.
+    """
+    lines = []
+    eof = False
+
+    class TooManyStuff(BaseException):
+        pass
+
+    while not eof:
+        try:
+            async with asyncio.timeout(timeout) as cm:
+                lines.append(await stream.readline())
+                old_deadline = cm.when()
+                assert (
+                    old_deadline is not None
+                ), "Timeout context does not have timeout!"
+                new_deadline = old_deadline + timeout
+                cm.reschedule(new_deadline)
+
+            if len(lines) >= max_batch_window:
+                raise TooManyStuff
+        except (TimeoutError, TooManyStuff):
+            # No line, we retry.
+            if len(lines) == 0:
+                continue
+            # Last line is EOF, so there won't be more lines.
+            while lines and (
+                lines[-1] == b"" or lines[-1].decode("utf8").strip() == ""
+            ):
+                eof = True
+                # Drop the last line.
+                lines = lines[:-1]
+            # If we had lines = ["", ...], we just break immediately, there's nothing to yield anymore.
+            if not lines:
+                break
+
+            yield lines
+            lines = []
+
+    assert eof, "Reached the end of `drain_lines` without EOF!"
 
 
 async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation):
@@ -105,8 +177,7 @@ async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation)
         state=NixEvaluation.EvaluationState.IN_PROGRESS
     )
     repo = NixpkgsRepo(settings.LOCAL_NIXPKGS_CHECKOUT)
-    # Amount of chunks to process in the database in real-time.
-    chunks = 10
+    start = time.time()
     try:
         # Pull our local checkout up to that evaluation revision.
         await repo.update_from_ref(evaluation.commit_sha1)
@@ -119,7 +190,6 @@ async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation)
             async with repo.extract_working_tree(
                 evaluation.commit_sha1, working_tree_path
             ) as working_tree, aiofiles.open(evaluation_log_filepath, "w") as eval_log:
-                start = time.time()
                 # Kickstart the evaluation asynchronously.
                 eval_process = await perform_evaluation(
                     working_tree.path, eval_log.fileno()
@@ -127,20 +197,24 @@ async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation)
                 assert (
                     eval_process.stdout is not None
                 ), "Expected a valid `stdout` pipe for the asynchronous evaluation process"
-                attribute = await eval_process.stdout.readline()
-                processors = []
-                while attribute != b"":
-                    processors.append(
-                        realtime_process_attribute(evaluation, attribute.decode("utf8"))
+
+                # The idea here is that we want to match as close as possible
+                # our evaluation speed. So, we read as much lines as possible
+                # and then insert them During the insertion time, more lines
+                # may come in our internal buffer. On the next read, we will
+                # drain them again.
+                # Adding an item in the database takes around 1s max.
+                # So we don't want to wait more than one second for all the lines we can get.
+                count = 0
+                async for lines in drain_lines(eval_process.stdout):
+                    await realtime_batch_process_attributes(
+                        evaluation, [line.decode("utf8") for line in lines]
                     )
-                    # logger.debug('Processing derivation in real-time: %s', attribute)
-                    attribute = await eval_process.stdout.readline()
-                    if len(processors) >= chunks:
-                        await asyncio.gather(*processors[:chunks])
-                        processors = processors[chunks:]
+                    count += len(lines)
                 # Wait for `nix-eval-jobs` to exit, at this point,
                 # It should be fairly quick because EOF has been reached.
                 rc = await eval_process.wait()
+                elapsed = time.time() - start
                 if rc in (SIGSEGV, SIGABRT):
                     raise RuntimeError("`nix-eval-jobs` crashed!")
                 elif rc != 0:
@@ -148,29 +222,29 @@ async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation)
                         "`nix-eval-jobs` failed to evaluate (non-zero exit status), check the evaluation logs"
                     )
                     await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
-                        state=NixEvaluation.EvaluationState.FAILED
+                        state=NixEvaluation.EvaluationState.FAILED,
+                        elapsed=elapsed,
                     )
                 else:
-                    # Wait for all the processing to finish.
-                    await asyncio.gather(*processors)
-                    elapsed = time.time() - start
                     logger.info(
                         "Processed %d derivations in real-time in %f seconds",
-                        len(processors),
+                        count,
                         elapsed,
                     )
-                    await NixEvaluation.objects.aupdate(
-                        pk=evaluation.pk,
+                    await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
                         state=NixEvaluation.EvaluationState.COMPLETED,
                         elapsed=elapsed,
                     )
-    except Exception:
+    except Exception as e:
+        elapsed = time.time() - start
         logger.exception(
             "Failed to run the `nix-eval-job` on revision '%s', marking job as crashed...",
             evaluation.commit_sha1,
         )
         await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
-            state=NixEvaluation.EvaluationState.CRASHED
+            state=NixEvaluation.EvaluationState.CRASHED,
+            elapsed=elapsed,
+            failure_reason=str(e),
         )
 
 
@@ -193,7 +267,6 @@ def run_evaluation_job(old: NixEvaluation, new: NixEvaluation):
     # Lock nix-eval-jobs concurrency behind a lock.
     # Lock this evaluation to avoid any modification for now.
     NixEvaluation.objects.select_for_update().filter(pk=new.pk)
-    print("selected for update", average_evaluation_time, new, new.pk)
     asyncio.run(
         evaluation_entrypoint(
             average_evaluation_time

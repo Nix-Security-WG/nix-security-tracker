@@ -8,3 +8,4 @@ __pycache__
 src/website/static
 # A shallow checkout of nixpkgs
 nixpkgs/
+nixpkgs-gc-roots/

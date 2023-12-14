@@ -1,10 +1,13 @@
-import asyncio
 import json
+import logging
+import time
+from collections.abc import Callable, Generator, Iterable
 from dataclasses import dataclass, field
-from typing import Any, Generator
+from itertools import chain
+from typing import Any, TypeVar
 
-from asgiref.sync import sync_to_async
 from dataclass_wizard import DumpMixin, JSONWizard, LoadMixin
+from django.db.utils import IntegrityError
 
 from shared.models.nix_evaluation import (
     NixDerivation,
@@ -14,40 +17,43 @@ from shared.models.nix_evaluation import (
     NixLicense,
     NixMaintainer,
     NixOutput,
-    NixPlatform,
     NixStorePathOutput,
 )
+
+T = TypeVar("T")
+DeferredThrough = Callable[[int], T]
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class MaintainerAttribute(JSONWizard):
     name: str
     github: str | None = None
-    githubId: int | None = None
+    github_id: int | None = None
     email: str | None = None
     matrix: str | None = None
 
 
 @dataclass
 class LicenseAttribute(JSONWizard):
-    fullName: str | None = None
+    full_name: str | None = None
     deprecated: bool = False
     free: bool = False
     redistributable: bool = False
-    shortName: str | None = None
-    spdxId: str | None = None
+    short_name: str | None = None
+    spdx_id: str | None = None
     url: str | None = None
 
 
 @dataclass
 class MetadataAttribute(JSONWizard, LoadMixin, DumpMixin):
-    outputsToInstall: list[str] = field(default_factory=list)
+    outputs_to_install: list[str] = field(default_factory=list)
     available: bool = True
     broken: bool = False
     unfree: bool = False
     unsupported: bool = False
     insecure: bool = False
-    mainProgram: str | None = None
+    main_program: str | None = None
     position: str | None = None
     homepage: str | None = None
     description: str | None = None
@@ -55,9 +61,9 @@ class MetadataAttribute(JSONWizard, LoadMixin, DumpMixin):
     maintainers: list[MaintainerAttribute] = field(default_factory=list)
     license: list[LicenseAttribute] = field(default_factory=list)
     platforms: list[str] = field(default_factory=list)
-    knownVulnerabilities: list[str] = field(default_factory=list)
+    known_vulnerabilities: list[str] = field(default_factory=list)
 
-    def __pre_as_dict__(self):
+    def __pre_as_dict__(self) -> None:
         linearized_maintainers = []
         for maintainer in self.maintainers:
             if maintainer.get("scope") is not None:  # pyright: ignore generalTypeIssue
@@ -76,11 +82,11 @@ class EvaluatedAttribute(JSONWizard):
     """
 
     attr: str
-    attrPath: list[str]
+    attr_path: list[str]
     name: str
-    drvPath: str
+    drv_path: str
     # drv -> list of outputs.
-    inputDrvs: dict[str, list[str]]
+    input_drvs: dict[str, list[str]]
     meta: MetadataAttribute | None
     outputs: dict[str, str]
     system: str
@@ -95,12 +101,12 @@ class PartialEvaluatedAttribute:
     """
 
     attr: str
-    attrPath: list[str]
+    attr_path: list[str]
     error: str | None = None
     evaluation: EvaluatedAttribute | None = None
 
 
-def parse_total_evaluation(raw: dict[str, Any]):
+def parse_total_evaluation(raw: dict[str, Any]) -> EvaluatedAttribute:
     # Various fixups to deal with... things.
     # my lord...
     if raw.get("meta", {}) is None:
@@ -134,50 +140,49 @@ def parse_total_evaluation(raw: dict[str, Any]):
     return EvaluatedAttribute.from_dict(raw)
 
 
-def parse_evaluation_result(line) -> PartialEvaluatedAttribute:
+def parse_evaluation_result(line: str) -> PartialEvaluatedAttribute:
     raw = json.loads(line)
     if raw.get("error") is not None:
         return PartialEvaluatedAttribute(**raw, evaluation=None)
     else:
         return PartialEvaluatedAttribute(
             attr=raw.get("attr"),
-            attrPath=raw.get("attrPath"),
+            attr_path=raw.get("attr_path"),
             error=None,
             evaluation=parse_total_evaluation(raw),
         )
 
 
-def parse_evaluation_results(lines) -> Generator[PartialEvaluatedAttribute, None, None]:
+def parse_evaluation_results(
+    lines: Iterable[str]
+) -> Generator[PartialEvaluatedAttribute, None, None]:
     for line in lines:
         yield parse_evaluation_result(line)
 
 
-class AsyncAttributeIngester:
+def bulkify(
+    gen: Generator[tuple[EvaluatedAttribute, list[T]], None, None]
+) -> Generator[tuple[str, list[T]], None, None]:
+    for origin, elements in gen:
+        yield (origin.drv_path, elements)
+
+
+class SyncBatchAttributeIngester:
     """
     This is a class to perform ingestion
-    of a specific **evaluated** attribute.
+    of a bunch of **evaluated** attribute synchronously.
     """
 
-    def __init__(self, evaluation: EvaluatedAttribute):
-        self.evaluation = evaluation
+    def __init__(self, evaluations: list[EvaluatedAttribute]) -> None:
+        self.evaluations = evaluations
 
-    async def initialize(self):
-        self.maintainers = await sync_to_async(
-            lambda: list(NixMaintainer.objects.all())
-        )()
-        self.licenses = await sync_to_async(lambda: list(NixLicense.objects.all()))()
-        platforms = await sync_to_async(lambda: list(NixPlatform.objects.all()))()
-        outputs = await sync_to_async(lambda: list(NixOutput.objects.all()))()
-        store_path_outputs = await sync_to_async(
-            lambda: list(NixStorePathOutput.objects.all())
-        )()
-        self.platforms = {model.system_double: model for model in platforms}
+    def initialize(self) -> None:
+        self.maintainers = list(NixMaintainer.objects.all())
+        self.licenses = list(NixLicense.objects.all())
+        outputs = list(NixOutput.objects.all())
         self.outputs = {model.output_name: model for model in outputs}
-        self.store_path_outputs = {
-            (model.output_name, model.store_path): model for model in store_path_outputs
-        }
 
-    async def ingest_maintainers(
+    def ingest_maintainers(
         self, maintainers: list[MaintainerAttribute]
     ) -> list[NixMaintainer]:
         ms = []
@@ -187,79 +192,71 @@ class AsyncAttributeIngester:
             # This unfortunately creates a partial view of all maintainers of a
             # given package. If you want to fix this, you can start from
             # looking around https://github.com/NixOS/nixpkgs/pull/273220.
-            if m.github is None or m.githubId is None:
+            if m.github is None or m.github_id is None:
                 continue
 
             # Duplicate...
-            if m.githubId in seen:
+            if m.github_id in seen:
                 continue
 
             ms.append(
-                NixMaintainer.objects.aupdate_or_create(
+                NixMaintainer.objects.update_or_create(
                     defaults={
                         "github": m.github,
                         "email": m.email,
                         "matrix": m.matrix,
                         "name": m.name,
                     },
-                    github_id=m.githubId,
+                    github_id=m.github_id,
                 )
             )
-            seen.add(m.githubId)
+            seen.add(m.github_id)
 
-        return [obj for obj, _ in (await asyncio.gather(*ms))]
+        return [obj for obj, _ in ms]
 
-    async def ingest_licenses(
-        self, licenses: list[LicenseAttribute]
-    ) -> list[NixLicense]:
+    def ingest_licenses(self, licenses: list[LicenseAttribute]) -> list[NixLicense]:
         lics = []
         seen = set()
 
         for lic in licenses:
-            # Duplicate...
-            if lic.url in seen:
+            if lic.spdx_id is None or lic.spdx_id in seen:
                 continue
+
             lics.append(
-                NixLicense.objects.aget_or_create(
+                NixLicense.objects.get_or_create(
                     defaults={
                         "deprecated": lic.deprecated,
                         "free": lic.free,
                         "redistributable": lic.redistributable,
+                        "full_name": lic.full_name,
+                        "short_name": lic.short_name,
+                        "url": lic.url,
                     },
-                    full_name=lic.fullName,
-                    short_name=lic.shortName,
-                    spdx_id=lic.spdxId,
-                    url=lic.url,
+                    spdx_id=lic.spdx_id,
                 )
             )
-            seen.add(lic.url)
+            seen.add(lic.spdx_id)
 
-        return [obj for obj, _ in (await asyncio.gather(*lics))]
+        return [obj for obj, _ in lics]
 
-    async def ingest_platforms(self, platforms: list[str]) -> list[NixPlatform]:
-        ps = []
-        for p in platforms:
-            if p not in self.platforms:
-                self.platforms[p], _ = await NixPlatform.objects.aget_or_create(
-                    system_double=p
-                )
-
-            ps.append(self.platforms[p])
-
-        return ps
-
-    async def ingest_meta(self) -> NixDerivationMeta:
-        metadata = self.evaluation.meta
+    def ingest_meta(
+        self, evaluation: EvaluatedAttribute
+    ) -> tuple[
+        NixDerivationMeta,
+        DeferredThrough[list[NixDerivationMeta.maintainers.through]],
+        DeferredThrough[list[NixDerivationMeta.licenses.through]],
+    ]:
+        metadata = evaluation.meta
         assert (
             metadata is not None
         ), "invalid ingest_meta call to an invalid metadata attribute"
+
         maintainers = self.ingest_maintainers(metadata.maintainers)
-        platforms = self.ingest_platforms(metadata.platforms)
         if isinstance(metadata.license, list):
             licenses = self.ingest_licenses(metadata.license)
         else:
             licenses = self.ingest_licenses([metadata.license])
-        meta = await NixDerivationMeta.objects.acreate(
+        meta = NixDerivationMeta(
             name=metadata.name,
             insecure=metadata.insecure,
             available=metadata.available,
@@ -268,81 +265,255 @@ class AsyncAttributeIngester:
             unsupported=metadata.unsupported,
             homepage=metadata.homepage,
             description=metadata.description,
-            main_program=metadata.mainProgram,
+            main_program=metadata.main_program,
             position=metadata.position,
-            known_vulnerabilities=metadata.knownVulnerabilities,
+            known_vulnerabilities=metadata.known_vulnerabilities,
         )
-        # Wait for those queries to land.
-        maintainers, platforms, licenses = await asyncio.gather(
-            maintainers, platforms, licenses
-        )
-        # Wait for adding those M2M.
-        await asyncio.gather(
-            meta.maintainers.aadd(*maintainers),
-            meta.licenses.aadd(*licenses),
-            meta.platforms.aadd(*platforms),
-        )
-        return meta
 
-    async def ingest_outputs(self) -> list[NixStorePathOutput]:
-        pending = {}
-        for key, value in self.evaluation.outputs.items():
-            if (key, value) not in self.store_path_outputs or (
-                key,
-                value,
-            ) not in pending:
-                pending[(key, value)] = NixStorePathOutput.objects.aget_or_create(
-                    output_name=key, store_path=value
+        # Those thunks are here to delay the evaluation of the M2M throughs.
+        def thunk_maintainers_throughs(
+            meta_pk: int
+        ) -> list[NixDerivationMeta.maintainers.through]:
+            return [
+                NixDerivationMeta.maintainers.through(
+                    nixderivationmeta_id=meta_pk, nixmaintainer_id=maintainer.pk
                 )
+                for maintainer in maintainers
+            ]
 
-        return [obj for obj, _ in (await asyncio.gather(*pending.values()))]
+        def thunk_licenses_throughs(
+            meta_pk: int
+        ) -> list[NixDerivationMeta.licenses.through]:
+            return [
+                NixDerivationMeta.licenses.through(
+                    nixderivationmeta_id=meta_pk, nixlicense_id=license.pk
+                )
+                for license in licenses
+            ]
 
-    async def ingest_dependencies(self) -> list[NixDerivationOutput]:
-        drvs = []
-        # TODO: improve concurrency of the loop here
-        # with fine-grained async dependencies.
-        for drvpath, outputs_raw in self.evaluation.inputDrvs.items():
-            outputs = []
-            for output in outputs_raw:
-                if output in self.outputs:
-                    outputs.append(self.outputs.get(output))
-                else:
-                    output_model, _ = await NixOutput.objects.aget_or_create(
-                        output_name=output
-                    )
-                    outputs.append(output_model)
-                    self.outputs[output] = output_model
-            drv_out = await NixDerivationOutput.objects.acreate(derivation_path=drvpath)
-            await drv_out.outputs.aadd(*outputs)
+        return meta, thunk_maintainers_throughs, thunk_licenses_throughs
 
-        return drvs
+    def ingest_outputs(
+        self, evaluation: EvaluatedAttribute
+    ) -> list[NixStorePathOutput]:
+        store_paths = [f"{value}!{key}" for (key, value) in evaluation.outputs.items()]
+        existing = NixStorePathOutput.objects.in_bulk(
+            store_paths, field_name="store_path"
+        )
+        return list(existing.values()) + [
+            NixStorePathOutput(store_path=store_path)
+            for store_path in store_paths
+            if store_path not in existing
+        ]
 
-    async def ingest_derivation_shell(
+    def ingest_dependencies(
+        self, evaluation: EvaluatedAttribute
+    ) -> list[NixDerivationOutput]:
+        # FIXME(raitobezarius): bulk upsert the outputs
+        # then add them into the M2M.
+
+        return [
+            NixDerivationOutput(derivation_path=drvpath)
+            for drvpath in evaluation.input_drvs.keys()
+        ]
+
+    def ingest_derivation_shell(
         self,
+        evaluation: EvaluatedAttribute,
         parent_evaluation: NixEvaluation,
         metadata: NixDerivationMeta | None = None,
     ) -> NixDerivation:
-        return await NixDerivation.objects.acreate(
-            attribute=self.evaluation.attr,
-            derivation_path=self.evaluation.drvPath,
-            name=self.evaluation.name,
+        return NixDerivation(
+            attribute=evaluation.attr,
+            derivation_path=evaluation.drv_path,
+            name=evaluation.name,
             metadata=metadata,
-            system=self.platforms[self.evaluation.system],
+            system=evaluation.system,
             parent_evaluation=parent_evaluation,
         )
 
-    async def ingest(self, parent_evaluation: NixEvaluation) -> NixDerivation:
-        sub_ingestions = [
-            self.ingest_dependencies(),
-            self.ingest_outputs(),
+    def ingest(self, parent_evaluation: NixEvaluation) -> list[NixDerivation]:
+        start = time.time()
+        dependencies = dict(
+            bulkify(
+                (evaluation, self.ingest_dependencies(evaluation))
+                for evaluation in self.evaluations
+            )
+        )
+        NixDerivationOutput.objects.bulk_create(
+            chain.from_iterable(dependencies.values())
+        )
+        logger.debug(
+            "Ingestion of all dependencies (%d) took %f s",
+            len(dependencies),
+            time.time() - start,
+        )
+
+        outputs = dict(
+            bulkify(
+                (evaluation, self.ingest_outputs(evaluation))
+                for evaluation in self.evaluations
+            )
+        )
+        # When Django 5 will be available, we will be able to get PKs directly.
+        start = time.time()
+        inserted = False
+        attempt = 0
+        store_path_outputs = {
+            item.store_path: item for item in chain.from_iterable(outputs.values())
+        }
+        new_store_path_outputs = [
+            spo for spo in store_path_outputs.values() if spo.pk is None
         ]
+        while not inserted:
+            try:
+                for spo in NixStorePathOutput.objects.bulk_create(
+                    new_store_path_outputs
+                ):
+                    store_path_outputs[spo.store_path].pk = spo.pk
+                inserted = True
+                logger.debug(
+                    "Ingestion of all Nix store path outputs (%d) took %f s",
+                    len(store_path_outputs),
+                    time.time() - start,
+                )
+            except IntegrityError:
+                logger.debug(
+                    "Failed to bulk-insert all Nix store path outputs, attempt %d...",
+                    attempt,
+                )
+                attempt += 1
+                existing_new = NixStorePathOutput.objects.in_bulk(
+                    [spo.store_path for spo in new_store_path_outputs],
+                    field_name="store_path",
+                )
+                # Filter out existing new ones.
+                new_store_path_outputs = [
+                    spo
+                    for spo in new_store_path_outputs
+                    if spo.store_path not in existing_new
+                ]
+                # Extend existing new ones with IDs.
+                for spath, existing in existing_new.items():
+                    store_path_outputs[spath].pk = existing.pk
+                continue
 
-        results = await asyncio.gather(*sub_ingestions)
-        metadata = None
-        if self.evaluation.meta is not None:
-            metadata = await self.ingest_meta()
-        derivation = await self.ingest_derivation_shell(parent_evaluation, metadata)
-        await derivation.dependencies.aadd(*results[0])
-        await derivation.outputs.aadd(*results[1])
+        # FIXME(raitobezarius): bulk ingest the maintainers or licenses themselves.
+        # This requires knowing in advance the maintainer PK or license PK
+        # and thunking it further.
+        derivations: dict[str, NixDerivation] = {}
+        thunked_maintainers_throughs = []
+        thunked_licenses_throughs = []
+        maintainers_throughs = []
+        licenses_throughs = []
+        metadatas = []
+        start = time.time()
+        for index, evaluation in enumerate(self.evaluations):
+            eval_dependencies = dependencies[evaluation.drv_path]
+            eval_outputs = outputs[evaluation.drv_path]
+            metadata = None
+            if evaluation.meta is not None:
+                (
+                    metadata,
+                    drv_maintainers_throughs,
+                    drv_licenses_throughs,
+                ) = self.ingest_meta(evaluation)
+                metadata_index = len(metadatas)
+                thunked_maintainers_throughs.append(
+                    (metadata_index, drv_maintainers_throughs)
+                )
+                thunked_licenses_throughs.append(
+                    (metadata_index, drv_licenses_throughs)
+                )
+                metadatas.append(metadata)
 
-        return derivation
+            derivations[evaluation.drv_path] = self.ingest_derivation_shell(
+                evaluation, parent_evaluation, None
+            )
+        logger.debug(
+            "Ingestion of derivation shells (%d) and their maintainers or licenses took %f s",
+            len(derivations),
+            time.time() - start,
+        )
+
+        start = time.time()
+        metadatas = NixDerivationMeta.objects.bulk_create(metadatas)
+        logger.debug(
+            "Ingestion of all metadata (%d) took %f s",
+            len(metadatas),
+            time.time() - start,
+        )
+
+        derivations = {
+            drv.derivation_path: drv
+            for drv in NixDerivation.objects.bulk_create(derivations.values())
+        }
+        for index, thunk in thunked_maintainers_throughs:
+            maintainers_throughs.extend(thunk(metadatas[index].pk))
+
+        for index, thunk in thunked_licenses_throughs:
+            licenses_throughs.extend(thunk(metadatas[index].pk))
+
+        deps_throughs = []
+        outputs_throughs = []
+        for drvpath, eval_dependencies in dependencies.items():
+            assert all(
+                dep.pk is not None for dep in eval_dependencies
+            ), "One dependency has no PK"
+            deps_throughs.extend(
+                [
+                    NixDerivation.dependencies.through(
+                        nixderivationoutput_id=dep.pk,
+                        nixderivation_id=derivations[drvpath].pk,
+                    )
+                    for dep in eval_dependencies
+                ]
+            )
+
+        for drvpath, eval_outputs in outputs.items():
+            assert all(
+                store_path_outputs[output.store_path].pk is not None
+                for output in eval_outputs
+            ), "One output has no PK"
+            outputs_throughs.extend(
+                [
+                    NixDerivation.outputs.through(
+                        nixstorepathoutput_id=store_path_outputs[output.store_path].pk,
+                        nixderivation_id=derivations[drvpath].pk,
+                    )
+                    for output in eval_outputs
+                ]
+            )
+
+        start = time.time()
+        NixDerivationMeta.maintainers.through.objects.bulk_create(maintainers_throughs)
+        logger.debug(
+            "Ingestion of all maintainers M2M (%d) took %f s",
+            len(maintainers_throughs),
+            time.time() - start,
+        )
+
+        start = time.time()
+        NixDerivationMeta.licenses.through.objects.bulk_create(licenses_throughs)
+        logger.debug(
+            "Ingestion of all licenses M2M (%d) took %f s",
+            len(licenses_throughs),
+            time.time() - start,
+        )
+
+        start = time.time()
+        NixDerivation.dependencies.through.objects.bulk_create(deps_throughs)
+        logger.debug(
+            "Ingestion of all dependencies M2M (%d) took %f s",
+            len(deps_throughs),
+            time.time() - start,
+        )
+        start = time.time()
+        NixDerivation.outputs.through.objects.bulk_create(outputs_throughs)
+        logger.debug(
+            "Ingestion of all outputs M2M (%d)  took %f s",
+            len(outputs_throughs),
+            time.time() - start,
+        )
+
+        return list(derivations.values())

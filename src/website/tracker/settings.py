@@ -89,6 +89,10 @@ LOGGING = {
             "level": "ERROR",
             "propagate": False,
         },
+        "django.db.backends": {
+            "level": "INFO" if "LOG_DB_QUERIES" not in env else "DEBUG",
+            "handlers": ["console"],
+        },
         "shared": {
             "handlers": ["console", "mail_admins"],
             "level": "DEBUG" if DEBUG else "INFO",
@@ -113,13 +117,13 @@ NIXPKGS_REFERENCE_CHECKOUT = None
 # TODO(raitobezarius): implement fine-grained tuning on `nix-eval-jobs`.
 MAX_PARALLEL_EVALUATION = 3
 # Where are stored the evaluation gc roots directory
-EVALUATION_GC_ROOTS_DIRECTORY: str = str(Path(
-    BASE_DIR / ".." / ".." / "nixpkgs-gc-roots"
-).resolve())
+EVALUATION_GC_ROOTS_DIRECTORY: str = str(
+    Path(BASE_DIR / ".." / ".." / "nixpkgs-gc-roots").resolve()
+)
 # Where are the stderr of each `nix-eval-jobs` stored.
-EVALUATION_LOGS_DIRECTORY: str = str(Path(
-    BASE_DIR / ".." / ".." / "nixpkgs-evaluation-logs"
-).resolve())
+EVALUATION_LOGS_DIRECTORY: str = str(
+    Path(BASE_DIR / ".." / ".." / "nixpkgs-evaluation-logs").resolve()
+)
 # This can be tuned for your specific deployment,
 # this is used to wait for an evaluation slot to be available
 # It should be around the average evaluation time on your machine.
@@ -286,3 +290,9 @@ if user_settings_file is not None:
     spec.loader.exec_module(module)
     sys.modules["user_settings"] = module
     from user_settings import *  # noqa: F403 # pyright: ignore [reportMissingImports]
+
+# Settings side-effect, must be after the loading of ALL settings, including user ones.
+
+# Ensure the following directories exist.
+Path(EVALUATION_GC_ROOTS_DIRECTORY).mkdir(exist_ok=True)
+Path(EVALUATION_LOGS_DIRECTORY).mkdir(exist_ok=True)

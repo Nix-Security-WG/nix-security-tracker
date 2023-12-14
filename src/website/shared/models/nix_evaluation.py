@@ -20,7 +20,7 @@ class NixMaintainer(models.Model):
     This represents a maintainer in the `maintainers` field of a package.
     """
 
-    github_id = models.IntegerField(unique=True)
+    github_id = models.IntegerField(unique=True, primary_key=True)
     github = models.CharField(max_length=200, unique=True)
     email = models.CharField(max_length=200, null=True)
     matrix = models.CharField(max_length=200, null=True)
@@ -34,18 +34,18 @@ class NixLicense(models.Model):
     """
     This represents a Nix license data, we don't keep only the SPDX ID
     for maximal faithfulness to what nixpkgs tells us.
+
+    We refuse any license without an SPDX ID, it is not realistic
+    to handle them without as this would make reconcilation hard.
     """
 
+    spdx_id = models.CharField(max_length=255, unique=True)
     deprecated = models.BooleanField()
     free = models.BooleanField()
     full_name = models.CharField(max_length=255, null=True)
     short_name = models.CharField(max_length=255, null=True)
-    spdx_id = models.CharField(max_length=255, null=True)
     redistributable = models.BooleanField()
     url = models.URLField(null=True)
-
-    class Meta:
-        unique_together = ("full_name", "short_name", "spdx_id", "url")
 
     def __str__(self) -> str:
         return f"{self.spdx_id}"
@@ -100,7 +100,13 @@ class NixDerivationMeta(models.Model):
     description = models.TextField(null=True)
     main_program = models.CharField(max_length=255, null=True)
 
-    platforms = models.ManyToManyField(NixPlatform)
+    # FIXME(raitobezarius):
+    # Ridiculously big, we should encode all reasonable known platforms
+    # into a static BitField (~120 of them, so 7 bits?).
+    # Ideally, we should find a way to deal with "inspect patterns"
+    # which are really dynamic things, maybe just project over our set of statically
+    # known platforms.
+    # platforms = models.ManyToManyField(NixPlatform)
 
     position = models.URLField(null=True)
 
@@ -123,15 +129,14 @@ class NixStorePathOutput(models.Model):
     """
     This is all the outputs of a given derivation, e.g. out, doc, etc.
     associated to their store paths.
+
+    This represents in database as '{store_path}!{out}'.
     """
 
-    # TODO(raitobezarius): do we foreign key or not?
-    # seems like premature optimization to me.
-    output_name = models.CharField(max_length=255)
-    store_path = models.CharField(max_length=255)
+    store_path = models.CharField(max_length=255, unique=True)
 
-    class Meta:
-        unique_together = ("output_name", "store_path")
+    def __hash__(self) -> int:
+        return hash(self.store_path)
 
 
 class NixDerivationOutput(models.Model):
@@ -232,11 +237,16 @@ class NixEvaluation(TimeStampMixin):
     # How many times have been we trying to evaluate
     # this? We use it for the crash backoff loop.
     attempt = models.IntegerField(default=0)
+    # Last failure reason
+    failure_reason = models.TextField(null=True)
     # Time elapsed in seconds for this evaluation.
     elapsed = models.FloatField(null=True)
 
     def __str__(self) -> str:
         return f"{self.channel} {self.commit_sha1[:8]}"
+
+    class Meta:
+        unique_together = ("channel", "commit_sha1")
 
 
 class NixDerivation(models.Model):
@@ -259,9 +269,7 @@ class NixDerivation(models.Model):
         null=True,
     )
     outputs = models.ManyToManyField(NixStorePathOutput)
-    system = models.ForeignKey(
-        NixPlatform, related_name="derivations", on_delete=models.CASCADE
-    )
+    system = models.CharField(max_length=255)
     parent_evaluation = models.ForeignKey(
         NixEvaluation, related_name="derivations", on_delete=models.CASCADE
     )
