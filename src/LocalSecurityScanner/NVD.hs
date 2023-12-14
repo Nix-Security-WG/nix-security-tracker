@@ -136,6 +136,7 @@ data LocalCache = LocalCache
 
 data CacheStatus = CacheStatus
   { _cachestatus_last_updated :: UTCTime
+  , _cachestatus_format_version :: Int
   }
 
 get' :: URL -> (Response -> InputStream ByteString -> IO a) -> IO a
@@ -255,7 +256,7 @@ writeCacheStatus :: UTCTime -> IO ()
 writeCacheStatus startTime = do
   cachedir <- cacheDirectory
   let filename = cachedir <> "/status.json"
-  encodeFile filename $ CacheStatus startTime
+  encodeFile filename $ CacheStatus startTime 1
 
 updateNVDCVECache :: LogT m ann => UTCTime -> ReaderT Parameters m ()
 updateNVDCVECache since = do
