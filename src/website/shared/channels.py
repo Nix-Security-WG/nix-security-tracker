@@ -19,6 +19,11 @@ class NixChannelChannel(TriggerChannel):
 @dataclass
 class NixEvaluationChannel(TriggerChannel):
     model = NixEvaluation
+    # To avoid having a process blocked on the same evaluation multiple times.
+    # We want to ensure that notifications are processed exactly once.
+    # For this, we need to take a lock in the PostgreSQL database via `SELECT FOR UPDATE`
+    # and let the pub-sub algorithm loop over available notifications with skip_locked.
+    lock_notifications = True
 
 
 @dataclass
