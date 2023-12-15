@@ -275,13 +275,13 @@ loadNVDCVEsFromCache = do
     cachedir <- cacheDirectory
     listDirectory cachedir
   let files = filter (\x -> not (x == "status.json")) files'
-  mapM (\filename -> do
+  flip mapM files $ \filename -> do
     parsed <- liftIO $ do
       cachedir <- cacheDirectory
       (decodeFileStrict' $ cachedir <> filename :: IO (Maybe NVDCVE))
     case parsed of
       Just cve -> pure cve
-      Nothing -> throw $ CacheMalformed filename) files
+      Nothing -> throw $ CacheMalformed filename
 
 loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEs = do
@@ -296,9 +296,7 @@ loadNVDCVEs = do
       logMessage $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ lastUpdated)
       let cacheAge = diffUTCTime currentTime lastUpdated
       let threeDays = 3 * 24 * 60 * 60
-      _ <- if (cacheAge > threeDays) then do
-        updateNVDCVECache lastUpdated
-      else pure ()
+      when (cacheAge > threeDays) $ updateNVDCVECache lastUpdated
       loadNVDCVEsFromCache
     Nothing -> do
       logMessage $ WithSeverity Informational $ "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."

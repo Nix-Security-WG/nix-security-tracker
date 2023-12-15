@@ -33,11 +33,15 @@
       hsPkgs = haskellPackages pkgs;
     in {
       default = hsPkgs.shellFor {
-        packages = ps: with ps; [ LocalSecurityScanner ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ];
+        packages = ps: with ps; [ LocalSecurityScanner ]; buildInputs = with hsPkgs; [ cabal-install ];
         propagatedBuildInputs = [ inputs.sbomnix.packages."${system}".sbomnix ];
-        shellHook = ''
+        shellHook = let
+          ghcidWrapped = pkgs.writeShellScriptBin "ghcid" ''
+            ${hsPkgs.ghcid.bin}/bin/ghcid --command "cabal repl"
+          '';
+        in ''
           # To find freshly-`cabal install`ed executables
-          export PATH=~/.local/bin:$PATH
+          export PATH=~/.local/bin:${ghcidWrapped}/bin:$PATH
         '';
       };
       LocalSecurityScanner = hsPkgs.shellFor { packages = ps: with ps; [ LocalSecurityScanner ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ]; };
