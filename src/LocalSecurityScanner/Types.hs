@@ -48,6 +48,7 @@ data SemVer = SemVer
   { _semver_major :: Int
   , _semver_minor :: Int
   , _semver_patch :: Maybe Int
+  , _semver_patchupdate :: Maybe Int
   } deriving (Show, Eq, Ord)
 
 instance Default Parameters where
@@ -55,9 +56,11 @@ instance Default Parameters where
 
 
 prettySemVer :: SemVer -> String
-prettySemVer (SemVer major minor c) = (show major) <> "." <> (show minor) <> case c of
+prettySemVer (SemVer major minor patch patchupdate) = (show major) <> "." <> (show minor) <> case patch of
                                                          Nothing -> ""
-                                                         Just d -> "." <> (show d)
+                                                         Just p -> "." <> (show p) <> case patchupdate of
+                                                           Nothing -> ""
+                                                           Just pu -> "." <> (show pu)
 
 splitSemVer :: Text -> Maybe SemVer
 splitSemVer v = do
@@ -67,13 +70,19 @@ splitSemVer v = do
           let maj = getInt major
               min' = getInt minor
           case (maj, min') of
-            (Just a, Just b) -> Just $ SemVer a b Nothing
+            (Just a, Just b) -> Just $ SemVer a b Nothing Nothing
             _ -> Nothing
       [major, minor, patch] -> do
           let maj = getInt major
               min' = getInt minor
           case (maj, min') of
-            (Just a, Just b) -> Just $ SemVer a b (getInt patch)
+            (Just a, Just b) -> Just $ SemVer a b (getInt patch) Nothing
+            _ -> Nothing
+      [major, minor, patch, patchupdate] -> do
+          let maj = getInt major
+              min' = getInt minor
+          case (maj, min') of
+            (Just a, Just b) -> Just $ SemVer a b (getInt patch) (getInt patchupdate)
             _ -> Nothing
       _ -> Nothing
     where

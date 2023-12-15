@@ -50,26 +50,13 @@ versionInRange version vuln =
       rangeStartExcluding = (_vuln_startVersionExcluding vuln) >>= splitSemVer
       rangeEndIncluding = (_vuln_endVersionIncluding vuln) >>= splitSemVer
       rangeEndExcluding = (_vuln_endVersionExcluding vuln) >>= splitSemVer
-      m = [ liftM2 through rangeStartIncluding localver
-          , liftM2 before rangeStartExcluding localver
-          , liftM2 through localver rangeEndIncluding
-          , liftM2 before localver rangeEndExcluding
+      m = [ liftM2 (<=) rangeStartIncluding localver
+          , liftM2 (<) rangeStartExcluding localver
+          , liftM2 (<=) localver rangeEndIncluding
+          , liftM2 (<) localver rangeEndExcluding
           ]
   in
       (and $ catMaybes m) && (or $ map isJust m)
-  where
-    before :: SemVer -> SemVer -> Bool
-    before one other =
-      if | _semver_major other > _semver_major one -> True
-         | _semver_major other == _semver_major one && _semver_minor other > _semver_minor one -> True
-         | _semver_major other == _semver_major one && _semver_minor other == _semver_minor one && _semver_patch other > _semver_patch one -> True
-         | otherwise -> False
-    through :: SemVer -> SemVer -> Bool
-    through version rangeEnd =
-      if | _semver_major rangeEnd > _semver_major version -> True
-         | _semver_major rangeEnd == _semver_major version && _semver_minor rangeEnd > _semver_minor version -> True
-         | _semver_major rangeEnd == _semver_major version && _semver_minor rangeEnd == _semver_minor version && _semver_patch rangeEnd >= _semver_patch version -> True
-         | otherwise -> False
 
 match :: SBOM -> Parameters -> IO ()
 match inventory params = do
