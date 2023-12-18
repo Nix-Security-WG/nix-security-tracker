@@ -17,14 +17,8 @@ Or set up [`nix-direnv`](https://github.com/nix-community/nix-direnv) on your sy
 Show helper commands:
 
 ```console
-./src/website/manage.py --help
+manage --help
 ```
-
-> You may want to set an alias for convenience:
->
-> ```console
-> alias manage=./src/website/manage.py
-> ```
 
 Set any values for secrets required by the server:
 
