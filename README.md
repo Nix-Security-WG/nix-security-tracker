@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2023 Arnout Engelen <arnout@bzzt.net>
+SPDX-FileCopyrightText: 2023 Dylan Green <dylan.green@obsidian.systems>
+
+SPDX-License-Identifier: MIT
+-->
+
 # Nix local security scanner
 
 Reports on which security advisories may be relevant for a given system or derivation.

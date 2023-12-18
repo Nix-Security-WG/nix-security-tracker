@@ -1,3 +1,8 @@
+-- SPDX-FileCopyrightText: 2023 Arnout Engelen <arnout@bzzt.net>
+-- SPDX-FileCopyrightText: 2023 Dylan Green <dylan.green@obsidian.systems>
+--
+-- SPDX-License-Identifier: MIT
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -285,6 +290,8 @@ loadNVDCVEsFromCache = do
 
 loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEs = do
+  -- https://nvd.nist.gov/developers/terms-of-use
+  logMessage $ WithSeverity Informational $ "This product uses the NVD API but is not endorsed or certified by the NVD."
   cacheStatus <- liftIO loadCacheStatus
   env <- ask
   let debug' = debug env
