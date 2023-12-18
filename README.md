@@ -159,11 +159,11 @@ nix-build -A tests
 Run a smoke test:
 
 ```console
-nix-build -A tests.basic
+nix-build -A tests.vm-basic
 ```
 
-Interact with the virtual machines in a test:
+Interact with the involved virtual machines in a test:
 
 ```
-$(nix-build -A tests.basic.driverInteractive)/bin/nixos-test-driver
+$(nix-build -A tests.vm-basic.driverInteractive)/bin/nixos-test-driver
 ```
