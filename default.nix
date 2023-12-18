@@ -80,24 +80,31 @@ let
         };
     };
 
-    shell = pkgs.mkShell {
-      DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
+    shell =
+      let
+        manage = pkgs.writeScriptBin "manage" ''
+          ${python3}/bin/python ${toString ./src/website/manage.py} $@
+        '';
+      in
+      pkgs.mkShell {
+        DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
 
-      packages = [
-        package
-        pkgs.nix-eval-jobs
-        pkgs.commitizen
-        pkgs.npins
-        pkgs.nixfmt
-      ];
+        packages = [
+          manage
+          package
+          pkgs.nix-eval-jobs
+          pkgs.commitizen
+          pkgs.npins
+          pkgs.nixfmt
+        ];
 
-      shellHook = ''
-        ${pre-commit-check.shellHook}
+        shellHook = ''
+          ${pre-commit-check.shellHook}
 
-        mkdir -p .credentials
-        export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
-      '';
-    };
+          mkdir -p .credentials
+          export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
+        '';
+      };
 
     tests = import ./nix/tests/vm-basic.nix {
       inherit pkgs;
