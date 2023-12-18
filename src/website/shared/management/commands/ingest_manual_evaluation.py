@@ -563,15 +563,13 @@ def parse_evaluation_results(
 ) -> Generator[PartialEvaluatedAttribute, None, None]:
     for line in lines:
         raw = json.loads(line)
-        if raw.get("error") is not None:
-            yield PartialEvaluatedAttribute(**raw, evaluation=None)
-        else:
-            yield PartialEvaluatedAttribute(
-                attr=raw.get("attr"),
-                attr_path=raw.get("attrPath"),
-                error=None,
-                evaluation=parse_total_evaluation(raw),
-            )
+        error = raw.get("error")
+        yield PartialEvaluatedAttribute(
+            attr=raw.get("attr"),
+            attr_path=raw.get("attrPath"),
+            error=error,
+            evaluation=parse_total_evaluation(raw) if error is None else None,
+        )
 
 
 class BulkEvaluationIngestion:
