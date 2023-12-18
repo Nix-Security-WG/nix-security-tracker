@@ -20,6 +20,7 @@ data Parameters = Parameters
   { debug :: !Bool
   , sbom :: !String
   , path :: !(Maybe String)
+  , vex :: !(Maybe String)
   , timeInfo :: Bool
   , excludeVendors :: Maybe [String]
   , securityTrackerUrl :: Maybe String
@@ -52,7 +53,7 @@ data SemVer = SemVer
   } deriving (Show, Eq, Ord)
 
 instance Default Parameters where
-    def = Parameters False "test.sbom" Nothing False Nothing Nothing
+    def = Parameters False "test.sbom" Nothing Nothing False Nothing Nothing
 
 
 prettySemVer :: SemVer -> String

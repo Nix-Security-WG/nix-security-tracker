@@ -58,8 +58,8 @@ versionInRange version vuln =
   in
       (and $ catMaybes m) && (or $ map isJust m)
 
-match :: SBOM -> Parameters -> IO ()
-match inventory params = do
+match :: SBOM -> [SBOMVulnerability] -> Parameters -> IO ()
+match inventory knownVulnerabilities params = do
     case _sbom_dependencies inventory of
       Nothing -> putStrLn "No known deps?"
       Just s -> do
@@ -70,7 +70,9 @@ match inventory params = do
                 advisories <- convertToLocal nvdCVEs
                 (_, matches) <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ foldM (performMatching (asLookup advisories)) ([], []) d
                 matchesWithStatus <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer)))$ getStatuses matches
-                flip mapM_ matchesWithStatus $ \(match', status) -> do
+                let knownFalsePositives = mapMaybe _sbomvuln_id $ filter (\k -> (_sbomvuln_analysis k >>= _sbomanalysis_state) == Just (T.pack "false_positive")) knownVulnerabilities
+                let filtered = flip filter matchesWithStatus (\(match', status) -> status /= Just "notforus" && not (elem (_match_advisory_id match') knownFalsePositives))
+                flip mapM_ filtered $ \(match', status) -> do
                     liftIO $ putStrLn ""
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_name match'
                     logMessage $ WithSeverity Warning $ pretty $ T.unpack $ _match_advisory_id match'
@@ -87,6 +89,9 @@ match inventory params = do
                     logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> (T.unpack $ _match_drv_path match')
                     liftIO $ putStrLn ""
 
+                when (debug params) $ case (filter (\fp -> elem fp (map _match_advisory_id matches)) knownFalsePositives) of
+                       [] -> pure ()
+                       fn -> logMessage $ WithSeverity Debug $ pretty $ "Possible false negatives: " <> (show fn)
                 pure ()
 
     where

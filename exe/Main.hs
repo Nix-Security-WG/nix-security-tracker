@@ -28,6 +28,10 @@ programOptions = Parameters
   <*> (optional $ strOption ( long "path"
                 <> help "Path to ingest"
                 ))
+  <*> (optional $ strOption (  long "vex"
+                <> help "VEX to ingest to exclude advisories which have been verified not to affect the current context"
+                <> metavar "VEX JSON"
+                ))
   <*> switch (long "timeinfo")
   <*> (optional $ many (strOption (long "exclude-vendor")))
   <*> (optional $ strOption (  long "security-tracker-url"
@@ -55,9 +59,14 @@ main = do
 
  where
      go params sbom' = do
-       sbom'' <- parseSBOM $ sbom'
-       case sbom'' of
-         Nothing ->
+       sbom'' <- parseSBOM sbom'
+       vex' <- case (vex params) of
+           Nothing -> pure $ Just []
+           Just v -> parseVEX v
+       case (sbom'', vex') of
+         (Nothing, _) ->
            putStrLn "[SBOM] Failed to parse"
-         Just s ->
-           match s params
+         (_, Nothing) ->
+           putStrLn "[VEX] Failed to parse"
+         (Just s, Just v) ->
+           match s v params

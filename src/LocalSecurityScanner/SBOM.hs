@@ -27,12 +27,13 @@ data SBOM = SBOM
   { _sbom_bomFormat :: Text
   , _sbom_specVersion :: Text
   , _sbom_serialNumber :: Maybe Text
-  , _sbom_version :: Integer
+  , _sbom_version :: Maybe Integer
   , _sbom_metadata :: Maybe MetaData
   , _sbom_components :: Maybe [Component]
   , _sbom_services :: Maybe [Service]
   , _sbom_externalReferences :: Maybe [SBOMReference]
   , _sbom_dependencies :: Maybe [SBOMDependency]
+  , _sbom_vulnerabilities :: Maybe [SBOMVulnerability]
   } deriving (Show, Generic)
 
 data SBOMReference = SBOMReference
@@ -44,6 +45,16 @@ data SBOMReference = SBOMReference
 data SBOMDependency = SBOMDependency
   { _sbomdependency_ref :: Text
   , _sbomdependency_dependsOn :: Maybe [Text]
+  } deriving (Show, Generic)
+
+data SBOMVulnerability = SBOMVulnerability
+  { _sbomvuln_id :: Maybe Text
+  , _sbomvuln_analysis :: Maybe SBOMAnalysis
+  } deriving (Show, Generic)
+
+data SBOMAnalysis = SBOMAnalysis
+  { _sbomanalysis_state :: Maybe Text
+  , _sbomanalysis_detail :: Maybe Text
   } deriving (Show, Generic)
 
 data Service = Service
@@ -183,8 +194,15 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''SBOMReference
     , ''Service
     , ''SBOMData
+    , ''SBOMVulnerability
+    , ''SBOMAnalysis
     ])
 
 parseSBOM :: String -> IO (Maybe SBOM)
 parseSBOM fp = do
     decodeFileStrict fp :: IO (Maybe SBOM)
+
+parseVEX :: String -> IO (Maybe [SBOMVulnerability])
+parseVEX fp = do
+    file <- decodeFileStrict fp :: IO (Maybe SBOM)
+    pure $ file >>= _sbom_vulnerabilities
