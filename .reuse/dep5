@@ -1,0 +1,18 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: nix local security scanner
+Upstream-Contact: Dylan Green <dylan.green@obsidian.systems>, Arnout Engelen <arnout@bzzt.net>
+Source: https://github.com/Nix-Security-WG/nix-security-tracker/tree/local-security-scanner
+
+Files: .envrc .gitignore flake.lock
+Copyright: Respective Contributors
+License: CC0-1.0
+
+# https://github.com/fsfe/reuse-tool/issues/882
+Files: LocalSecurityScanner.cabal
+Copyright: 2023 Dylan Green <dylan.green@obsidian.systems>, Arnout Engelen <arnout@bzzt.net>
+License: MIT
+
+Files: tests/resources/CVE-*
+Copyright: Respective Contributors
+# https://www.nist.gov/oism/copyrights
+License: CC0-1.0

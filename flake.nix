@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2023 Arnout Engelen <arnout@bzzt.net>
+# SPDX-FileCopyrightText: 2023 Dylan Green <dylan.green@obsidian.systems>
+#
+# SPDX-License-Identifier: MIT
+
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

@@ -5,12 +5,12 @@ version:            0.1.0.0
 -- description:
 license:            MIT
 license-file:       LICENSE
-author:             cidkidnix
-maintainer:         dylan.green@obsidian.systems
--- copyright:
+author:             cidkidnix, raboof
+maintainer:         dylan.green@obsidian.systems, arnout@bzzt.net
+copyright:          2023 Dylan Green, Arnout Engelen
 category:           Security
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md
+-- extra-doc-files:
 -- extra-source-files:
 
 common warnings

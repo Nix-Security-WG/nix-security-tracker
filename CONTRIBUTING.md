@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2023 Arnout Engelen <arnout@bzzt.net>
+SPDX-FileCopyrightText: 2023 Dylan Green <dylan.green@obsidian.systems>
+
+SPDX-License-Identifier: MIT
+-->
+
 To get all development prerequisites enter `nix develop`.
 
 Then run the process for a given derivation path with:
