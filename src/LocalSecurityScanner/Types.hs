@@ -29,6 +29,7 @@ data Parameters = Parameters
   , timeInfo :: Bool
   , excludeVendors :: Maybe [String]
   , securityTrackerUrl :: Maybe String
+  , cacheDir :: Maybe String
   } deriving (Show, Eq, Ord)
 
 
@@ -58,7 +59,7 @@ data SemVer = SemVer
   } deriving (Show, Eq, Ord)
 
 instance Default Parameters where
-    def = Parameters False "test.sbom" Nothing Nothing False Nothing Nothing
+    def = Parameters False "test.sbom" Nothing Nothing False Nothing Nothing Nothing
 
 
 prettySemVer :: SemVer -> String

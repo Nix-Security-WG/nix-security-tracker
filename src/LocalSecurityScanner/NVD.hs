@@ -177,27 +177,30 @@ keywordSearch t = nvdApi $ fromList [("keywordSearch", t)]
 cveSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
 cveSearch t = nvdApi $ fromList [("cveId", t)]
 
-cacheDirectory :: IO String
+cacheDirectory :: LogT m ann => ReaderT Parameters m String
 cacheDirectory = do
-    xdg_cache <- getEnv "XDG_CACHE_HOME"
-    cachedir <- case xdg_cache of
-      Just dir -> pure $ dir <> "/NixLocalSecurityScanner/NVD/"
+    cacheDirCli <- cacheDir <$> ask
+    case cacheDirCli of
+      Just dir -> pure dir
       Nothing -> do
-        home <- getEnv "HOME"
-        pure $ case home of
-          Just h -> h <> "/.cache/NixLocalSecurityScanner/NVD/"
-          Nothing -> "./NixLocalSecurityScanner-cache/NVD/"
-    createDirectoryIfMissing True cachedir
-    pure cachedir
+        xdg_cache <- liftIO $ getEnv "XDG_CACHE_HOME"
+        cachedir <- case xdg_cache of
+          Just dir -> pure $ dir <> "/NixLocalSecurityScanner/NVD/"
+          Nothing -> do
+            home <- liftIO $ getEnv "HOME"
+            pure $ case home of
+              Just h -> h <> "/.cache/NixLocalSecurityScanner/NVD/"
+              Nothing -> "./NixLocalSecurityScanner-cache/NVD/"
+        liftIO $ createDirectoryIfMissing True cachedir
+        pure cachedir
 
 writeToDisk :: LogT m ann => NVDResponse -> ReaderT Parameters m ()
 writeToDisk resp = do
     let t = map (_nvdwrapper_cve) $ _nvdresponse_vulnerabilities resp
     flip mapM_ t $ \x -> do
         let id' = _nvdcve_id x
-        liftIO $ do
-          cachedir <- cacheDirectory
-          encodeFile (cachedir <> T.unpack id' <> ".json") x
+        cachedir <- cacheDirectory
+        liftIO $ encodeFile (cachedir <> T.unpack id' <> ".json") x
 
 showDuration :: NominalDiffTime -> String
 showDuration diff =
@@ -249,19 +252,19 @@ data NVDException = CacheMalformed !FilePath
   deriving (Show)
 instance Exception NVDException
 
-loadCacheStatus :: IO (Maybe CacheStatus)
+loadCacheStatus :: LogT m ann => ReaderT Parameters m (Maybe CacheStatus)
 loadCacheStatus = do
   cachedir <- cacheDirectory
   let filename = cachedir <> "/status.json"
-  exists <- doesFileExist $ filename
-  if exists then decodeFileStrict filename :: IO (Maybe CacheStatus)
+  exists <- liftIO $ doesFileExist $ filename
+  if exists then liftIO $ (decodeFileStrict filename :: IO (Maybe CacheStatus))
   else pure Nothing
 
-writeCacheStatus :: UTCTime -> IO ()
+writeCacheStatus :: LogT m ann => UTCTime -> ReaderT Parameters m ()
 writeCacheStatus startTime = do
   cachedir <- cacheDirectory
   let filename = cachedir <> "/status.json"
-  encodeFile filename $ CacheStatus startTime 1
+  liftIO $ encodeFile filename $ CacheStatus startTime 1
 
 updateNVDCVECache :: LogT m ann => UTCTime -> ReaderT Parameters m ()
 updateNVDCVECache since = do
@@ -272,17 +275,15 @@ updateNVDCVECache since = do
   updated <- getEverythingSince since startTime
   when debug' $ logMessage $ WithSeverity Debug $ "Got updates, writing to cache"
   mapM_ writeToDisk updated
-  liftIO $ writeCacheStatus startTime
+  writeCacheStatus startTime
 
 loadNVDCVEsFromCache :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEsFromCache = do
-  files' <- liftIO $ do
-    cachedir <- cacheDirectory
-    listDirectory cachedir
+  cachedir <- cacheDirectory
+  files' <- liftIO $ listDirectory cachedir
   let files = filter (\x -> not (x == "status.json")) files'
   flip mapM files $ \filename -> do
     parsed <- liftIO $ do
-      cachedir <- cacheDirectory
       (decodeFileStrict' $ cachedir <> filename :: IO (Maybe NVDCVE))
     case parsed of
       Just cve -> pure cve
@@ -292,7 +293,7 @@ loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEs = do
   -- https://nvd.nist.gov/developers/terms-of-use
   logMessage $ WithSeverity Informational $ "This product uses the NVD API but is not endorsed or certified by the NVD."
-  cacheStatus <- liftIO loadCacheStatus
+  cacheStatus <- loadCacheStatus
   env <- ask
   let debug' = debug env
   case cacheStatus of
@@ -312,7 +313,7 @@ loadNVDCVEs = do
       everything <- getEverything
       when debug' $ logMessage $ WithSeverity Debug $ "Got everything, writing to cache"
       mapM_ writeToDisk everything
-      liftIO $ writeCacheStatus startTime
+      writeCacheStatus startTime
       pure $ map _nvdwrapper_cve $ concatMap _nvdresponse_vulnerabilities everything
 
 

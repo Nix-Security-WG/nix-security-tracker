@@ -42,8 +42,11 @@ programOptions = Parameters
   <*> (optional $ strOption (  long "security-tracker-url"
                             <> help "Web Tracker to ingest from"
                             <> metavar "URL"
-                            )
-      )
+                            ))
+  <*> (optional $ strOption (  long "cache-dir"
+                            <> help "Directory to store cache files to"
+                            <> metavar "CACHE_DIR"
+                            ))
 
 parameterInfo :: ParserInfo Parameters
 parameterInfo = info (helper <*> programOptions) (fullDesc <> progDesc "Nix Security Scanner" <> header "Nix Security Scanner")
