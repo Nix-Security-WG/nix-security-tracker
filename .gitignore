@@ -5,6 +5,14 @@ __pycache__
 .credentials
 *.jsonl
 .data_cache
+nixpkgs
+nixpkgs-gc-roots/*
+nixpkgs-evaluation-logs/*.log
+result
+*.zst
+*.dump
+*.jsonl
+*.log
 src/website/static
 # A shallow checkout of nixpkgs
 nixpkgs/
