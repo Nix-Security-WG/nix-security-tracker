@@ -1,10 +1,10 @@
+result
 .direnv
 .pre-commit-config.yaml
 __pycache__
-*.sqlite3
 .credentials
-*.jsonl # Evaluation results
-/**/.data_cache
+*.jsonl
+.data_cache
 src/website/static
 # A shallow checkout of nixpkgs
 nixpkgs/
