@@ -91,7 +91,7 @@ timeLog f = do
         time <- liftIO $ getCurrentTime
         o <- _f f
         time' <- liftIO $ getCurrentTime
-        when debug' $ logMessage $ WithSeverity Debug $ pretty $ "[" <> (T.unpack $ _fname f) <> "] Time to run: " <> (show $ diffUTCTime time' time)
+        when debug' $ logDebug $ pretty $ "[" <> (T.unpack $ _fname f) <> "] Time to run: " <> (show $ diffUTCTime time' time)
         pure o
 
 getWithHeaders' :: Map ByteString ByteString -> URL -> (Response -> InputStream ByteString -> IO a) -> IO a

@@ -95,8 +95,8 @@ data ADP = ADP
   , _adp_taxonomyMappings :: Maybe [TaxonomyMapping]
   } deriving (Show, Eq, Ord, Generic)
 
-data ProgramRoutine = ProgramRoutine
-  { _programroutine_name :: Text } deriving (Show, Eq, Ord, Generic)
+newtype ProgramRoutine = ProgramRoutine { _programroutine_name :: Text }
+    deriving (Show, Eq, Ord, Generic)
 
 data ProviderMetadata = ProviderMetadata
   { _providermetadata_orgId :: Text
@@ -150,7 +150,9 @@ data Change = Change
 
 type Affected = Product
 
-data ProblemType = ProblemType { _problemtype_descriptions :: [ProblemDescription] } deriving (Show, Eq, Ord, Generic)
+newtype ProblemType = ProblemType { _problemtype_descriptions :: [ProblemDescription] }
+    deriving (Show, Eq, Ord, Generic)
+
 data ProblemDescription = ProblemDescription
   { _problemdescription_lang :: Text
   , _problemdescription_description :: Text

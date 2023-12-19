@@ -11,7 +11,6 @@ import Data.Aeson
 import LocalSecurityScanner.CVE
 import System.Directory
 import Data.Time.Clock
-import Data.Maybe
 
 exampleParseCVE :: IO [CVE]
 exampleParseCVE = do
@@ -38,18 +37,3 @@ exampleParseCVE = do
     curTime' <- getCurrentTime
     putStrLn $ "[CVE] Time to run: " <> (show $ diffUTCTime curTime curTime' * (-1))
     pure $ l
-  where
-      getCPEIDs p = case p of
-                      Nothing -> []
-                      Just cve -> do
-                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
-                          case unwrappedContainer of
-                            Nothing -> []
-                            Just a -> catMaybes $ map (_product_cpes) a
-      getVersions p = case p of
-                        Nothing -> []
-                        Just cve -> do
-                          let unwrappedContainer = _cna_affected $ _container_cna $ _cve_containers cve
-                          case unwrappedContainer of
-                            Nothing -> []
-                            Just a -> catMaybes $ map (_product_versions) a

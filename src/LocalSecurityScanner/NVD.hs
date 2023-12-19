@@ -51,21 +51,16 @@ data NVDResponse = NVDResponse
   , _nvdresponse_vulnerabilities :: [NVDWrapper]
   } deriving (Show, Eq, Ord, Generic)
 
-data Cvss31Data = Cvss31Data
-  { _cvss31data_baseSeverity :: Text
-  } deriving (Show, Eq, Ord, Generic)
+newtype CVSS31Data = Cvss31Data { _cvss31data_baseSeverity :: Text }
+    deriving (Show, Eq, Ord, Generic)
+newtype CVSS31Metric = Cvss31Metric { _cvss31metric_cvssData :: CVSS31Data }
+    deriving (Show, Eq, Ord, Generic)
 
-data Cvss31Metric = Cvss31Metric
-  { _cvss31metric_cvssData :: Cvss31Data
-  } deriving (Show, Eq, Ord, Generic)
-
-data Metric = Metric
-  -- TODO support for non-cvss-v31 severities
-  { _metric_cvssMetricV31 :: Maybe [Cvss31Metric]
-  } deriving (Show, Eq, Ord, Generic)
-
-data NVDWrapper = NVDWrapper
-  { _nvdwrapper_cve :: NVDCVE } deriving (Show, Eq, Ord)
+-- TODO support for non-cvss-v31 severities
+newtype Metric = Metric { _metric_cvssMetricV31 :: Maybe [CVSS31Metric] }
+    deriving (Show, Eq, Ord, Generic)
+newtype NVDWrapper = NVDWrapper { _nvdwrapper_cve :: NVDCVE }
+    deriving (Show, Eq, Ord)
 
 data NVDCVE = NVDCVE
   { _nvdcve_id :: Text --
@@ -167,8 +162,8 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''LocalCache
     , ''CacheStatus
     , ''Metric
-    , ''Cvss31Metric
-    , ''Cvss31Data
+    , ''CVSS31Metric
+    , ''CVSS31Data
     ])
 
 keywordSearch :: LogT m ann => Text -> ReaderT Parameters m NVDResponse
@@ -216,7 +211,7 @@ getPages :: LogT m ann => [(Text, Text)] -> ReaderT Parameters m [NVDResponse]
 getPages params = do
   env <- ask
   let debug' = debug env
-  when debug' $ logMessage $ WithSeverity Debug $ "Getting first response from NVD"
+  when debug' $ logDebug $ "Getting first response from NVD"
   start <- liftIO getCurrentTime
   response1 <- nvdApi $ fromList params
   let st = _nvdresponse_totalResults response1
@@ -226,12 +221,12 @@ getPages params = do
   where
     go :: LogT m ann => [NVDResponse] -> UTCTime -> Int -> (Int, Int) -> ReaderT Parameters m [NVDResponse]
     go acc start total (pagesToGo, results) = do
-        logMessage $ WithSeverity Informational $ pretty $ "[NVD] Got partial data, " <> (show pagesToGo) <> "/" <> (show total) <> " pages to go"
+        logInfo $ pretty $ "[NVD] Got partial data, " <> (show pagesToGo) <> "/" <> (show total) <> " pages to go"
         current <- liftIO getCurrentTime
         let pagesRemaining = total - pagesToGo + 1
         let remaining = (diffUTCTime current start) * (fromIntegral pagesToGo) / (fromIntegral pagesRemaining)
         -- TODO show in minutes
-        logMessage $ WithSeverity Informational $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
+        logInfo $ pretty $ "[NVD] " <> (showDuration $ diffUTCTime current start) <> " elapsed, " <> (showDuration remaining) <> " remaining"
         let st = pagesToGo * results
         resp <- nvdApi (fromList $ ("startIndex", (tshow st)) : params)
         if pagesToGo <= 0 then
@@ -273,7 +268,7 @@ updateNVDCVECache since = do
   startTime <- liftIO $ getCurrentTime
 
   updated <- getEverythingSince since startTime
-  when debug' $ logMessage $ WithSeverity Debug $ "Got updates, writing to cache"
+  when debug' $ logDebug $ "Got updates, writing to cache"
   mapM_ writeToDisk updated
   writeCacheStatus startTime
 
@@ -292,7 +287,7 @@ loadNVDCVEsFromCache = do
 loadNVDCVEs :: LogT m ann => ReaderT Parameters m [NVDCVE]
 loadNVDCVEs = do
   -- https://nvd.nist.gov/developers/terms-of-use
-  logMessage $ WithSeverity Informational $ "This product uses the NVD API but is not endorsed or certified by the NVD."
+  logInfo "This product uses the NVD API but is not endorsed or certified by the NVD."
   cacheStatus <- loadCacheStatus
   env <- ask
   let debug' = debug env
@@ -300,18 +295,18 @@ loadNVDCVEs = do
     Just status -> do
       let lastUpdated = _cachestatus_last_updated status
       currentTime <- liftIO getCurrentTime
-      logMessage $ WithSeverity Informational $ "Loading NVD data from cache"
-      logMessage $ WithSeverity Informational $ pretty $ "Cache last updated: " <> (show $ lastUpdated)
+      logInfo "Loading NVD data from cache"
+      logInfo $ pretty $ "Cache last updated: " <> (show $ lastUpdated)
       let cacheAge = diffUTCTime currentTime lastUpdated
       let threeDays = 3 * 24 * 60 * 60
       when (cacheAge > threeDays) $ updateNVDCVECache lastUpdated
       loadNVDCVEsFromCache
     Nothing -> do
-      logMessage $ WithSeverity Informational $ "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."
+      logInfo "CVE data from NVD not yet cached, fetching. This will take considerable time for the first import."
       startTime <- liftIO $ getCurrentTime
 
       everything <- getEverything
-      when debug' $ logMessage $ WithSeverity Debug $ "Got everything, writing to cache"
+      when debug' $ logDebug "Got everything, writing to cache"
       mapM_ writeToDisk everything
       writeCacheStatus startTime
       pure $ map _nvdwrapper_cve $ concatMap _nvdresponse_vulnerabilities everything
@@ -329,12 +324,12 @@ nvdApi r = go 0
         let debug' = debug env
         v <- liftIO $ (try (withApiKey (get' url jsonHandler) $ \key ->
             getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler)) :: LogT m ann => m (Either SomeException NVDResponse)
-        when debug' $ logMessage $  WithSeverity Debug $ pretty $ show url
+        when debug' $ logDebug $ pretty $ show url
         case v of
           Left e -> do
-              when debug' $ logMessage $ WithSeverity Debug $ pretty $ show e
-              logMessage $ WithSeverity Warning $ "Failed to parse, waiting for 10 seconds and retrying.."
-              logMessage $ WithSeverity Warning $ pretty $ "Retry count: " <> show count
+              when debug' $ logDebug $ pretty $ show e
+              logWarning $ "Failed to parse, waiting for 10 seconds and retrying.."
+              logWarning $ pretty $ "Retry count: " <> show count
               liftIO $ threadDelay $ 1000000 * 10
               go (count + 1)
           Right c -> pure c
