@@ -142,15 +142,12 @@ def parse_total_evaluation(raw: dict[str, Any]) -> EvaluatedAttribute:
 
 def parse_evaluation_result(line: str) -> PartialEvaluatedAttribute:
     raw = json.loads(line)
-    if raw.get("error") is not None:
-        return PartialEvaluatedAttribute(**raw, evaluation=None)
-    else:
-        return PartialEvaluatedAttribute(
-            attr=raw.get("attr"),
-            attr_path=raw.get("attr_path"),
-            error=None,
-            evaluation=parse_total_evaluation(raw),
-        )
+    return PartialEvaluatedAttribute(
+        attr=raw.get("attr"),
+        attr_path=raw.get("attr_path"),
+        error=None,
+        evaluation=parse_total_evaluation(raw) if raw.get("error") is None else None,
+    )
 
 
 def parse_evaluation_results(

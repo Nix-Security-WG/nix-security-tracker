@@ -162,7 +162,9 @@ async def drain_lines(
     assert eof, "Reached the end of `drain_lines` without EOF!"
 
 
-async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation):
+async def evaluation_entrypoint(
+    avg_eval_time: float, evaluation: NixEvaluation
+) -> None:
     while (
         await NixEvaluation.objects.filter(
             state=NixEvaluation.EvaluationState.IN_PROGRESS
@@ -176,7 +178,7 @@ async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation)
     await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
         state=NixEvaluation.EvaluationState.IN_PROGRESS
     )
-    repo = NixpkgsRepo(settings.LOCAL_NIXPKGS_CHECKOUT)
+    repo = GitRepo(settings.LOCAL_NIXPKGS_CHECKOUT)
     start = time.time()
     try:
         # Pull our local checkout up to that evaluation revision.
@@ -249,7 +251,7 @@ async def evaluation_entrypoint(avg_eval_time: float, evaluation: NixEvaluation)
 
 
 @pgpubsub.post_insert_listener(NixEvaluationChannel)
-def run_evaluation_job(old: NixEvaluation, new: NixEvaluation):
+def run_evaluation_job(old: NixEvaluation, new: NixEvaluation) -> None:
     average_evaluation_time = NixEvaluation.objects.aggregate(
         avg_eval_time=Avg("elapsed")
     )
