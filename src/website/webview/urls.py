@@ -1,6 +1,12 @@
 from django.urls import path, re_path
 
-from webview.views import HomeView, NixpkgsIssueListView, NixpkgsIssueView
+from webview.views import (
+    HomeView,
+    LinkIssuesView,
+    NixDerivationsView,
+    NixpkgsIssueListView,
+    NixpkgsIssueView,
+)
 
 app_name = "webview"
 
@@ -13,4 +19,6 @@ urlpatterns = [
         NixpkgsIssueView.as_view(),
         name="issue_detail",
     ),
+    path("derivations/<id>", NixDerivationsView.as_view(), name="derivation_detail"),
+    path("link-issues/<id>", LinkIssuesView.as_view(), name="link_issues_detail"),
 ]

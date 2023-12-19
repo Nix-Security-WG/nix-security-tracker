@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="mt-10 w-1/2 mx-auto bg-white rounded p-4 drop-shadow">
+    <div class="mb-2 text-blue-800 text-xl font-semibold" >Link issues to {{ object.name }}</div>
+
+    <div class="flex flex-col">
+      {% for issue in object.all_issues %}
+        <form method="post" >
+      {% csrf_token %}
+        <input class="hidden" name="code" required id="id_code" value="{{issue.code}}">
+        {% if issue in object.issues.all %}
+      <button type="submit" name="link" class="issue p-2 bg-green-200 mb-2 border-2 border-green-400 drop-shadow-lg" id="action" value="unlink">
+           <div class="flex flex-row items-center justify-between mb-2">
+             <div class="issue-code font-bold text-gray-600">{{issue.code}}</div>
+             <div class="font-bold text-green-900 uppercase">LINKED</div>
+           </div>
+           <div class="rounded p-2 bg-green-900 text-sm text-gray-100 w-full font-mono">{{issue.description.value}}</div>
+        </button>
+        {% else %}
+        <button type="submit" name="link" class="issue p-2 bg-gray-100 border-gray-300 mb-2 border" id="action" value="link">
+           <div class="flex flex-row items-center mb-2">
+             <div class="issue-code font-bold text-gray-600">{{issue.code}}</div>
+           </div>
+           <div class="rounded p-2 bg-black/90 text-sm text-green-500 w-full font-mono">{{issue.description.value}}</div>
+        </button>
+        {% endif %}
+        </form>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

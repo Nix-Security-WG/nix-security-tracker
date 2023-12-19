@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="m-4 p-4 bg-white drop-shadow">
+  <div class="mb-2 flex flex-row items-center">
+    {% if object.metadata.available %}
+    <div class="px-2 py-1 text-xs font-bold bg-green-500 text-green-100 rounded">Available</div>
+    {% endif %}
+  </div>
+  <h2 class="text-3xl text-blue-800 font-semibold"> {{ object.name }} </h2>
+  <p class="text-lg mt-2 text-gray-600"> {{ object.description }} </p>
+
+  <div class="mt-4">
+    <div class="font-semibold text-sm text-blue-800"> Maintained By </div>
+    <div class="flex flex-row font-bold text-blue-900">
+      {% for maintainer in object.metadata.maintainers.all %}
+        <div>{{maintainer.name}}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <div class="flex flex-row justify-between items-end mb-2 border-b">
+      <div class="font-semibold text-xl text-blue-800">Issues</div>
+      <a type="button" class="mb-2 bg-yellow-500 px-2 py-1 font-bold text-yellow-100 rounded" href="{% url 'webview:link_issues_detail' object.id %}">Link Issue</a>
+    </div>
+    <div class="flex flex-col">
+      {% for issue in object.issues.all %}
+        <div class="p-2 bg-gray-100 border-gray-300 mb-2 border">
+           <div class="flex flex-row items-center mb-2">
+             <div class="text-xs font-bold text-gray-600">{{issue.code}}</div>
+             <div class="px-2 py-1 rounded bg-red-500 text-white text-xs font-bold text-gray-600 uppercase ml-2">{{issue.get_status_display}}</div>
+           </div>
+           <div class="rounded p-2 bg-black/90 text-green-500 w-full font-mono">{{issue.description.value}}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
