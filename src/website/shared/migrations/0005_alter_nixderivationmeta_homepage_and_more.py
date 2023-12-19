@@ -14,16 +14,4 @@ class Migration(migrations.Migration):
             name="homepage",
             field=models.URLField(null=True),
         ),
-        migrations.AlterField(
-            model_name="nixmaintainer",
-            name="github",
-            field=models.CharField(default="no github", max_length=200),
-            preserve_default=False,
-        ),
-        migrations.AlterField(
-            model_name="nixmaintainer",
-            name="github_id",
-            field=models.IntegerField(default=-1),
-            preserve_default=False,
-        ),
     ]

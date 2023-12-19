@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
     dependencies = [
         ("shared", "0017_remove_nixpkgsissue_cve_and_more"),
-        ("shared", "0018_remove_github_null_on_maintainers"),
     ]
 
     operations = []

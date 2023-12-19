@@ -60,18 +60,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="NixMaintainer",
             fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
                 ("email", models.CharField(max_length=200, null=True)),
-                ("github", models.CharField(max_length=200, null=True)),
-                ("github_id", models.IntegerField(null=True)),
+                ("github", models.CharField(max_length=200, unique=True)),
+                ("github_id", models.IntegerField(primary_key=True)),
                 ("matrix", models.CharField(max_length=200, null=True)),
                 ("name", models.CharField(max_length=200)),
             ],
