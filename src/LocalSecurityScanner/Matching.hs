@@ -94,7 +94,7 @@ match inventory knownVulnerabilities params = do
                     logMessage $ WithSeverity Warning $ pretty $ "Full drv path: " <> (T.unpack $ _match_drv_path match')
                     liftIO $ putStrLn ""
 
-                when (debug params) $ case (filter (\fp -> elem fp (map _match_advisory_id matches)) knownFalsePositives) of
+                when (debug params) $ case (filter (\fp -> not $ elem fp (map _match_advisory_id matches)) knownFalsePositives) of
                        [] -> pure ()
                        fn -> logMessage $ WithSeverity Debug $ pretty $ "Possible false negatives: " <> (show fn)
                 pure ()
