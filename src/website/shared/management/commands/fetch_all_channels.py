@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
+from pprint import pprint
 from typing import Any
 
 import requests
@@ -103,9 +104,7 @@ class Command(BaseCommand):
                 "head_sha1_commit": channel.revision,
                 "release_version": release_from_branch(channel.name),
             }
-            print(branch_info, channel)
-            print(
-                NixChannel.objects.update_or_create(
-                    branch_info, channel_branch=channel_branch
-                )
+            pprint(branch_info | {"channel_branch": channel.name})
+            NixChannel.objects.update_or_create(
+                branch_info, channel_branch=channel_branch
             )

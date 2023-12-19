@@ -99,6 +99,7 @@ let
           ${pre-commit-check.shellHook}
 
           mkdir -p .credentials
+          export DATABASE_URL=postgres:///nix-security-tracker
           export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
         '';
       };
