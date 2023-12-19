@@ -45,7 +45,11 @@ Set up the database with known-good values to play around with:
 ./contrib/reset.sh
 ```
 
-Call `manage runserver` and open <http://localhost:8000>.
+Start the server:
+
+```console
+manage runserver
+```
 
 ## Running tests
 
@@ -69,13 +73,23 @@ $(nix-build -A tests.vm-basic.driverInteractive)/bin/nixos-test-driver
 
 ## Changing the database schema
 
-Whenever you add a field in the database schema, call `manage makemigrations`.
-Then run `manage migrate` before starting the server again.
+Whenever you add a field in the database schema, run:
+
+```console
+manage makemigrations
+```
+
+Then before starting the server again, run:
+
+```
+manage migrate
+```
+
 This is the default Django workflow.
 
 ## Fixtures
 
-Using fixtures is faster than resetting the database completely, especially if you haven't changed the schema.
+If you haven't changed the schema, using fixtures is faster than resetting the database completely.
 
 Remove all data:
 
