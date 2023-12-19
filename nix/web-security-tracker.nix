@@ -98,16 +98,44 @@ in
 
   config = mkIf cfg.enable {
     environment.systemPackages = [ wstExternalManageScript ];
-    services.web-security-tracker.settings = {
-      STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
-      DEBUG = mkDefault false;
-      ALLOWED_HOSTS = mkDefault [
-        cfg.domain
-        "localhost"
-        "127.0.0.1"
-        "[::1]"
-      ];
-      CSRF_TRUSTED_ORIGINS = mkDefault [ "https://${cfg.domain}" ];
+    services = {
+      web-security-tracker.settings = {
+        STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
+        DEBUG = mkDefault false;
+        ALLOWED_HOSTS = mkDefault [
+          cfg.domain
+          "localhost"
+          "127.0.0.1"
+          "[::1]"
+        ];
+        CSRF_TRUSTED_ORIGINS = mkDefault [ "https://${cfg.domain}" ];
+      };
+
+      nginx.enable = true;
+      nginx.virtualHosts = {
+        ${cfg.domain} =
+          {
+            locations = {
+              "/".proxyPass = "http://localhost:${toString cfg.port}";
+              "/static/".alias = "/var/lib/web-security-tracker/static/";
+            };
+          }
+          // lib.optionalAttrs cfg.production {
+            enableACME = true;
+            forceSSL = true;
+          };
+      };
+
+      postgresql.enable = true;
+      postgresql = {
+        ensureUsers = [
+          {
+            name = "web-security-tracker";
+            ensureDBOwnership = true;
+          }
+        ];
+        ensureDatabases = [ "web-security-tracker" ];
+      };
     };
 
     users.users.web-security-tracker = {
@@ -115,31 +143,6 @@ in
       group = "web-security-tracker";
     };
     users.groups.web-security-tracker = { };
-    services.postgresql = {
-      enable = true;
-      ensureUsers = [
-        {
-          name = "web-security-tracker";
-          ensureDBOwnership = true;
-        }
-      ];
-      ensureDatabases = [ "web-security-tracker" ];
-    };
-
-    services.nginx.enable = true;
-    services.nginx.virtualHosts = {
-      ${cfg.domain} =
-        {
-          locations = {
-            "/".proxyPass = "http://localhost:${toString cfg.port}";
-            "/static/".alias = "/var/lib/web-security-tracker/static/";
-          };
-        }
-        // lib.optionalAttrs cfg.production {
-          enableACME = true;
-          forceSSL = true;
-        };
-    };
 
     systemd.services = {
       web-security-tracker-server = {
