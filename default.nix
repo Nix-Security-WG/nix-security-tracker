@@ -17,8 +17,8 @@ let
       src = ./.;
 
       settings.statix.ignore = [
-        "/staging"
-        "/nix/web-security-tracker.nix"
+        "staging"
+        "web-security-tracker.nix"
       ];
 
       hooks =
