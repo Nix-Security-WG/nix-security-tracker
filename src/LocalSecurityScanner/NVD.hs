@@ -181,7 +181,7 @@ cacheDirectory :: LogT m ann => ReaderT Parameters m String
 cacheDirectory = do
     cacheDirCli <- cacheDir <$> ask
     case cacheDirCli of
-      Just dir -> pure dir
+      Just dir -> pure $ dir <> "/"
       Nothing -> do
         xdg_cache <- liftIO $ getEnv "XDG_CACHE_HOME"
         cachedir <- case xdg_cache of
