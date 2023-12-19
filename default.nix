@@ -16,10 +16,7 @@ let
     pre-commit-check = pkgs.pre-commit-hooks {
       src = ./.;
 
-      settings.statix.ignore = [
-        "staging"
-        "web-security-tracker.nix"
-      ];
+      settings.statix.ignore = [ "staging" ];
 
       hooks =
         let
