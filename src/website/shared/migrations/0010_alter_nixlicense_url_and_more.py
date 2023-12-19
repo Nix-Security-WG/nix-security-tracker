@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("shared", "0009_alter_nixmaintainer_name"),
+        ("shared", "0007_alter_nixlicense_full_name"),
     ]
 
     operations = [
