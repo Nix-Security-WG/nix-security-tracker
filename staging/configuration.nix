@@ -23,6 +23,7 @@
     openssh.authorizedKeys.keyFiles = [
       ./raito.keys
       ./thubrecht.keys
+      ./fricklerhandwerk.keys
     ];
   };
 
