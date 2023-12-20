@@ -1,10 +1,11 @@
 import re
 from typing import Any
 
+from django.db.models import F
 from django.db.models.manager import BaseManager
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView, TemplateView
-from shared.models import Container, CveRecord, NixpkgsIssue
+from shared.models import Container, CveRecord, IssueStatus, NixChannel, NixpkgsIssue
 
 
 class HomeView(TemplateView):
@@ -46,3 +47,43 @@ class NixpkgsIssueListView(ListView):
 
     def get_queryset(self) -> BaseManager[NixpkgsIssue]:
         return NixpkgsIssue.objects.all()
+
+
+class NixderivationPerChannelView(ListView):
+    template_name = "affected_list.html"
+    context_object_name = "affected_list"
+    paginate_by = 4
+
+    def get_queryset(self) -> Any:
+        channel_filter_value = self.kwargs["channel"]
+        channel = get_object_or_404(NixChannel, channel_branch=channel_filter_value)
+
+        return (
+            NixpkgsIssue.objects.values(
+                issue_id=F("id"), issue_code=F("code"), issue_status=F("status")
+            )
+            .filter(issue_status=IssueStatus.AFFECTED)
+            .annotate(
+                cve_id=F("cve__id"),
+                cve_code=F("cve__cve_id"),
+                cve_state=F("cve__state"),
+                drv_id=F("derivations__id"),
+                drv_name=F("derivations__name"),
+                drv_system=F("derivations__system__system_double"),
+                drv_path=F("derivations__derivation_path"),
+                channel_id=F("derivations__parent_evaluation__channel_id"),
+            )
+            .filter(channel_id=channel.channel_branch)
+        )
+
+    def get_context_data(self, **kwargs: Any) -> Any:
+        context = super().get_context_data(**kwargs)
+        context["channels"] = ["NIXOS-UNSTABLE", "NIXOS-23.11", "NIXOS-23.05"]
+        context["current_channel"] = self.kwargs["channel"].upper()
+        context["adjusted_elided_page_range"] = context[
+            "paginator"
+        ].get_elided_page_range(context["page_obj"].number)
+
+        context["headers"] = ["ID", "PLATFORM", "ISSUE", "CVE", "CVE STATE"]
+
+        return context

@@ -52,6 +52,12 @@
     </article>
     {% endblock layout %}
 
+    {% if is_paginated %}
+      <nav id="pagination">
+        {% block pagination %} {% endblock %}
+      </nav>
+    {% endif %}
+
     <footer>
       <p>
         <a href="https://github.com/Nix-Security-WG/nix-security-tracker">Nixpkgs Security Tracker</a> is part of a project funded by the
