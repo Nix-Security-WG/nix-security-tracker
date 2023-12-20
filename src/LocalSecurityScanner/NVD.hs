@@ -198,8 +198,7 @@ writeToDisk resp = do
         liftIO $ encodeFile (cachedir <> T.unpack id' <> ".json") x
 
 showDuration :: NominalDiffTime -> String
-showDuration diff =
-  showDur $ floor diff
+showDuration = showDur . floor
   where
     showDur :: Integer -> String
     showDur s =
@@ -209,8 +208,7 @@ showDuration diff =
 
 getPages :: LogT m ann => [(Text, Text)] -> ReaderT Parameters m [NVDResponse]
 getPages params = do
-  env <- ask
-  let debug' = debug env
+  debug' <- debug <$> ask
   when debug' $ logDebug $ "Getting first response from NVD"
   start <- liftIO getCurrentTime
   response1 <- nvdApi $ fromList params
@@ -263,8 +261,7 @@ writeCacheStatus startTime = do
 
 updateNVDCVECache :: LogT m ann => UTCTime -> ReaderT Parameters m ()
 updateNVDCVECache since = do
-  env <- ask
-  let debug' = debug env
+  debug' <- debug <$> ask
   startTime <- liftIO $ getCurrentTime
 
   updated <- getEverythingSince since startTime
@@ -289,8 +286,7 @@ loadNVDCVEs = do
   -- https://nvd.nist.gov/developers/terms-of-use
   logInfo "This product uses the NVD API but is not endorsed or certified by the NVD."
   cacheStatus <- loadCacheStatus
-  env <- ask
-  let debug' = debug env
+  debug' <- debug <$> ask
   case cacheStatus of
     Just status -> do
       let lastUpdated = _cachestatus_last_updated status
@@ -320,8 +316,7 @@ nvdApi r = go 0
       go count = do
         let baseUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?"
             url = baseUrl <> (convertToApi $ toList r)
-        env <- ask
-        let debug' = debug env
+        debug' <- debug <$> ask
         v <- liftIO $ (try (withApiKey (get' url jsonHandler) $ \key ->
             getWithHeaders' (fromList [("apiKey", key)]) url jsonHandler)) :: LogT m ann => m (Either SomeException NVDResponse)
         when debug' $ logDebug $ pretty $ show url
