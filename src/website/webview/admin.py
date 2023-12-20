@@ -6,15 +6,13 @@ from typing import Any
 from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
+from django.utils.safestring import mark_safe
 from pghistory.admin import EventModelAdmin
-from pghistory.models import MiddlewareEvents
 from shared.models import (
     Container,
     NixDerivationMeta,
     NixpkgsIssue,
-    NixpkgsIssueCveLog,  # type: ignore
-    NixpkgsIssueDerivationsLog,  # type: ignore
-    NixpkgsIssueLog,  # type: ignore
+    NixpkgsIssueLogView,  # type: ignore
 )
 
 
@@ -140,61 +138,22 @@ class NixpkgsIssueAdmin(AutocompleteMixin, admin.ModelAdmin):
     readonly_fields = ["code"]
 
 
-@admin.register(NixpkgsIssueLog)
-class NixpkgsIssuesLogAdmin(EventModelAdmin):
-    list_display = ["object", "timestamp", "action", "change", "user"]
+@admin.register(NixpkgsIssueLogView)
+class NixpkgsIssuesLogViewAdmin(EventModelAdmin):
+    list_display = ["id", "timestamp", "user_link", "entry_link", "changes"]
 
-    def object(self, obj: NixpkgsIssueLog) -> Any:
-        return obj.pgh_obj
+    def user_link(self, obj: NixpkgsIssueLogView) -> str:
+        return mark_safe(
+            f'<a href="../../auth/user/{obj.entry_id}">{obj.entry}</a>'  # type: ignore
+        )
 
-    def timestamp(self, obj: NixpkgsIssueLog) -> Any:
-        return obj.pgh_created_at
+    user_link.short_description = "user"
+    user_link.admin_order_field = "user_id"
 
-    def action(self, obj: NixpkgsIssueLog) -> Any:
-        return obj.pgh_label
+    def entry_link(self, obj: NixpkgsIssueLogView) -> str:
+        return mark_safe(
+            f'<a href="../../shared/nixpkgsissue/{obj.entry_id}">{obj.entry}</a>'  # type: ignore
+        )
 
-    def change(self, obj: NixpkgsIssueLog) -> Any:
-        return MiddlewareEvents.objects.filter(pgh_id=obj.pgh_id).first().pgh_diff  # type: ignore
-
-    def user(self, obj: NixpkgsIssueLog) -> Any:
-        return MiddlewareEvents.objects.filter(pgh_id=obj.pgh_id).first().user  # type: ignore
-
-
-@admin.register(NixpkgsIssueCveLog)
-class NixpkgsIssueCveLogAdmin(EventModelAdmin):
-    list_display = ["log_id", "timestamp", "text"]
-
-    def log_id(self, obj: NixpkgsIssueCveLog) -> Any:
-        return obj.pgh_id
-
-    def timestamp(self, obj: NixpkgsIssueCveLog) -> Any:
-        return obj.pgh_created_at
-
-    def user(self, obj: NixpkgsIssueCveLog) -> Any:
-        return MiddlewareEvents.objects.filter(pgh_id=obj.pgh_id).first().user  # type: ignore
-
-    def text(self, obj: NixpkgsIssueCveLog, with_issue: bool = True) -> str:
-        log_entry = NixpkgsIssueCveLog.objects.filter(id=obj.id).first()
-        issue_text = f" to {log_entry.nixpkgsissue}." if with_issue else "."
-        action_text = "added" if ("add" in obj.pgh_label) else "removed"
-        return f"{self.user(log_entry)} {action_text} {log_entry.cverecord}{issue_text}"
-
-
-@admin.register(NixpkgsIssueDerivationsLog)
-class NixpkgsIssueDerivationsLogAdmin(EventModelAdmin):
-    list_display = ["log_id", "timestamp", "text"]
-
-    def log_id(self, obj: NixpkgsIssueDerivationsLog) -> Any:
-        return obj.pgh_id
-
-    def timestamp(self, obj: NixpkgsIssueDerivationsLog) -> Any:
-        return obj.pgh_created_at
-
-    def user(self, obj: NixpkgsIssueDerivationsLog) -> Any:
-        return MiddlewareEvents.objects.filter(pgh_id=obj.pgh_id).first().user  # type: ignore
-
-    def text(self, obj: NixpkgsIssueCveLog, with_issue: bool = True) -> str:
-        log_entry = NixpkgsIssueDerivationsLog.objects.filter(id=obj.id).first()
-        issue_text = f" to {log_entry.nixpkgsissue}." if with_issue else "."
-        action_text = "added" if ("add" in obj.pgh_label) else "removed"
-        return f"{self.user(log_entry)} {action_text} {log_entry.nixderivation}{issue_text}"
+    entry_link.short_description = "entry"
+    entry_link.admin_order_field = "entry_id"
