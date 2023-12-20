@@ -6,7 +6,14 @@ from typing import Any
 from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
-from shared.models import Container, NixDerivationMeta, NixpkgsIssue
+from django.utils.safestring import mark_safe
+from pghistory.admin import EventModelAdmin
+from shared.models import (
+    Container,
+    NixDerivationMeta,
+    NixpkgsIssue,
+    NixpkgsIssueLogView,  # type: ignore
+)
 
 
 class ReadOnlyMixin:
@@ -129,3 +136,24 @@ class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
 @admin.register(NixpkgsIssue)
 class NixpkgsIssueAdmin(AutocompleteMixin, admin.ModelAdmin):
     readonly_fields = ["code"]
+
+
+@admin.register(NixpkgsIssueLogView)
+class NixpkgsIssuesLogViewAdmin(EventModelAdmin):
+    list_display = ["id", "timestamp", "user_link", "entry_link", "changes"]
+
+    def user_link(self, obj: NixpkgsIssueLogView) -> str:
+        return mark_safe(
+            f'<a href="../../auth/user/{obj.entry_id}">{obj.entry}</a>'  # type: ignore
+        )
+
+    user_link.short_description = "user"
+    user_link.admin_order_field = "user_id"
+
+    def entry_link(self, obj: NixpkgsIssueLogView) -> str:
+        return mark_safe(
+            f'<a href="../../shared/nixpkgsissue/{obj.entry_id}">{obj.entry}</a>'  # type: ignore
+        )
+
+    entry_link.short_description = "entry"
+    entry_link.admin_order_field = "entry_id"
