@@ -5,7 +5,7 @@ SPDX-FileCopyrightText: 2023 Dylan Green <dylan.green@obsidian.systems>
 SPDX-License-Identifier: MIT
 -->
 
-To get all development prerequisites enter `nix develop`.
+To get all development prerequisites enter `nix develop` or alternatively run `direnv allow` if you have direnv installed.
 
 Then run the process for a given derivation path with:
 
@@ -28,7 +28,9 @@ cabal run LocalSecurityScanner -- --debug --sbom ./sbom.cdx.json
 For easier debugging you can use:
 
 ```bash
-ghcid --command "cabal repl"
+ghcid
 ```
 
-Which will open up a cabal repl in ghcid, so that you can see new warnings/errors on code changes
+[ghcid](https://github.com/ndmitchell/ghcid) is aliased to `ghcid --command "cabal repl"`.
+
+To access the unwrapped ghcid plase use `ghcid-unwrapped`

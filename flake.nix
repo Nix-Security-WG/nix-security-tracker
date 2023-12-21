@@ -44,9 +44,12 @@
           ghcidWrapped = pkgs.writeShellScriptBin "ghcid" ''
             ${hsPkgs.ghcid.bin}/bin/ghcid --command "cabal repl"
           '';
+          ghcidUnwrapped = pkgs.writeShellScriptBin "ghcid-unwrapped" ''
+            ${hsPkgs.ghcid.bin}/bin/ghcid
+          '';
         in ''
           # To find freshly-`cabal install`ed executables
-          export PATH=~/.local/bin:${ghcidWrapped}/bin:$PATH
+          export PATH=~/.local/bin:${ghcidWrapped}/bin:${ghcidUnwrapped}/bin:$PATH
         '';
       };
       LocalSecurityScanner = hsPkgs.shellFor { packages = ps: with ps; [ LocalSecurityScanner ]; buildInputs = with hsPkgs; [ cabal-install ghcid multi-containers ]; };
