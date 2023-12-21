@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{% load account socialaccount %}
+{% get_social_accounts user as accounts %}
+
 {% block content %}
 <div class="m-4 p-4 bg-white drop-shadow">
   <div class="mb-2 flex flex-row items-center">
@@ -22,7 +25,18 @@
   <div class="mt-4">
     <div class="flex flex-row justify-between items-end mb-2 border-b">
       <div class="font-semibold text-xl text-blue-800">Issues</div>
-      <a type="button" class="mb-2 bg-yellow-500 px-2 py-1 font-bold text-yellow-100 rounded" href="{% url 'webview:link_issues_detail' object.id %}">Link Issue</a>
+      {% if user.is_authenticated %}
+        {% with github_account=user.socialaccount_set.all.0 %}
+          {% if github_account %}
+            {% for maintainer in object.metadata.maintainers.all %}
+              {% if github_account.uid == maintainer.github_id %}
+                <a type="button" class="mb-2 bg-yellow-500 px-2 py-1 font-bold text-yellow-100 rounded" href="{% url 'webview:link_issues_detail' object.id %}">Link Issue</a>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+
     </div>
     <div class="flex flex-col">
       {% for issue in object.issues.all %}
