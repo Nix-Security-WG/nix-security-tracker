@@ -1,1 +1,22 @@
 {% extends "base.html" %}
+
+{% block content %}
+
+<h2 class="pt-4 pl-4 text-3xl text-blue-800 font-semibold "> Nix Derivations </h2>
+<ul class="flex flex-col p-4">
+    {% for object in object_list %}
+      <a class="p-2 bg-white mb-2 flex flex-col" href="{% url 'webview:derivation_detail' object.id %}">
+        <div class="text-lg text-blue-900 font-semibold drop-shadow">{{ object.name }}</div>
+        <div class="mt-2 flex flex-row items-center">
+          {% if object.available %}
+          <div class="px-2 py-1 text-xs font-bold bg-green-500 text-green-100 rounded">Available</div>
+          {% endif %}
+      </div>
+      <div class="mt-2">
+      </div>
+      </a>
+
+    {% endfor %}
+</ul>
+
+{% endblock %}
