@@ -58,8 +58,11 @@ class LinkIssuesView(DetailView):
             else:
                 issue.derivations.remove(drv)
 
-        response = redirect(reverse("webview:link_issues_detail", kwargs={"id": id}))
+        url = reverse("webview:link_issues_detail", kwargs={"id": id})
+        response = redirect(url)
+
         response.status_code = 302
+        response["Location"] = url
         return response
 
 
