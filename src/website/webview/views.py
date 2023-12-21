@@ -2,6 +2,8 @@ import re
 from typing import Any
 
 from django import forms
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.db.models.manager import BaseManager
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -17,6 +19,7 @@ from shared.models import (
 
 class HomeView(ListView):
     template_name = "home_view.html"
+    paginate_by = 100
 
     def get_queryset(self) -> BaseManager[NixDerivationMeta]:
         return NixDerivationMeta.objects.all()
@@ -41,9 +44,20 @@ class LinkIssuesView(DetailView):
     model = NixDerivation
 
     def get_object(self, queryset: Any = None) -> Any:
+        query = self.request.GET.get("q")
         drv = get_object_or_404(self.model, id=self.kwargs.get("id"))
-        drv.all_issues = NixpkgsIssue.objects.all()  # type: ignore
+        issues = LinkIssuesView.get_issues(query)  # type: ignore
+        paginator = Paginator(issues, 100)
+        drv.all_issues = paginator.get_page(0)  # type: ignore
+        drv.query = query  # type: ignore
         return drv
+
+    @staticmethod
+    def get_issues(query: Any) -> Any:
+        if query is not None:
+            return NixpkgsIssue.objects.filter(Q(code__icontains=query))
+        else:
+            return NixpkgsIssue.objects.all()
 
     def post(self, request: Any, id: Any) -> Any:  # type: ignore
         form = SelectForm(request.POST)

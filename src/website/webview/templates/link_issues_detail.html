@@ -2,11 +2,16 @@
 
 {% block content %}
   <div class="mt-10 w-1/2 mx-auto bg-white rounded p-4 drop-shadow">
-    <div class="flex flex-row items-center">
-    <a type="button" class="mr-2 mb-2 bg-yellow-100 border-yellow-500 border-2 px-2 py-1 font-bold text-yellow-500 rounded" href="{% url 'webview:derivation_detail' object.id %}">Back</a>
-    <div class="mb-2 text-blue-800 text-xl font-semibold" >Link issues to {{ object.name }}</div>
+    <div class="flex flex-row items-center border-b mb-2">
+      <a type="button" class="mr-2 mb-2 bg-yellow-100 border-yellow-500 border-2 px-2 py-1 font-bold text-yellow-500 rounded" href="{% url 'webview:derivation_detail' object.id %}">Back</a>
+      <div class="mb-2 text-blue-800 text-xl font-semibold" >Link issues to <span class="font-bold">{{ object.name }}</span></div>
     </div>
     <div class="flex flex-col">
+      <form class="flex flex-row rounded overflow-hidden mb-4" action="{% url 'webview:link_issues_detail' object.id %}" method="GET">
+        <input type="text" name="q" class="border-gray-300 border-2 px-2 py-1 bg-gray-100 flex-grow font-semibold text-gray-700" placeholder="Search for an Issue" value="{{object.query}}"></input>
+        <button type="submit" class="px-2 py-1 border-2 border-yellow-600 bg-yellow-500 font-bold text-yellow-100">Search</button>
+      </form>
+
       {% for issue in object.all_issues %}
         <form method="post" >
       {% csrf_token %}
