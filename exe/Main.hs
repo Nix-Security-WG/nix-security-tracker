@@ -57,7 +57,7 @@ main = do
     params <- execParser parameterInfo
     case path params of
       Just drv' -> do
-        callProcess (sbomnixExe) [drv', "--type", "runtime"]
+        callProcess (sbomnixExe) [drv']
         go params "./sbom.cdx.json"
       _ -> do
         let sbomFile = sbom params
