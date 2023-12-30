@@ -30,10 +30,10 @@ import Control.Monad.IO.Class
 import Prettyprinter
 import Control.Monad.Trans.Reader
 
-data InventoryDependency = InventoryDependency
-  { _inventorydependency_pname :: Text
-  , _inventorydependency_version :: Maybe Text
-  , _inventorydependency_drv :: Text
+data InventoryComponent = InventoryComponent
+  { _inventorycomponent_pname :: Text
+  , _inventorycomponent_version :: Maybe Text
+  , _inventorycomponent_drv :: Text
   } deriving (Show)
 
 data Match = Match
@@ -65,10 +65,10 @@ versionInRange version vuln =
 
 match :: SBOM -> [SBOMVulnerability] -> Parameters -> IO ()
 match inventory knownVulnerabilities params = do
-    case _sbom_dependencies inventory of
-      Nothing -> putStrLn "No known deps?"
+    case _sbom_components inventory of
+      Nothing -> putStrLn "No known components?"
       Just s -> do
-          let d = filter (\(InventoryDependency pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getDeps s
+          let d = filter (\(InventoryComponent pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getComponents s
           withApp params $ timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ do
                 when (debug params) $ logDebug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ loadNVDCVEs
@@ -100,25 +100,25 @@ match inventory knownVulnerabilities params = do
                 pure ()
 
     where
-      getDeps :: [SBOMDependency] -> [InventoryDependency]
-      getDeps d = let deps = map (_sbomdependency_ref) d
-                      split :: Text -> InventoryDependency
-                      split drvpath =
-                            let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ drvpath
-                                lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
-                                version =
-                                  if T.length lastSegment == 0 then Nothing
-                                  else if isDigit (T.head lastSegment) then Just lastSegment
-                                  else Nothing
-                                pname = case version of
-                                  Nothing -> name
-                                  Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
-                            in
-                              (InventoryDependency pname version drvpath)
-                  in map split deps
+      getComponents :: [Component] -> [InventoryComponent]
+      getComponents d = let drv_paths = mapMaybe _property_value $ filter (\p -> _property_name p == Just "nix:drv_path") $ concat $ mapMaybe _component_properties d
+                            split :: Text -> InventoryComponent
+                            split drvpath =
+                                  let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ drvpath
+                                      lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                                      version =
+                                        if T.length lastSegment == 0 then Nothing
+                                        else if isDigit (T.head lastSegment) then Just lastSegment
+                                        else Nothing
+                                      pname = case version of
+                                        Nothing -> name
+                                        Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
+                                  in
+                                    (InventoryComponent pname version drvpath)
+                        in map split drv_paths
 
-      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> ([(Text, Maybe Text)], [Match]) -> InventoryDependency -> ReaderT Parameters m ([(Text, Maybe Text)], [Match])
-      performMatching vulns (seenSoFar, matchedSoFar) (InventoryDependency pname version drv) = do
+      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> ([(Text, Maybe Text)], [Match]) -> InventoryComponent -> ReaderT Parameters m ([(Text, Maybe Text)], [Match])
+      performMatching vulns (seenSoFar, matchedSoFar) (InventoryComponent pname version drv) = do
           debug' <- debug <$> ask
           case elem (pname, version) seenSoFar of
             True -> do

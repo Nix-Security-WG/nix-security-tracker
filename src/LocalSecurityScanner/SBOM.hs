@@ -25,7 +25,6 @@ type Composition = Object
 type Vulnerability = Object
 type Annotation = Object
 type Formulation = Object
-type Property = Object
 type Signature = Object
 
 data SBOM = SBOM
@@ -89,13 +88,29 @@ type LifeCycle = Object
 type Tool = Object
 type Author = Object
 type Manufacture = Object
-type Pedigree = Object
 type Reference = SBOMReference
 type Evidence = Object
 type ReleaseNote = Object
 type ModelCard = Object
 type Data = Object
-type Properties = Object
+
+data Resolve = Resolve
+  { _resolve_type :: Text
+  , _resolve_id :: Maybe Text
+  } deriving (Show, Generic)
+
+data Patch = Patch
+  { _patch_resolves :: Maybe [Resolve]
+  } deriving (Show, Generic)
+
+data Pedigree = Pedigree
+  { _pedigree_patches :: Maybe [Patch]
+  } deriving (Show, Generic)
+
+data Property = Property
+  { _property_name :: Maybe Text
+  , _property_value :: Maybe Text
+  } deriving (Show, Generic)
 
 data MetaData = MetaData
   { _metadata_timestamp :: Maybe Text
@@ -135,7 +150,7 @@ data Component = Component
   , _component_releaseNotes :: Maybe ReleaseNote
   , _component_modelCard :: Maybe ModelCard
   , _component_data :: Maybe [Data]
-  , _component_properties :: Maybe [Properties]
+  , _component_properties :: Maybe [Property]
   , _component_signature :: Maybe [Signature]
   } deriving (Show, Generic)
 
@@ -191,6 +206,10 @@ mconcat <$> sequence (deriveJSON stripType' <$>
     , ''Supplier
     , ''Contact
     , ''Hash
+    , ''Resolve
+    , ''Patch
+    , ''Pedigree
+    , ''Property
     , ''License
     , ''LicenseData
     , ''SBOMText
