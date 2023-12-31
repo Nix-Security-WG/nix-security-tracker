@@ -34,6 +34,7 @@ data InventoryComponent = InventoryComponent
   { _inventorycomponent_pname :: Text
   , _inventorycomponent_version :: Maybe Text
   , _inventorycomponent_drv :: Text
+  , _inventorycomponent_patched :: [ Text ]
   } deriving (Show)
 
 data Match = Match
@@ -42,11 +43,12 @@ data Match = Match
   , _match_severity :: Maybe Text
   , _match_version :: Maybe Text
   , _match_drv_path :: Text
+  , _match_patched :: [Text]
   } deriving (Show)
 
-createMatch :: Text -> Maybe Text -> Text -> LocalVuln -> Match
-createMatch pname version drv_path vuln =
-  Match pname (_vuln_cveId vuln) (_vuln_severity vuln) version drv_path
+createMatch :: Text -> Maybe Text -> Text -> [Text] -> LocalVuln -> Match
+createMatch pname version drv_path patched vuln =
+  Match pname (_vuln_cveId vuln) (_vuln_severity vuln) version drv_path patched
 
 versionInRange :: Maybe Text -> LocalVuln -> Bool
 versionInRange version vuln =
@@ -68,7 +70,7 @@ match inventory knownVulnerabilities params = do
     case _sbom_components inventory of
       Nothing -> putStrLn "No known components?"
       Just s -> do
-          let d = filter (\(InventoryComponent pname _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getComponents s
+          let d = filter (\(InventoryComponent pname _ _ _) -> not $ (isJust $ T.stripSuffix ".config" pname) || (isJust $ T.stripSuffix ".service" pname)) $ getComponents s
           withApp params $ timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ do
                 when (debug params) $ logDebug $ pretty $ "Known deps: " <> (show $ length d)
                 nvdCVEs <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ loadNVDCVEs
@@ -76,7 +78,7 @@ match inventory knownVulnerabilities params = do
                 (_, matches) <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ foldM (performMatching (asLookup advisories)) ([], []) d
                 matchesWithStatus <- timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer)))$ getStatuses matches
                 let knownFalsePositives = mapMaybe _sbomvuln_id $ filter (\k -> (_sbomvuln_analysis k >>= _sbomanalysis_state) == Just (T.pack "false_positive")) knownVulnerabilities
-                let filtered = flip filter matchesWithStatus (\(match', status) -> status /= Just "notforus" && not (elem (_match_advisory_id match') knownFalsePositives))
+                let filtered = flip filter matchesWithStatus (\(match', status) -> status /= Just "notforus" && not (elem (_match_advisory_id match') knownFalsePositives) && not (elem (_match_advisory_id match') (_match_patched match')))
                 flip mapM_ filtered $ \(match', status) -> do
                     liftIO $ putStrLn ""
                     logWarning $ pretty $ T.unpack $ _match_name match'
@@ -100,35 +102,45 @@ match inventory knownVulnerabilities params = do
                 pure ()
 
     where
-      getComponents :: [Component] -> [InventoryComponent]
-      getComponents d = let drv_paths = mapMaybe _property_value $ filter (\p -> _property_name p == Just "nix:drv_path") $ concat $ mapMaybe _component_properties d
-                            split :: Text -> InventoryComponent
-                            split drvpath =
-                                  let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ drvpath
-                                      lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
-                                      version =
-                                        if T.length lastSegment == 0 then Nothing
-                                        else if isDigit (T.head lastSegment) then Just lastSegment
-                                        else Nothing
-                                      pname = case version of
-                                        Nothing -> name
-                                        Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
-                                  in
-                                    (InventoryComponent pname version drvpath)
-                        in map split drv_paths
+      getComponent :: Component -> Maybe InventoryComponent
+      getComponent component = case _component_properties component of
+          Nothing -> Nothing
+          Just properties ->
+              let drv_paths = mapMaybe _property_value $ filter (\p -> _property_name p == Just "nix:drv_path") $ properties
+                  patches = case _component_pedigree component >>= _pedigree_patches of
+                      Nothing -> []
+                      Just p -> mapMaybe _resolve_id $ concat $ mapMaybe _patch_resolves p
+                  split :: Text -> InventoryComponent
+                  split drvpath =
+                        let name = T.reverse . T.drop 4 . T.reverse . T.drop 1 . T.dropWhile (\x -> x /= '-') $ drvpath
+                            lastSegment = T.reverse . T.takeWhile (\x -> x /= '-') . T.reverse $ name
+                            version =
+                              if T.length lastSegment == 0 then Nothing
+                              else if isDigit (T.head lastSegment) then Just lastSegment
+                              else Nothing
+                            pname = case version of
+                              Nothing -> name
+                              Just n -> T.reverse . T.drop (T.length n + 1) . T.reverse $ name
+                        in
+                            (InventoryComponent pname version drvpath patches)
+              in
+                  Just $ split $ head drv_paths
 
-      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> ([(Text, Maybe Text)], [Match]) -> InventoryComponent -> ReaderT Parameters m ([(Text, Maybe Text)], [Match])
-      performMatching vulns (seenSoFar, matchedSoFar) (InventoryComponent pname version drv) = do
+      getComponents :: [Component] -> [InventoryComponent]
+      getComponents c = mapMaybe getComponent c
+
+      performMatching :: LogT m ann => SetMultimap.SetMultimap Text LocalVuln -> ([(Text, Maybe Text, [Text])], [Match]) -> InventoryComponent -> ReaderT Parameters m ([(Text, Maybe Text, [Text])], [Match])
+      performMatching vulns (seenSoFar, matchedSoFar) (InventoryComponent pname version drv patched) = do
           debug' <- debug <$> ask
-          case elem (pname, version) seenSoFar of
+          case elem (pname, version, patched) seenSoFar of
             True -> do
                 when (debug') $ logDebug $ pretty $ "Already seen " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
                 pure (seenSoFar, matchedSoFar)
             False -> timeLog $ Named (__FILE__ <> ":" <> (tshow (__LINE__ :: Integer))) $ do
               when (debug') $ logDebug $ pretty $ "Matching " <> T.unpack pname <> " " <> maybe "" id (T.unpack <$> version)
               let vulns' = filter (versionInRange version) (Set.toList $ SetMultimap.lookup pname vulns)
-              let matches = flip map vulns' $ \vuln -> createMatch pname version drv vuln
-              pure $ (seenSoFar <> [(pname, version)], matchedSoFar <> matches)
+              let matches = flip map vulns' $ \vuln -> createMatch pname version drv patched vuln
+              pure $ (seenSoFar <> [(pname, version, patched)], matchedSoFar <> matches)
 
       getStatuses :: LogT m ann => [Match] -> ReaderT Parameters m [(Match, Maybe Text)]
       getStatuses matches = do
