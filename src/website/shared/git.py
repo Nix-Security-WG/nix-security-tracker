@@ -133,7 +133,10 @@ class GitRepo:
         repo_clone_url = settings.GIT_CLONE_URL
         exists = (
             await (
-                await self.execute_git_command(f"git cat-file commit {object_sha1}")
+                await self.execute_git_command(
+                    f"git cat-file commit {object_sha1}",
+                    stderr=asyncio.subprocess.PIPE,
+                )
             ).wait()
             == 0
         )
