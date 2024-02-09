@@ -106,7 +106,7 @@ manage loaddata sample
 ```
 
 Where `sample` is the name of the fixture JSON file.
-Django will look inside the app folders for a fixture folders to match this name.
+Django will look inside the app folders for a fixture to match this name.
 
 To create (or update) a fixture file:
 
@@ -129,14 +129,27 @@ Not passing `--subset N` will take about an hour and produce ~500 MB of data.
 
 ### Nixpkgs evaluations
 
-Get a full evaluaton of Nixpkgs, for example of the `nixos-23.11` channel:
+Evaluating Nixpkgs happens on a local Git repository.
+Start with creating a checkout:
+
+```console
+manage initiate_checkout
+```
+
+The service will then listen on creation of channel entries in the database.
+These are made by the following command, which gets all recent channel branch evaluations and fetches the corresponding commits to the local Git repository:
+
+```console
+manage fetch_all_channels
+```
+
+To run an evaluation of Nixpkgs manually, for example of the `nixos-23.11` channel:
 
 ```console
 ./contrib/get-all-hydra-jobs.sh -I nixpkgs=channel:nixos-23.11
 ```
 
 and take note of the Git revision of Nixpkgs you're evaluating.
-
 For a channel, this can be found in the associated `git-revision` file, for example <https://channels.nixos.org/nixos-23.11/git-revision>.
 
 The script will write to `$PWD/evaluation.jsonl`.
