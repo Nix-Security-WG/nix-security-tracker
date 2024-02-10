@@ -1,4 +1,4 @@
-{% load static socialaccount %}
+{% load static socialaccount account %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,56 +6,61 @@
     <title>{% block title %}Nixpkgs Security Tracker{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <link rel="stylesheet" type="text/css" href="/static/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Space+Mono">
 
     {% block extra_head %}{% endblock extra_head %}
   </head>
 
-  <body>
+  <body class="w-screen h-screen overflow-hidden flex flex-col">
 
-    <nav>
+    <nav class="bg-blue-600 text-blue-100 p-4 flex flex-row items-center justify-between">
       <h1>
-        <a href="{% url 'webview:home' %}">
+        <a href="{% url 'webview:home' %}" class="text-xl font-bold text-white">
           Nixpkgs Security Tracker
         </a>
       </h1>
-      <ul>
+      <div class="flex flex-row items-center">
         {% if user.is_staff %}
         <!-- TODO settings? -->
         {% endif %}
 
         {% block auth %}
         {% if user.is_authenticated %}
-        <li>
-          <a href="{% url 'account_logout' %}">
-            Logout
+        <div>
+          Logged in as
+          <a href="{% url 'account_logout' %}" class="font-bold" >
+            @{% user_display user %}
           </a>
-        </li>
+        </div>
+
+        <button type="button" class="ml-4 border-yellow-500 border-2 px-2 py-1 font-bold text-yellow-500 rounded">Logout</button>
 
         {% else %}
 
-        <li>
-          <a href="{% provider_login_url 'github' %}">
+        <div>
+          <a href="{% provider_login_url 'github' %}" class="ml-4 bg-yellow-500 px-4 py-2 font-bold text-yellow-800 rounded">
             Login with GitHub
           </a>
-        </li>
+        </div>
         {% endif %}
         {% endblock %}
-      </ul>
+      </div>
     </nav>
 
     {% block layout %}
-    <article>
+    <article class="flex-grow bg-blue-100 overflow-y-scroll">
           {% block content %}{% endblock content %}
     </article>
     {% endblock layout %}
 
-    <footer>
+    <footer class="bg-blue-800 p-4 text-blue-300 font-semibold">
       <p>
-        <a href="https://github.com/Nix-Security-WG/nix-security-tracker">Nixpkgs Security Tracker</a> is part of a project funded by the
-        <a href="https://sovereigntechfund.de/en/">Sovereign Tech Fund</a>.
+        <a class="font-bold text-white" href="https://github.com/Nix-Security-WG/nix-security-tracker">Nixpkgs Security Tracker</a> is part of a project funded by the
+        <a class="font-bold text-yellow-500" href="https://sovereigntechfund.de/en/">Sovereign Tech Fund</a>.
       </p>
     </footer>
   </body>
