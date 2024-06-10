@@ -23,7 +23,7 @@ You can set up a database on NixOS like this:
 services.postgresql.enable = true;
 services.postgresql.ensureDatabases = [ "nix-security-tracker" ];
 services.postgresql.ensureUsers = [{
-  name = "youruser";
+  name = "nix-security-tracker";
   ensureDBOwnership = true;
 }];
 ```
