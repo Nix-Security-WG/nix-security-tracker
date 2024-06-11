@@ -30,5 +30,6 @@ createdb nix-security-tracker
 manage migrate
 manage createsuperuser --username admin  # prompts for password
 manage ingest_bulk_cve --subset 100
-manage fetch_all_channels
+manage initiate_checkout   # Checkout based on LOCAL_NIXPKGS_CHECKOUT
+manage fetch_all_channels  # Fails if LOCAL_NIXPKGS_CHECKOUT is not set
 manage ingest_manual_evaluation cd17fb8b3bfd63bf4a54512cfdd987887e1f15eb nixos-unstable $DIR/contrib/evaluation.jsonl --subset 100
