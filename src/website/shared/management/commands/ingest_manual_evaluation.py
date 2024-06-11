@@ -626,7 +626,7 @@ class BulkEvaluationIngestion:
         # https://github.com/django/django/commit/89c7454dbdae3e0df6d96aa6132205d05e4a9b3d is not merged yet in 4.2...
         added_ids = NixMaintainer.objects.filter(
             name__in=[m.name for m in ms]
-        ).values_list("id", flat=True)
+        ).values_list("github_id", flat=True)
         return list(NixMaintainer.objects.in_bulk(added_ids).values())
 
     def ingest_licenses(self, licenses: list[LicenseAttribute]) -> list[NixLicense]:
@@ -634,6 +634,10 @@ class BulkEvaluationIngestion:
         seen = set()
 
         for lic in licenses:
+            # null SPDX IDs violate schema constraints
+            if lic.spdx_id is None:
+                continue
+
             # Duplicate...
             if lic.url in seen:
                 continue
@@ -667,7 +671,7 @@ class BulkEvaluationIngestion:
 
     def ingest_meta(self, metadata: MetadataAttribute) -> NixDerivationMeta:
         maintainers = self.ingest_maintainers(metadata.maintainers)
-        platforms = self.ingest_platforms(metadata.platforms)
+        platforms = self.ingest_platforms(metadata.platforms)  # noqa: F841
         if isinstance(metadata.license, list):
             licenses = self.ingest_licenses(metadata.license)
         else:
@@ -688,7 +692,10 @@ class BulkEvaluationIngestion:
         self.bs.add_insert(meta)
         self.bs.set_m2m(meta, "maintainers", maintainers)
         self.bs.set_m2m(meta, "licenses", licenses)
-        self.bs.set_m2m(meta, "platforms", platforms)
+        # raises `KeyError: 'platforms'`
+        # It was commented out of the schema in commit [1]
+        # [1] https://github.com/Nix-Security-WG/nix-security-tracker/commit/86dc3dfa4be4fb8ba0516b8c1526efa5ed81a447#diff-0ed666f4199a47452175c6d7b089c099b9bf603dfda1b0d92e4cca754291ea20R103-R109
+        # self.bs.set_m2m(meta, "platforms", platforms)
 
         return meta
 
