@@ -315,7 +315,7 @@ class NixpkgsIssue(models.Model):
         default=IssueStatus.UNKNOWN,
     )
 
-    derivations = models.ManyToManyField(NixDerivation)
+    derivations = models.ManyToManyField(NixDerivation, related_name="issues")
 
     def __str__(self) -> str:
         return self.code
