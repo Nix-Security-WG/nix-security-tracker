@@ -32,6 +32,11 @@ nav a:visited {
   margin: 0;
 }
 
+nav span {
+  color: white;
+  padding: 1em;
+}
+
 article {
   padding: 1em;
 }
