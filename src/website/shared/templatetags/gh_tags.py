@@ -12,7 +12,7 @@ from shared.models import SocialUser
 from shared.utils import get_gh
 
 register = template.Library()
-github: Github = get_gh()
+github: Github = get_gh(per_page=100)
 logger = logging.getLogger(__name__)
 
 
