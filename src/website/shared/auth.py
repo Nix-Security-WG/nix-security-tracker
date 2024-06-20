@@ -110,6 +110,28 @@ def is_team_member(username: str, orgname: str, teamname: str) -> bool:
     return False
 
 
+def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> None:
+    """
+    Setup group memberships for a newly created user.
+    """
+    # Ignore updates and deletions
+    if not created:
+        return
+
+    logger.info(f"New Github account: {instance}. Setting up groups...")
+
+    social_account = instance
+    gh_username = social_account.extra_data.get("login")  # type: ignore
+    user = social_account.user
+
+    if is_team_member(gh_username, "NixOS", "security"):
+        user.groups.add(Group.objects.get(name="security_team"))
+    if is_team_member(gh_username, "NixOS", "nixpkgs-committers"):
+        user.groups.add(Group.objects.get(name="committers"))
+    if is_team_member(gh_username, "NixOS", "nixpkgs-maintainers"):
+        user.groups.add(Group.objects.get(name="maintainers"))
+
+
 def reset_group_permissions(**kwargs: Any) -> None:
     """
     Reset general permissions in case new tables were created.
