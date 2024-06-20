@@ -1,4 +1,4 @@
-{% load static socialaccount gh_tags %}
+{% load static socialaccount %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -49,16 +49,7 @@
 
     {% block layout %}
     <article>
-      {% block content %}
-        {% if user.is_authenticated %}
-          <ul>
-            <li>is admin? {{ user.is_staff }}</li>
-            <li>is NixOS member? {% is_nixos_member user %}</li>
-            <li>is Security Team member? {% is_security_member user %}</li>
-            <li>is Nixpkgs committer? {% is_committer user %}</li>
-          </ul>
-        {% endif %}
-      {% endblock content %}
+      {% block content %}{% endblock content %}
     </article>
     {% endblock layout %}
 
