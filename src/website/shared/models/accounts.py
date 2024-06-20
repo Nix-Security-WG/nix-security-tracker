@@ -1,20 +1,9 @@
 from typing import Any
 
-from allauth.socialaccount.models import SocialAccount
-from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth.models import Group, Permission
 from django.db.models import Q
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
-
-
-class SocialUser(User):
-    class Meta:
-        proxy = True
-
-    @property
-    def github_account(self) -> SocialAccount | None:
-        # As we only have one social account per user (GitHub), we use the first one.
-        return self.socialaccount_set.first()  # type: ignore
 
 
 def reset_group_permissions() -> None:

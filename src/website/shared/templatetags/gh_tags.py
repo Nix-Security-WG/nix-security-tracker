@@ -8,7 +8,6 @@ from github import Github
 from github.NamedUser import NamedUser
 from github.Organization import Organization
 from github.Team import Team
-from shared.models import SocialUser
 from shared.utils import get_gh
 
 register = template.Library()
@@ -20,8 +19,10 @@ def get_gh_username(user: User) -> str | None:
     """
     Return the Github username of a given Auth.User.
     """
-    social_user = SocialUser.objects.get(id=user.id)  # type: ignore
-    social_account: SocialAccount | None = social_user.github_account
+    social_user = User.objects.get(id=user.id)  # type: ignore
+    social_account: SocialAccount | None = (
+        social_user.socialaccount_set.filter(provider="github").first()  # type: ignore
+    )
     if social_account:
         return social_account.extra_data.get("login")  # type: ignore
 
