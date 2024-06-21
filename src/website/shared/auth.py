@@ -3,12 +3,14 @@ from typing import Any, cast
 
 from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth.models import Group, Permission, User
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from github import Github
 from github.NamedUser import NamedUser
 from github.Organization import Organization
 from github.Team import Team
+from guardian.shortcuts import assign_perm, remove_perm
 
+from shared.models import NixDerivationMeta, NixMaintainer, NixpkgsIssue
 from shared.utils import get_gh
 
 github: Github = get_gh(per_page=100)  # 100 is the API limit
@@ -163,3 +165,59 @@ def reset_group_permissions(**kwargs: Any) -> None:
         )
     )
     readers.save()
+
+
+def update_maintainer_permissions() -> None:
+    pass
+
+
+def update_maintainer_permissions_m2m_receiver(
+    instance: NixDerivationMeta | NixMaintainer,
+    action: str,
+    reverse: bool,
+    pk_set: set[int],
+    **kwargs: Any,
+) -> None:
+    """
+    Update maintainer permissions when a package metadata is changed.
+
+    This function returns early in the following cases:
+        - When the action is not 'post_add' or 'post_remove'.
+        - When the pk_set is empty. For example, trying to add a maintainer
+          to a package that is already in its metadatadata, will not create a duplicate
+          entry in the database, which is reflected in the signal with an empty pk_set.
+
+    The direction of the signal trigger is:
+        - `derivation.metadata.maintainers.add(maintainer)` when `reverse` is `False`.
+        - `maintainer.nixderivationmeta_set.add(derivation.metadata)` when `reverse` is `True`.
+    """
+    if action not in ["post_add", "post_remove"]:
+        return
+    if pk_set == set():
+        return
+
+    # TODO(alejandrosame): Take into account multiple additions. Now it's assumed only one
+    # entry is added per instance.
+    metadata: NixDerivationMeta = (
+        cast(NixDerivationMeta, instance)
+        if not reverse
+        else NixDerivationMeta.objects.get(id=pk_set.pop())
+    )
+    maintainer: NixMaintainer = (
+        cast(NixMaintainer, instance)
+        if reverse
+        else NixMaintainer.objects.get(github_id=pk_set.pop())
+    )
+    user: User = User.objects.get(username=maintainer.github)
+    issues: QuerySet[NixpkgsIssue] = metadata.derivation.nixpkgsissue_set.all()  # type: ignore
+
+    if action == "post_add":
+        assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
+        assign_perm("change_nixderivationmeta", user, metadata)
+        for issue in issues:
+            assign_perm("change_nixpkgsissue", user, issue)
+    elif action == "post_remove":
+        remove_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
+        remove_perm("change_nixderivationmeta", user, metadata)
+        for issue in issues:
+            remove_perm("change_nixpkgsissue", user, issue)

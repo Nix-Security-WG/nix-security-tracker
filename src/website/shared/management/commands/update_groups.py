@@ -2,6 +2,7 @@ import argparse
 import logging
 from typing import Any
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -44,7 +45,14 @@ class Command(BaseCommand):
 
                 logger.info("Done updating database groups.")
             else:
-                if not user.is_superuser:
+                # Superusers and the anonymous user are the only possible users
+                # with no social account. Log an error if we find any other user that didn't
+                # setup up their account via Github login.
+                # NOTE: the anonymous user is created by django-guardian.
+                if (
+                    not user.is_superuser
+                    and user.username != settings.ANONYMOUS_USER_NAME
+                ):
                     logger.error(
                         f"User {user} with ID {user.id} has no social account auth."  # type: ignore
                     )
