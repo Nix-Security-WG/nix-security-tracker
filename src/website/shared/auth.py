@@ -167,7 +167,29 @@ def reset_group_permissions(**kwargs: Any) -> None:
     readers.save()
 
 
-def update_maintainer_permissions() -> None:
+def update_maintainer_permissions(
+    action: str, user: User, metadata: NixDerivationMeta
+) -> None:
+    """
+    Update maintainer permissions over a package according to the m2m changed signal action.
+
+    A maitainer of a package is able to change:
+        - Derivations (NixDerivation) whose metadata points at them as a maintainer and
+          the metadata itself (NixDerivationMeta).
+        - Issues (NixpkgsIssue) that point to previous derivations as involved packages.
+    """
+    # TODO(alejandrosame): Figure out the best way to do prefetching
+    issues: QuerySet[NixpkgsIssue] = metadata.derivation.nixpkgsissue_set.all()  # type: ignore
+    if action == "post_add":
+        assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
+        assign_perm("change_nixderivationmeta", user, metadata)
+        for issue in issues:
+            assign_perm("change_nixpkgsissue", user, issue)
+    elif action == "post_remove":
+        remove_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
+        remove_perm("change_nixderivationmeta", user, metadata)
+        for issue in issues:
+            remove_perm("change_nixpkgsissue", user, issue)
     pass
 
 
@@ -185,7 +207,7 @@ def update_maintainer_permissions_m2m_receiver(
         - When the action is not 'post_add' or 'post_remove'.
         - When the pk_set is empty. For example, trying to add a maintainer
           to a package that is already in its metadatadata, will not create a duplicate
-          entry in the database, which is reflected in the signal with an empty pk_set.
+          entry in the database, which is reflected in the signal with an empty `pk_set`.
 
     The direction of the signal trigger is:
         - `derivation.metadata.maintainers.add(maintainer)` when `reverse` is `False`.
@@ -196,28 +218,22 @@ def update_maintainer_permissions_m2m_receiver(
     if pk_set == set():
         return
 
-    # TODO(alejandrosame): Take into account multiple additions. Now it's assumed only one
-    # entry is added per instance.
-    metadata: NixDerivationMeta = (
-        cast(NixDerivationMeta, instance)
-        if not reverse
-        else NixDerivationMeta.objects.get(id=pk_set.pop())
-    )
-    maintainer: NixMaintainer = (
-        cast(NixMaintainer, instance)
-        if reverse
-        else NixMaintainer.objects.get(github_id=pk_set.pop())
-    )
-    user: User = User.objects.get(username=maintainer.github)
-    issues: QuerySet[NixpkgsIssue] = metadata.derivation.nixpkgsissue_set.all()  # type: ignore
+    if reverse:  # `instance` is NixMaintainer and `pk_set` contains metadata keys
+        maintainer: NixMaintainer = cast(NixMaintainer, instance)
+        user: User = User.objects.get(username=maintainer.github)
+        metadatas: QuerySet[NixDerivationMeta] = NixDerivationMeta.objects.filter(
+            id__in=pk_set
+        ).all()
+        for metadata in metadatas:
+            update_maintainer_permissions(action, user, metadata)
 
-    if action == "post_add":
-        assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
-        assign_perm("change_nixderivationmeta", user, metadata)
-        for issue in issues:
-            assign_perm("change_nixpkgsissue", user, issue)
-    elif action == "post_remove":
-        remove_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
-        remove_perm("change_nixderivationmeta", user, metadata)
-        for issue in issues:
-            remove_perm("change_nixpkgsissue", user, issue)
+    else:  # `instance` is NixDerivationMeta and `pk_set` contains maintainer keys
+        maintainer_usernames: set[str] = set(
+            NixMaintainer.objects.filter(github_id__in=pk_set)
+            .all()
+            .values_list("github", flat=True)
+        )
+        users: QuerySet[User] = User.objects.filter(username__in=maintainer_usernames)
+        metadata: NixDerivationMeta = cast(NixDerivationMeta, instance)
+        for user in users:
+            update_maintainer_permissions(action, user, metadata)
