@@ -1,11 +1,15 @@
 import re
 from typing import Any
 
+from django.contrib.postgres.search import SearchVector
 from django.db.models.manager import BaseManager
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView, TemplateView
-from shared.models import Container, CveRecord, NixpkgsIssue
-from django.contrib.postgres.search import SearchVector
+from shared.models import (
+    Container,
+    CveRecord,
+    NixpkgsIssue,
+)
 
 
 class HomeView(TemplateView):
@@ -17,7 +21,7 @@ class TriageView(ListView):
     model = Container
     paginate_by = 25
 
-    def get_queryset(self):
+    def get_queryset(self) -> BaseManager[Container]:
         qs = (
             Container.objects.prefetch_related("descriptions", "affected", "cve")
             .exclude(title="")
@@ -27,21 +31,17 @@ class TriageView(ListView):
         if not search_query:
             return qs.all()
         else:
-            return (
-                qs.annotate(
-                    search=SearchVector(
-                        "title",
-                        "descriptions__value",
-                        "affected__vendor",
-                        "affected__product",
-                        "affected__package_name",
-                        "affected__repo",
-                        "affected__cpes__name",
-                    )
+            return qs.annotate(
+                search=SearchVector(
+                    "title",
+                    "descriptions__value",
+                    "affected__vendor",
+                    "affected__product",
+                    "affected__package_name",
+                    "affected__repo",
+                    "affected__cpes__name",
                 )
-                .filter(search=search_query)
-                .distinct("id")
-            )
+            ).distinct("id")
 
 
 class NixpkgsIssueView(DetailView):
