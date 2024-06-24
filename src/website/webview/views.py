@@ -3,6 +3,7 @@ from typing import Any
 
 from django.contrib.postgres.search import SearchVector
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.db.models.manager import BaseManager
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
@@ -37,21 +38,12 @@ def triage_view(request: HttpRequest) -> HttpResponse:
     search_pkgs = request.GET.get("search_pkgs")
 
     if search_cves:
-        cve_objects = (
-            cve_qs.annotate(
-                search=SearchVector(
-                    "title",
-                    "descriptions__value",
-                    "affected__vendor",
-                    "affected__product",
-                    "affected__package_name",
-                    "affected__repo",
-                    "affected__cpes__name",
-                )
-            )
-            .filter(search=search_cves)
-            .distinct("id")
-        )
+        cve_objects = cve_qs.filter(
+            Q(search_vector=search_cves)
+            | Q(descriptions__search_vector=search_cves)
+            | Q(affected__search_vector=search_cves)
+            | Q(affected__cpes__search_vector=search_cves)
+        ).distinct("id")
 
     if search_pkgs:
         pkg_objects = (
