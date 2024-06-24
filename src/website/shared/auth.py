@@ -28,7 +28,7 @@ def get_gh_username(user: User) -> str | None:
     if social_account:
         return social_account.extra_data.get("login")  # type: ignore
 
-    logger.warning(f"Failed to get GitHub username for user {user}.")
+    logger.warning("Failed to get GitHub username for user %s.", user)
     return None
 
 
@@ -39,7 +39,7 @@ def get_gh_organization(orgname: str) -> Organization | None:
     try:
         return github.get_organization(login=orgname)
     except Exception as e:
-        logger.warning(f"Failed to get organization {orgname}: {e}")
+        logger.warning("Failed to get organization %s: %s", orgname, e)
         return None
 
 
@@ -55,7 +55,7 @@ def get_gh_team(org_or_orgname: Organization | str, teamname: str) -> Team | Non
         try:
             return gh_org.get_team_by_slug(teamname)
         except Exception as e:
-            logger.warning(f"Failed to get team {teamname}: {e}")
+            logger.warning("Failed to get team %s: %s", teamname, e)
 
     return None
 
@@ -70,7 +70,10 @@ def get_github_ids_cache() -> dict[str, set[int]]:
         if team:
             members = team.get_members()
             logger.info(
-                f"Caching {members.totalCount} IDs from team {orgname}/{teamname}..."
+                "Caching %s IDs from team %s/%s...",
+                members.totalCount,
+                orgname,
+                teamname,
             )
 
             # The iterator will make the extra page API calls for us.
@@ -120,7 +123,7 @@ def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> N
     if not created:
         return
 
-    logger.info(f"New Github account: {instance}. Setting up groups...")
+    logger.info("New Github account: %s. Setting up groups...", instance)
 
     social_account = instance
     gh_username = social_account.extra_data.get("login")  # type: ignore

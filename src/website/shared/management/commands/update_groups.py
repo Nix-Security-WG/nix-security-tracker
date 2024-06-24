@@ -54,5 +54,7 @@ class Command(BaseCommand):
                     and user.username != settings.ANONYMOUS_USER_NAME
                 ):
                     logger.error(
-                        f"User {user} with ID {user.id} has no social account auth."  # type: ignore
+                        "User %s with ID %s has no social account auth.",
+                        user,
+                        user.id,  # type: ignore
                     )
