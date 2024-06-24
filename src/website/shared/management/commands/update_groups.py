@@ -31,7 +31,7 @@ class Command(BaseCommand):
 
         logger.info("Using Github ID cache to update database groups...")
 
-        users = User.objects.all()
+        users = User.objects.prefetch_related("socialaccount_set").iterator()
         for user in users:
             social = user.socialaccount_set.filter(provider="github").first()  # type: ignore
             if social:
