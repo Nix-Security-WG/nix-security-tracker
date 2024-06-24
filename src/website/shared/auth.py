@@ -38,8 +38,8 @@ def get_gh_organization(orgname: str) -> Organization | None:
     """
     try:
         return github.get_organization(login=orgname)
-    except Exception as e:
-        logger.warning("Failed to get organization %s: %s", orgname, e)
+    except Exception:
+        logger.exception("Failed to get organization %s", orgname)
         return None
 
 
@@ -54,8 +54,8 @@ def get_gh_team(org_or_orgname: Organization | str, teamname: str) -> Team | Non
     if gh_org:
         try:
             return gh_org.get_team_by_slug(teamname)
-        except Exception as e:
-            logger.warning("Failed to get team %s: %s", teamname, e)
+        except Exception:
+            logger.exception("Failed to get team %s", teamname)
 
     return None
 
