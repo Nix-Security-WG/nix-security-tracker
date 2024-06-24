@@ -22,14 +22,14 @@ def get_gh_username(user: User) -> str | None:
     Return the Github username of a given Auth.User.
     """
     social_user = User.objects.get(id=user.id)  # type: ignore
-    social_account: SocialAccount | None = (
-        social_user.socialaccount_set.filter(provider="github").first()  # type: ignore
-    )
-    if social_account:
-        return social_account.extra_data.get("login")  # type: ignore
-
-    logger.warning("Failed to get GitHub username for user %s.", user)
-    return None
+    try:
+        extra_data_login: str = social_user.socialaccount_set.get(  # type: ignore
+            provider="github"
+        ).extra_data.get("login")
+        return extra_data_login
+    except Exception:
+        logger.exception("Failed to get GitHub username for user %s.", user)
+        return None
 
 
 def get_gh_organization(orgname: str) -> Organization | None:
