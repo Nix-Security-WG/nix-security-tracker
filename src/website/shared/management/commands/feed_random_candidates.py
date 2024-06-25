@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import F
 from django_pandas.io import read_frame
 from recordlinkage import Index
-from shared.models import Container, NixDerivation
+from shared.models import Container, LinkageCandidate, NixDerivation
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,9 @@ def get_daframes() -> Any:
     pkg_qs = (
         NixDerivation.objects.select_related("metadata")
         .order_by("id")
-        .annotate(pkg_id=F("id"))
+        .annotate(derivation_id=F("id"))
         .values(
-            "pkg_id",
+            "derivation_id",
             "attribute",
             "name",
             "system",
@@ -78,7 +78,7 @@ class Command(BaseCommand):
 
         container_df, pkg_df = get_daframes()
         container_ids = container_df.loc[:, "container_id"]
-        pkg_ids = pkg_df.loc[:, "pkg_id"]
+        pkg_ids = pkg_df.loc[:, "derivation_id"]
 
         print("\nExample row for container DF:")
         print(container_df.iloc[0])
@@ -102,3 +102,10 @@ class Command(BaseCommand):
 
         print("\nCandidates to insert:")
         print(id_pairs)
+
+        # Insert the candidates in bulk
+        logger.info("Preparing candidates to insert.")
+        data = id_pairs.to_dict(orient="records")
+        instances = [LinkageCandidate(**row) for row in data]
+        LinkageCandidate.objects.bulk_create(instances)
+        logger.info("%s candidates inserted.", len(instances))
