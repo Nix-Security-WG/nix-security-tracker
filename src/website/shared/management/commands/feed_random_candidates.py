@@ -12,7 +12,7 @@ from shared.models import Container, LinkageCandidate, NixDerivation
 logger = logging.getLogger(__name__)
 
 
-def get_daframes() -> Any:
+def get_daframes(to_pkg_id: int | None) -> Any:
     """
     Return dataframes from the appropriate querysets.
     """
@@ -47,11 +47,14 @@ def get_daframes() -> Any:
         )
     )
 
-    return read_frame(container_qs.all()[:4]), read_frame(pkg_qs)
+    if to_pkg_id:
+        pkg_qs = pkg_qs.filter(id=to_pkg_id)
+
+    return read_frame(container_qs), read_frame(pkg_qs)
 
 
-def provide_candidates(df_a: Any, df_b: Any) -> Any:
-    indexer = Index().random(n=200)
+def provide_candidates(df_a: Any, df_b: Any, n: int) -> Any:
+    indexer = Index().random(n=n)
     candidate_links = indexer.index(df_a, df_b)
 
     return candidate_links
@@ -69,14 +72,30 @@ class Command(BaseCommand):
     help = "Generate and insert random record linkage candidates."
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
-        pass
-
-    def handle(self, *args: str, **kwargs: Any) -> None:  # pyright: ignore reportUnusedVariable
-        logger.info(
-            "Resetting group permissions based on their Github team memberships."
+        parser.add_argument(
+            "-n",
+            "--number-inserts",
+            nargs="?",
+            type=int,
+            help="Integer value representing the N entries to be inserted. "
+            + " Useful to generate a small dataset for development. "
+            + " Defaults to 200.",
+            default=200,
+        )
+        parser.add_argument(
+            "-p",
+            "--pkg-id",
+            nargs="?",
+            type=int,
+            help="Integer value representing the id of the package to insert the candidates. "
+            + " Useful to generate feed candidates to a specific pkgs for development.",
+            default=None,
         )
 
-        container_df, pkg_df = get_daframes()
+    def handle(self, *args: str, **kwargs: Any) -> None:  # pyright: ignore reportUnusedVariable
+        logger.info("Generating candidates.")
+
+        container_df, pkg_df = get_daframes(to_pkg_id=kwargs["pkg_id"])
         container_ids = container_df.loc[:, "container_id"]
         pkg_ids = pkg_df.loc[:, "derivation_id"]
 
@@ -87,7 +106,7 @@ class Command(BaseCommand):
         print(pkg_df.iloc[0])
 
         # Candidates are return as a MultiIndex
-        candidates = provide_candidates(container_df, pkg_df)
+        candidates = provide_candidates(container_df, pkg_df, kwargs["number_inserts"])
         print()
         print(candidates)
 
@@ -103,7 +122,7 @@ class Command(BaseCommand):
         print("\nCandidates to insert:")
         print(id_pairs)
 
-        # Insert the candidates in bulk
+        # Insert candidates in bulk
         logger.info("Preparing candidates to insert.")
         data = id_pairs.to_dict(orient="records")
         instances = [LinkageCandidate(**row) for row in data]
