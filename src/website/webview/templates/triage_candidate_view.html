@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    .container {
+        display: flex;
+    }
+
+    .column {
+        flex: 1;
+        padding: 0px 10px 0px 10px;
+        margin: 0px 5px 0px 5px;
+    }
+
+    .column > ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .column-header {
+        display: flex;
+        justify-content: left;
+        align-items: center;
+        padding: 0px 10px 0px 10px;
+        margin: 0px 5px 10px 5px;
+    }
+
+    .column-header > * {
+        padding-right: 20px
+    }
+
+    .column-header > h1 {
+        margin-top: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .selectable-item {
+        padding: 10px;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        cursor: pointer;
+    }
+
+    .selected {
+        background-color: #f2f2f2;
+    }
+
+    form > input {
+        display: none;
+    }
+
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+
+<div class="container">
+{% if pkg %}
+    <div class="column">
+        <div class="column-header">
+            <h1>CVEs</h1>
+        </div>
+        <ul class="cves">
+            {% for object in cve_list %}
+            <li class="selectable-item selected" data-id={{object.id}}>
+                {{ object.title }}: {{ object.cve.cve_id }} ({{ object.id }})
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="column">
+        <div class="column-header">
+            <h1>PKG</h1>
+        </div>
+        {{ pkg }} ({{ pkg.id }})
+    </div>
+{%else%}
+    No more candidates to triage.
+{%endif%}
+</div>
+
+<script>
+    const selectableItems = document.querySelectorAll('.selectable-item');
+
+    selectableItems.forEach(item => {
+        item.addEventListener('click', () => {
+            toggleItemSelection(item);
+        });
+    });
+
+    function toggleItemSelection(item) {
+        if (item.classList.contains('selected')) {
+            item.classList.remove('selected');
+        } else {
+            item.classList.add('selected');
+        }
+    }
+</script>
+{% endblock content %}

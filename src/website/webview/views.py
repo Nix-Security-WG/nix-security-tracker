@@ -11,6 +11,7 @@ from django.views.generic import DetailView, ListView, TemplateView
 from shared.models import (
     Container,
     CveRecord,
+    LinkageCandidate,
     NixDerivation,
     NixpkgsIssue,
 )
@@ -18,6 +19,54 @@ from shared.models import (
 
 class HomeView(TemplateView):
     template_name = "home_view.html"
+
+
+def triage_candidate_view(request: HttpRequest) -> HttpResponse:
+    """
+    Return the triage view of a candidate record linkage.
+
+    In this view logic we are only interested in showing
+    CVEs and packages specified by candidate records.
+    """
+    template_name = "triage_candidate_view.html"
+
+    next_candidates = LinkageCandidate.objects.values_list(
+        "derivation_id", flat=True
+    ).distinct()[:2]
+    print(next_candidates)
+    if len(next_candidates) == 0:
+        context = {
+            "cve_list": None,
+            "pkg": None,
+            "next_pkg_id": None,
+        }
+        return render(request, template_name, context)
+
+    print(next_candidates[0])
+    print(dir(next_candidates[0]))
+
+    candidates = (
+        LinkageCandidate.objects.prefetch_related("container", "derivation")
+        .filter(derivation_id=next_candidates[0])
+        .values_list("container_id", flat=True)
+    )
+
+    cve_objects = (
+        Container.objects.prefetch_related("descriptions", "affected", "cve")
+        .filter(id__in=candidates)
+        .order_by("id", "-date_public")
+        .all()
+    )
+    pkg = NixDerivation.objects.prefetch_related("metadata").get(id=next_candidates[0])
+    print(pkg)
+
+    context = {
+        "cve_list": cve_objects,
+        "pkg": pkg,
+        "next_pkg_id": None if len(next_candidates) == 1 else next_candidates[1],
+    }
+
+    return render(request, template_name, context)
 
 
 def triage_view(request: HttpRequest) -> HttpResponse:
