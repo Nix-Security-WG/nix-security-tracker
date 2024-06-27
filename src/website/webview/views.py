@@ -71,7 +71,7 @@ def triage_candidate_view(request: HttpRequest) -> HttpResponse:
 
 def triage_view(request: HttpRequest) -> HttpResponse:
     template_name = "triage_view.html"
-    paginate_by = 25
+    paginate_by = 15
 
     cve_qs = (
         Container.objects.prefetch_related("descriptions", "affected", "cve")

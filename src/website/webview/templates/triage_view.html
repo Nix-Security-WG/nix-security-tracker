@@ -52,6 +52,11 @@
         display: none;
     }
 
+    .actions {
+        display: flex;
+        justify-content: center;
+    }
+
 </style>
 {% endblock extra_head %}
 
@@ -99,6 +104,14 @@
         </div>
     </div>
 </form>
+<div class="actions">
+    <br/>
+    <button type="button">
+        Create Issue
+    </button>
+    <input placeholder="Description"/>
+    <input placeholder="Status (choose selection)"/>
+</div>
 
 <script>
     const selectableItems = document.querySelectorAll('.selectable-item');

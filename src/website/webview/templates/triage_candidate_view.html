@@ -52,36 +52,64 @@
         display: none;
     }
 
+    .accept {
+        background-color: lime;
+    }
+
+    .reject {
+        background-color: pink;
+    }
+
+    .actions {
+        display: flex;
+        justify-content: center;
+    }
+
 </style>
 {% endblock extra_head %}
 
 {% block content %}
 
-<div class="container">
 {% if pkg %}
-    <div class="column">
-        <div class="column-header">
-            <h1>CVEs</h1>
+    <div class="container">
+        <div class="column">
+            <div class="column-header">
+                <h1>CVEs</h1>
+            </div>
+            <ul class="cves">
+                {% for object in cve_list %}
+                <li class="selectable-item selected" data-id={{object.id}}>
+                    {{ object.title }}: {{ object.cve.cve_id }} ({{ object.id }})
+                </li>
+                {% endfor %}
+            </ul>
         </div>
-        <ul class="cves">
-            {% for object in cve_list %}
-            <li class="selectable-item selected" data-id={{object.id}}>
-                {{ object.title }}: {{ object.cve.cve_id }} ({{ object.id }})
-            </li>
-            {% endfor %}
-        </ul>
+
+        <div class="column">
+            <div class="column-header">
+                <h1>PKG</h1>
+            </div>
+            {{ pkg }} ({{ pkg.id }})
+        </div>
     </div>
 
-    <div class="column">
-        <div class="column-header">
-            <h1>PKG</h1>
-        </div>
-        {{ pkg }} ({{ pkg.id }})
+    <div class="actions">
+        <br/>
+        <button class="accept" type="button">
+            Create Issue
+        </button>
+        <input placeholder="Description"/>
+        <input placeholder="Status (choose selection)"/>
+        <br/>
+        <br/>
+        <button class="reject" type="button">
+            Reject Linkage
+        </button>
+        <input placeholder="Reason"/>
     </div>
 {%else%}
     No more candidates to triage.
 {%endif%}
-</div>
 
 <script>
     const selectableItems = document.querySelectorAll('.selectable-item');
