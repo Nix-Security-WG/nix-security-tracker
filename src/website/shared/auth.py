@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 from typing import Any, cast
 
 from allauth.socialaccount.models import SocialAccount
@@ -17,6 +18,7 @@ github: Github = get_gh(per_page=100)  # 100 is the API limit
 logger = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=1)
 def get_gh_organization(orgname: str) -> Organization | None:
     """
     Return the Github Organization instance given an organization name.
@@ -28,6 +30,11 @@ def get_gh_organization(orgname: str) -> Organization | None:
         return None
 
 
+# We only care about caching two teams (security-team and committers)
+# from github at the moment.
+# It benefits the on-first login logic, but there's no point for the
+# one-time per user login `is_team_member` function to be cached.
+@lru_cache(maxsize=2)
 def get_gh_team(org_or_orgname: Organization | str, teamname: str) -> Team | None:
     """
     Return the Github Team instance given an Organization instance and a team name.
@@ -59,18 +66,6 @@ def get_team_member_ids(orgname: str, teamname: str) -> set[int]:
         # The iterator will make the extra page API calls for us.
         return {member.id for member in members}
     return set()
-
-
-def is_org_member(username: str, orgname: str) -> bool:
-    """
-    Return whether a given username is a member of a Github organization
-    """
-    gh_named_user: NamedUser = cast(NamedUser, github.get_user(login=username))
-
-    gh_org: Organization | None = get_gh_organization(orgname)
-    if gh_org:
-        return gh_org.has_in_members(gh_named_user)
-    return False
 
 
 def is_team_member(username: str, orgname: str, teamname: str) -> bool:
