@@ -60,34 +60,20 @@ def get_gh_team(org_or_orgname: Organization | str, teamname: str) -> Team | Non
     return None
 
 
-def get_github_ids_cache() -> dict[str, set[int]]:
-    """
-    Return a dictionary cache with the Github IDs for each team.
-    """
+def get_team_member_ids(orgname: str, teamname: str) -> set[int]:
+    team = get_gh_team(orgname, teamname)
+    if team:
+        members = team.get_members()
+        logger.info(
+            "Getting %s IDs from team %s/%s...",
+            members.totalCount,
+            orgname,
+            teamname,
+        )
 
-    def get_team_member_ids(orgname: str, teamname: str) -> set[int]:
-        team = get_gh_team(orgname, teamname)
-        if team:
-            members = team.get_members()
-            logger.info(
-                "Caching %s IDs from team %s/%s...",
-                members.totalCount,
-                orgname,
-                teamname,
-            )
-
-            # The iterator will make the extra page API calls for us.
-            return {member.id for member in members}
-        return set()
-
-    ids: dict[str, set[int]] = dict()
-
-    ids["security_team"] = get_team_member_ids("NixOS", "security")
-    ids["committers"] = get_team_member_ids("NixOS", "nixpkgs-committers")
-
-    logger.info("Done caching IDs from Github.")
-
-    return ids
+        # The iterator will make the extra page API calls for us.
+        return {member.id for member in members}
+    return set()
 
 
 def is_org_member(username: str, orgname: str) -> bool:

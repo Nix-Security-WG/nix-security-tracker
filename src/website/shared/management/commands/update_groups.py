@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from shared.auth import get_github_ids_cache
+from shared.auth import get_team_member_ids
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +22,13 @@ class Command(BaseCommand):
             "Resetting group permissions based on their Github team memberships."
         )
 
-        id_cache: dict[str, set[int]] = get_github_ids_cache()
+        gh_team_ids: dict[str, set[int]] = dict()
+        gh_team_ids["security_team"] = get_team_member_ids("NixOS", "security")
+        gh_team_ids["committers"] = get_team_member_ids("NixOS", "nixpkgs-committers")
 
         # Get the group objects for the transaction
         group_objects: dict[str, Group] = {}
-        for groupname in id_cache.keys():
+        for groupname in gh_team_ids.keys():
             group_objects[groupname] = Group.objects.get(name=groupname)
 
         logger.info("Using Github ID cache to update database groups...")
@@ -37,7 +39,7 @@ class Command(BaseCommand):
             for user in users:
                 social = user.socialaccount_set.filter(provider="github").first()  # type: ignore
                 if social:
-                    for groupname, ids in id_cache.items():
+                    for groupname, ids in gh_team_ids.items():
                         if social.extra_data["id"] in ids:
                             user.groups.add(group_objects[groupname])
                         else:
