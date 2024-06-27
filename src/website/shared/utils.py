@@ -6,7 +6,7 @@ from github import Auth, Github
 logger = logging.getLogger(__name__)
 
 
-def get_gh() -> Github:
+def get_gh(per_page: int = 30) -> Github:
     """
     Initialize a GitHub API connection, using credentials when available.
     """
@@ -30,4 +30,4 @@ def get_gh() -> Github:
                 "using unauthenticated API."
             )
 
-    return Github(auth=gh_auth)
+    return Github(auth=gh_auth, per_page=per_page)

@@ -39,6 +39,7 @@ in
       django-allauth
       django-debug-toolbar
       django-filter
+      django-guardian
       django-types
       django_4
       djangorestframework

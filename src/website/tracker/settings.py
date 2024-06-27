@@ -158,6 +158,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.github",
     "channels",
+    "guardian",
     "pgpubsub",
     "pgtrigger",
     "rest_framework",
@@ -223,7 +224,11 @@ AUTHENTICATION_BACKENDS = [
     # Needed to login by username in Django admin, regardless of `allauth`
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
+    "guardian.backends.ObjectPermissionBackend",
 ]
+
+# Set to None to prevent django-guardian from creating the user
+ANONYMOUS_USER_NAME = "AnonymousUser"
 
 SOCIALACCOUNT_PROVIDERS = {
     "github": {
@@ -278,6 +283,13 @@ INTERNAL_IPS = [
     "127.0.0.1",
     "[::1]",
 ]
+
+# Github auth settings
+GH_ORGANIZATION = "NixOS"
+GH_COMMITTERS_TEAM = "nixpkgs-committers"
+GH_SECURITY_TEAM = "security"
+GROUP_COMMITTERS = "committers"
+GROUP_SECURITY_TEAM = "security_team"
 
 # Customization via user settings
 # This must be at the end, as it must be able to override the above
