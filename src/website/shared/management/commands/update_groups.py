@@ -35,7 +35,7 @@ class Command(BaseCommand):
         for groupname in gh_team_ids.keys():
             group_objects[groupname] = Group.objects.get(name=groupname)
 
-        logger.info("Using Github ID cache to update database groups...")
+        logger.info("Using retrieved Github IDs to update database groups...")
 
         # Open a single transaction for the db
         with transaction.atomic():
