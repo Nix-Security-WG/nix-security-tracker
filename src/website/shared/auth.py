@@ -84,7 +84,6 @@ def get_github_ids_cache() -> dict[str, set[int]]:
 
     ids["security_team"] = get_team_member_ids("NixOS", "security")
     ids["committers"] = get_team_member_ids("NixOS", "nixpkgs-committers")
-    ids["maintainers"] = get_team_member_ids("NixOS", "nixpkgs-maintainers")
 
     logger.info("Done caching IDs from Github.")
 
@@ -133,8 +132,6 @@ def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> N
         user.groups.add(Group.objects.get(name="security_team"))
     if is_team_member(gh_username, "NixOS", "nixpkgs-committers"):
         user.groups.add(Group.objects.get(name="committers"))
-    if is_team_member(gh_username, "NixOS", "nixpkgs-maintainers"):
-        user.groups.add(Group.objects.get(name="maintainers"))
 
 
 def reset_group_permissions(**kwargs: Any) -> None:

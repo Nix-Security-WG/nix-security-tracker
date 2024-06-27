@@ -9,8 +9,6 @@ def insert_groups(apps, schema_editor):
     Group.objects.create(name="security_team")
     # Nixpkgs committers get write permissions for all packages
     Group.objects.create(name="committers")
-    # Maintainers get write permissions for packages they maintain
-    Group.objects.create(name="maintainers")
     # Everyone else get read permissions for all packages
     Group.objects.create(name="readers")
 
