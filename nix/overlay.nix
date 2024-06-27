@@ -40,6 +40,7 @@ in
       django-debug-toolbar
       django-filter
       django-types
+      django-pandas
       django_4
       djangorestframework
       ipython
@@ -53,6 +54,7 @@ in
       daphne
       channels
       aiofiles
+      recordlinkage
     ];
 
     postInstall = ''
