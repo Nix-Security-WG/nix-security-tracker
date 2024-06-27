@@ -3,8 +3,6 @@ import logging
 from typing import Any
 
 from django.core.management.base import BaseCommand
-
-# TODO: move to shared.auth or shared.auth_utils
 from shared.auth import reset_group_permissions
 
 logger = logging.getLogger(__name__)
