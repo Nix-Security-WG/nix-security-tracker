@@ -17,21 +17,6 @@ github: Github = get_gh(per_page=100)  # 100 is the API limit
 logger = logging.getLogger(__name__)
 
 
-def get_gh_username(user: User) -> str | None:
-    """
-    Return the Github username of a given Auth.User.
-    """
-    social_user = User.objects.get(id=user.id)  # type: ignore
-    try:
-        extra_data_login: str = social_user.socialaccount_set.get(  # type: ignore
-            provider="github"
-        ).extra_data.get("login")
-        return extra_data_login
-    except Exception:
-        logger.exception("Failed to get GitHub username for user %s.", user)
-        return None
-
-
 def get_gh_organization(orgname: str) -> Organization | None:
     """
     Return the Github Organization instance given an organization name.
