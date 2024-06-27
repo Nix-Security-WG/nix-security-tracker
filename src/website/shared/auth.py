@@ -147,7 +147,6 @@ def update_maintainer_permissions(
           the metadata itself (NixDerivationMeta).
         - Issues (NixpkgsIssue) that point to previous derivations as involved packages.
     """
-    # TODO(alejandrosame): Figure out the best way to do prefetching
     issues: QuerySet[NixpkgsIssue] = metadata.derivation.nixpkgsissue_set.all()  # type: ignore
     if action == "post_add":
         assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
