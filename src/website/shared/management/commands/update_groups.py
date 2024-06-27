@@ -23,8 +23,12 @@ class Command(BaseCommand):
         )
 
         gh_team_ids: dict[str, set[int]] = dict()
-        gh_team_ids["security_team"] = get_team_member_ids("NixOS", "security")
-        gh_team_ids["committers"] = get_team_member_ids("NixOS", "nixpkgs-committers")
+        gh_team_ids[settings.GROUP_SECURITY_TEAM] = get_team_member_ids(
+            settings.GH_ORGANIZATION, settings.GH_SECURITY_TEAM
+        )
+        gh_team_ids[settings.GROUP_COMMITTERS] = get_team_member_ids(
+            settings.GH_ORGANIZATION, settings.GH_COMMITTERS_TEAM
+        )
 
         # Get the group objects for the transaction
         group_objects: dict[str, Group] = {}

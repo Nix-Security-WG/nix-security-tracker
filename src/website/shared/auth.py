@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any, cast
 
 from allauth.socialaccount.models import SocialAccount
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission, User
 from django.db.models import Q, QuerySet
 from github import Github
@@ -94,10 +95,12 @@ def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> N
     gh_username = social_account.extra_data.get("login")  # type: ignore
     user = social_account.user
 
-    if is_team_member(gh_username, "NixOS", "security"):
-        user.groups.add(Group.objects.get(name="security_team"))
-    if is_team_member(gh_username, "NixOS", "nixpkgs-committers"):
-        user.groups.add(Group.objects.get(name="committers"))
+    if is_team_member(gh_username, settings.GH_ORGANIZATION, settings.GH_SECURITY_TEAM):
+        user.groups.add(Group.objects.get(name=settings.GROUP_SECURITY_TEAM))
+    if is_team_member(
+        gh_username, settings.GH_ORGANIZATION, settings.GH_COMMITTERS_TEAM
+    ):
+        user.groups.add(Group.objects.get(name=settings.GROUP_COMMITTERS))
 
 
 def reset_group_permissions(**kwargs: Any) -> None:
@@ -107,12 +110,12 @@ def reset_group_permissions(**kwargs: Any) -> None:
     logger.info("Resetting general group permissions...")
 
     # Secury team members have admin permissions
-    security = Group.objects.get(name="security_team")
+    security = Group.objects.get(name=settings.GROUP_SECURITY_TEAM)
     security.permissions.set(Permission.objects.all())
     security.save()
 
     # Committers have write permissions on packages
-    committers = Group.objects.get(name="committers")
+    committers = Group.objects.get(name=settings.GROUP_COMMITTERS)
     # TODO: finetune filter
     committers.permissions.set(
         Permission.objects.filter(
