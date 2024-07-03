@@ -10,7 +10,6 @@ from github import Github
 from github.NamedUser import NamedUser
 from github.Organization import Organization
 from github.Team import Team
-from guardian.shortcuts import assign_perm, remove_perm
 
 from shared.models import NixDerivationMeta, NixMaintainer, NixpkgsIssue
 from shared.utils import get_gh
@@ -103,6 +102,7 @@ def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> N
         user.groups.add(Group.objects.get(name=settings.GROUP_COMMITTERS))
 
 
+# TODO: refactor logic to not use this function
 def reset_group_permissions(**kwargs: Any) -> None:
     """
     Reset general permissions in case new tables were created.
@@ -136,6 +136,7 @@ def reset_group_permissions(**kwargs: Any) -> None:
     readers.save()
 
 
+# TODO: refactor logic to not use this function
 def update_maintainer_permissions(
     action: str, user: User, metadata: NixDerivationMeta
 ) -> None:
@@ -147,20 +148,24 @@ def update_maintainer_permissions(
           the metadata itself (NixDerivationMeta).
         - Issues (NixpkgsIssue) that point to previous derivations as involved packages.
     """
+
     issues: QuerySet[NixpkgsIssue] = metadata.derivation.nixpkgsissue_set.all()  # type: ignore
     if action == "post_add":
-        assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
-        assign_perm("change_nixderivationmeta", user, metadata)
+        # assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
+        # assign_perm("change_nixderivationmeta", user, metadata) # type: ignore
         for issue in issues:
-            assign_perm("change_nixpkgsissue", user, issue)
+            pass
+            # assign_perm("change_nixpkgsissue", user, issue)
     elif action == "post_remove":
-        remove_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
-        remove_perm("change_nixderivationmeta", user, metadata)
+        # remove_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
+        # remove_perm("change_nixderivationmeta", user, metadata)
         for issue in issues:
-            remove_perm("change_nixpkgsissue", user, issue)
+            pass
+            # remove_perm("change_nixpkgsissue", user, issue)
     pass
 
 
+# TODO: refactor logic to not use this function
 def update_maintainer_permissions_m2m_receiver(
     instance: NixDerivationMeta | NixMaintainer,
     action: str,

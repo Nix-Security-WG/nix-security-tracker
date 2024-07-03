@@ -51,14 +51,10 @@ class Command(BaseCommand):
 
                     logger.info("Done updating database groups.")
                 else:
-                    # Superusers and the anonymous user are the only possible users
-                    # with no social account. Log an error if we find any other user that didn't
+                    # Superusers are the only possible users with no social account.
+                    # Log an error if we find any other user that didn't
                     # setup up their account via Github login.
-                    # NOTE: the anonymous user is created by django-guardian.
-                    if (
-                        not user.is_superuser
-                        and user.username != settings.ANONYMOUS_USER_NAME
-                    ):
+                    if not user.is_superuser:
                         logger.error(
                             "User %s with ID %s has no social account auth.",
                             user,
