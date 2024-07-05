@@ -13,7 +13,7 @@ from shared.models import (
 )
 from tracker.admin import CustomAdminPermissionsMixin, custom_admin_site
 
-admin.site = custom_admin_site
+admin_site = custom_admin_site
 
 
 class ReadOnlyMixin:
@@ -67,7 +67,7 @@ class AutocompleteMixin:
 
                 # Add search_fields to the referenced models
                 related_model = field.remote_field.model
-                related_admin = admin.site._registry.get(related_model)
+                related_admin = admin_site._registry.get(related_model)
                 if not related_admin:
                     related_admin = self.create_related_admin(related_model)
                 self.set_search_fields(related_model, related_admin)
@@ -75,10 +75,15 @@ class AutocompleteMixin:
     def create_related_admin(self, related_model: type[models.Model]) -> type[Any]:
         related_admin = type(
             f"{related_model.__name__}Admin",
-            (ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin),
+            (
+                ReadOnlyMixin,
+                AutocompleteMixin,
+                CustomAdminPermissionsMixin,
+                admin.ModelAdmin,
+            ),
             {},
         )
-        admin.site.register(related_model, related_admin)
+        admin_site.register(related_model, related_admin)
         return related_admin
 
     def set_search_fields(
@@ -101,21 +106,25 @@ class AutocompleteMixin:
 
 def override(model_class: type[Any]) -> Callable[[type[Any]], type[Any]]:
     def decorator(admin_class: type[Any]) -> type[Any]:
-        if admin.site.is_registered(model_class):
-            admin.site.unregister(model_class)
-        admin.site.register(model_class, admin_class)
+        if admin_site.is_registered(model_class):
+            admin_site.unregister(model_class)
+        admin_site.register(model_class, admin_class)
         return model_class
 
     return decorator
 
 
 @override(NixDerivationMeta)
-class NixDerivationMetaAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
+class NixDerivationMetaAdmin(
+    ReadOnlyMixin, AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
+):
     search_fields = ["known_vulnerabilities"]
 
 
-@admin.register(Container, site=custom_admin_site)
-class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
+@admin.register(Container, site=admin_site)
+class ContainerAdmin(
+    ReadOnlyMixin, AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
+):
     search_fields = ["title"]
 
     def get_search_results(
@@ -133,7 +142,7 @@ class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
         return queryset, use_distinct
 
 
-@admin.register(NixpkgsIssue, site=custom_admin_site)
+@admin.register(NixpkgsIssue, site=admin_site)
 class NixpkgsIssueAdmin(
     AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
 ):
