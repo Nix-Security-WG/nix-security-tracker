@@ -11,7 +11,7 @@ from shared.models import (
     NixDerivationMeta,
     NixpkgsIssue,
 )
-from tracker.admin import CustomPermissionsMixin, custom_admin_site
+from tracker.admin import CustomAdminPermissionsMixin, custom_admin_site
 
 admin.site = custom_admin_site
 
@@ -134,5 +134,7 @@ class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
 
 
 @admin.register(NixpkgsIssue, site=custom_admin_site)
-class NixpkgsIssueAdmin(AutocompleteMixin, CustomPermissionsMixin, admin.ModelAdmin):
+class NixpkgsIssueAdmin(
+    AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
+):
     readonly_fields = ["code"]
