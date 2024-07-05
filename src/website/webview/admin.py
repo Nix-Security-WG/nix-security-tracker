@@ -3,7 +3,6 @@
 from collections.abc import Callable
 from typing import Any
 
-from django.conf import settings
 from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
@@ -12,7 +11,7 @@ from shared.models import (
     NixDerivationMeta,
     NixpkgsIssue,
 )
-from tracker.admin import custom_admin_site
+from tracker.admin import CustomPermissionsMixin, custom_admin_site
 
 admin.site = custom_admin_site
 
@@ -135,56 +134,5 @@ class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
 
 
 @admin.register(NixpkgsIssue, site=custom_admin_site)
-class NixpkgsIssueAdmin(AutocompleteMixin, admin.ModelAdmin):
+class NixpkgsIssueAdmin(AutocompleteMixin, CustomPermissionsMixin, admin.ModelAdmin):
     readonly_fields = ["code"]
-
-    def has_view_permission(
-        self, request: Any, obj: models.Model | None = None
-    ) -> bool:
-        if not request.user.is_authenticated:
-            return False
-
-        return (
-            request.user.is_staff
-            or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
-        )
-
-    def has_change_permission(
-        self, request: Any, obj: models.Model | None = None
-    ) -> bool:
-        if not request.user.is_authenticated:
-            return False
-
-        return (
-            request.user.is_staff
-            or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
-        )
-
-    def has_add_permission(self, request: Any) -> bool:
-        if not request.user.is_authenticated:
-            return False
-
-        return (
-            request.user.is_staff
-            or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
-        )
-
-    def has_delete_permission(
-        self, request: Any, obj: models.Model | None = None
-    ) -> bool:
-        if not request.user.is_authenticated:
-            return False
-
-        return (
-            request.user.is_staff
-            or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
-        )
-
-    def has_module_permission(self, request: Any) -> bool:
-        if not request.user.is_authenticated:
-            return False
-
-        return (
-            request.user.is_staff
-            or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
-        )
