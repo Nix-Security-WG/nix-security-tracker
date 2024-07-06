@@ -143,7 +143,7 @@ def update_maintainer_permissions(
     """
     Update maintainer permissions over a package according to the m2m changed signal action.
 
-    A maitainer of a package is able to change:
+    A maintainer of a package is able to change:
         - Derivations (NixDerivation) whose metadata points at them as a maintainer and
           the metadata itself (NixDerivationMeta).
         - Issues (NixpkgsIssue) that point to previous derivations as involved packages.
