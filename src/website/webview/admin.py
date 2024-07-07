@@ -7,14 +7,39 @@ from django import forms
 from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
+from shared.auth import isadmin
 from shared.models import (
     Container,
     NixDerivationMeta,
     NixpkgsIssue,
 )
-from tracker.admin import CustomAdminPermissionsMixin, custom_admin_site
+from tracker.admin import custom_admin_site
 
 admin_site = custom_admin_site
+
+
+# Mixins
+class CustomAdminPermissionsMixin:
+    def has_view_permission(
+        self, request: Any, obj: models.Model | None = None
+    ) -> bool:
+        return isadmin(request)
+
+    def has_change_permission(
+        self, request: Any, obj: models.Model | None = None
+    ) -> bool:
+        return isadmin(request)
+
+    def has_add_permission(self, request: Any) -> bool:
+        return isadmin(request)
+
+    def has_delete_permission(
+        self, request: Any, obj: models.Model | None = None
+    ) -> bool:
+        return isadmin(request)
+
+    def has_module_permission(self, request: Any) -> bool:
+        return isadmin(request)
 
 
 class ReadOnlyMixin:

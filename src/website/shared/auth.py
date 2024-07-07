@@ -210,3 +210,14 @@ def update_maintainer_permissions_m2m_receiver(
         metadata: NixDerivationMeta = cast(NixDerivationMeta, instance)
         for user in users:
             update_maintainer_permissions(action, user, metadata)
+
+
+# Request utilities
+def isadmin(request: Any) -> bool:
+    if not request.user.is_authenticated:
+        return False
+
+    return (
+        request.user.is_staff
+        or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
+    )
