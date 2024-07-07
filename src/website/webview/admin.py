@@ -1,9 +1,11 @@
 # Register your models here.
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
 from django import forms
+from django.apps import apps
 from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
@@ -16,6 +18,7 @@ from shared.models import (
 from tracker.admin import custom_admin_site
 
 admin_site = custom_admin_site
+logger = logging.getLogger(__name__)
 
 
 # Mixins
@@ -95,22 +98,9 @@ class AutocompleteMixin:
                 related_model = field.remote_field.model
                 related_admin = admin_site._registry.get(related_model)
                 if not related_admin:
-                    related_admin = self.create_related_admin(related_model)
-                self.set_search_fields(related_model, related_admin)
-
-    def create_related_admin(self, related_model: type[models.Model]) -> type[Any]:
-        related_admin = type(
-            f"{related_model.__name__}Admin",
-            (
-                ReadOnlyMixin,
-                AutocompleteMixin,
-                CustomAdminPermissionsMixin,
-                admin.ModelAdmin,
-            ),
-            {},
-        )
-        admin_site.register(related_model, related_admin)
-        return related_admin
+                    logger.warning("Missing model admin for %s", related_model)
+                else:
+                    self.set_search_fields(related_model, related_admin)
 
     def set_search_fields(
         self,
@@ -140,6 +130,23 @@ def override(model_class: type[Any]) -> Callable[[type[Any]], type[Any]]:
     return decorator
 
 
+# Register all models from the 'shared' app
+shared_app_config = apps.get_app_config("shared")
+shared_models = shared_app_config.get_models()
+for model in shared_models:
+    modeladmin = type(
+        f"{model.__name__}Admin",
+        (
+            AutocompleteMixin,
+            CustomAdminPermissionsMixin,
+            admin.ModelAdmin,
+        ),
+        {},
+    )
+
+    admin_site.register(model, modeladmin)
+
+
 @override(NixDerivationMeta)
 class NixDerivationMetaAdmin(
     ReadOnlyMixin, AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
@@ -147,7 +154,7 @@ class NixDerivationMetaAdmin(
     search_fields = ["known_vulnerabilities"]
 
 
-@admin.register(Container, site=admin_site)
+@override(Container)
 class ContainerAdmin(
     ReadOnlyMixin, AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
 ):
@@ -201,11 +208,12 @@ def nixpkgsissueform_factory(request: Any) -> type[forms.ModelForm]:
     return NixpkgsIssueForm
 
 
-@admin.register(NixpkgsIssue, site=admin_site)
+@override(NixpkgsIssue)
 class NixpkgsIssueAdmin(
     AutocompleteMixin, CustomAdminPermissionsMixin, admin.ModelAdmin
 ):
     readonly_fields = ["code"]
+    search_fields = ["code"]
 
     # TODO: check permission functions
     def has_view_permission(
