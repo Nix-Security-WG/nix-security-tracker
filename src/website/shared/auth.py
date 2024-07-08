@@ -213,11 +213,13 @@ def update_maintainer_permissions_m2m_receiver(
 
 
 # Request utilities
-def isadmin(request: Any) -> bool:
-    if not request.user.is_authenticated:
-        return False
-
+@lru_cache(maxsize=1)
+def isadmin(user: Any) -> bool:
     return (
-        request.user.is_staff
-        or request.user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
+        user.is_staff or user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
     )
+
+
+@lru_cache(maxsize=1)
+def ismaintainer(user: Any) -> bool:
+    return NixMaintainer.objects.filter(github=user.username).exists()
