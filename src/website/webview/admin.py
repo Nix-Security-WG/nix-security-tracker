@@ -218,8 +218,12 @@ class NixDerivationMetaAdmin(
             and ismaintainer(request.user)
         ):
             # Limit elements shown for pkg maintainer
-            queryset = NixDerivationMeta.objects.prefetch_related("maintainers").filter(
-                maintainers__github=request.user.username  # type: ignore
+            queryset = (
+                NixDerivationMeta.objects.prefetch_related("maintainers")
+                .filter(
+                    maintainers__github=request.user.username  # type: ignore
+                )
+                .distinct()
             )
 
         return queryset
@@ -284,10 +288,14 @@ class NixpkgsIssueAdmin(
             and ismaintainer(request.user)
         ):
             # Limit elements shown for pkg maintainer
-            queryset = NixpkgsIssue.objects.prefetch_related(
-                "derivations__metadata__maintainers"
-            ).filter(
-                derivations__metadata__maintainers__github=request.user.username  # type: ignore
+            queryset = (
+                NixpkgsIssue.objects.prefetch_related(
+                    "derivations__metadata__maintainers"
+                )
+                .filter(
+                    derivations__metadata__maintainers__github=request.user.username  # type: ignore
+                )
+                .distinct()
             )
 
         return queryset
@@ -308,8 +316,12 @@ class NixDerivationAdmin(
             and ismaintainer(request.user)
         ):
             # Limit elements shown for pkg maintainer
-            queryset = queryset.prefetch_related("metadata__maintainers").filter(
-                metadata__maintainers__github=request.user.username  # type: ignore
+            queryset = (
+                queryset.prefetch_related("metadata__maintainers")
+                .filter(
+                    metadata__maintainers__github=request.user.username  # type: ignore
+                )
+                .distinct()
             )
 
         return queryset
