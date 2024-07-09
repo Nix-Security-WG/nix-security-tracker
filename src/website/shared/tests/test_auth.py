@@ -20,9 +20,10 @@ def create_metadata_with_maintainer(id: int, username: str) -> models.NixDerivat
         unsupported=False,
     )
 
-    meta.maintainers.add(
-        models.NixMaintainer.objects.create(github_id=id, github=username)
+    maintainer, _ = models.NixMaintainer.objects.get_or_create(
+        github_id=id, github=username
     )
+    meta.maintainers.add(maintainer)
 
     return meta
 
@@ -67,6 +68,10 @@ class AuthTests(TestCase):
             metadata=create_metadata_with_maintainer(1, cls.committer.username),
             parent_evaluation=cls.evaluation,
         )
+        cls.another_derivation = models.NixDerivation.objects.create(
+            metadata=create_metadata_with_maintainer(1, cls.committer.username),
+            parent_evaluation=cls.evaluation,
+        )
         cls.derivation_not_related = models.NixDerivation.objects.create(
             metadata=create_metadata_with_maintainer(2, "not-related"),
             parent_evaluation=cls.evaluation,
@@ -84,8 +89,6 @@ class AuthTests(TestCase):
         response = self.client.post(reverse("admin:shared_nixpkgsissue_add"))
         self.assertEqual(response.status_code, 200)
 
-    """
-    # FIXME: Check whether test or logic is wrong
     def test_committer_cannot_add_non_related_issue_from_admin_site(self) -> None:
         # Committers can add issues that relate to derivations they maintain
         self.client.login(username=self.committer.username, password=self.password)
@@ -97,22 +100,23 @@ class AuthTests(TestCase):
             "derivations": [self.derivation_not_related.id],  # type: ignore
         }
 
-        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"))
-        self.assertEqual(response.status_code, 200)
-
-        '''
-        # TODO: Find another way to prevent insertions from non related maintainers
-        request = self.factory.post(reverse("admin:shared_nixpkgsissue_add"))
-        request.user = self.committer
-        form_class = nixpkgsissueform_factory(request)
-        form = form_class(data=data)  # type: ignore
-
-        self.assertFalse(form.is_valid())
-        self.assertEqual(
-            form.errors["derivations"],
-            ["Cannot add issues that relate to derivations you do not maintain."],
+        # TODO: Check form error messages
+        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"), data=data)
+        self.assertRedirects(
+            response,
+            status_code=302,
+            expected_url=reverse("admin:shared_nixpkgsissue_changelist"),
+            target_status_code=200,
         )
-        '''
+
+        # Make sure that only one issue was created
+        self.assertEqual(models.NixpkgsIssue.objects.count(), 0)
+
+        # And that the changelist view only shows one issue
+        redirect_response = self.client.get(
+            reverse("admin:shared_nixpkgsissue_changelist")
+        )
+        self.assertContains(redirect_response, "0 nixpkgs issue", status_code=200)
 
     def test_committer_can_add_related_issue_from_admin_site(self) -> None:
         # Committers can add issues that relate to derivations they maintain
@@ -122,28 +126,25 @@ class AuthTests(TestCase):
             "cve": [self.cve.id],  # type: ignore
             "description": self.description.id,  # type: ignore
             "status": "U",
-            "derivations": [self.derivation.id],  # type: ignore
+            "derivations": [self.derivation.id, self.another_derivation.id],  # type: ignore
         }
 
-        self.assertTrue(
-            self.derivation.metadata.maintainers.filter(  # type: ignore
-                github=self.committer.username
-            ).exists()
+        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"), data=data)
+        self.assertRedirects(
+            response,
+            status_code=302,
+            expected_url=reverse("admin:shared_nixpkgsissue_changelist"),
+            target_status_code=200,
         )
 
-        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"), data=data)
-        self.assertEqual(response.status_code, 302)
+        # Make sure that only one issue was created
+        self.assertEqual(models.NixpkgsIssue.objects.count(), 1)
 
-        '''
-        # TODO: Find another way to prevent insertions from non related maintainers
-        request = self.factory.post(reverse("admin:shared_nixpkgsissue_add"))
-        request.user = self.committer
-        form_class = nixpkgsissueform_factory(request)
-        form = form_class(data=data)  # type: ignore
-        
-        self.assertTrue(form.is_valid())
-        '''
-    """
+        # And that the changelist view only shows one issue
+        redirect_response = self.client.get(
+            reverse("admin:shared_nixpkgsissue_changelist")
+        )
+        self.assertContains(redirect_response, "1 nixpkgs issue", status_code=200)
 
     def test_viewer_cannot_add_issue_from_admin_site(self) -> None:
         self.client.login(username=self.viewer.username, password=self.password)
