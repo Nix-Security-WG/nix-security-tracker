@@ -4,14 +4,13 @@ from typing import Any, cast
 
 from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
-from django.contrib.auth.models import Group, Permission, User
-from django.db.models import Q, QuerySet
+from django.contrib.auth.models import Group
 from github import Github
 from github.NamedUser import NamedUser
 from github.Organization import Organization
 from github.Team import Team
 
-from shared.models import NixDerivationMeta, NixMaintainer, NixpkgsIssue
+from shared.models import NixMaintainer
 from shared.utils import get_gh
 
 github: Github = get_gh(per_page=100)  # 100 is the API limit
@@ -100,116 +99,6 @@ def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> N
         gh_username, settings.GH_ORGANIZATION, settings.GH_COMMITTERS_TEAM
     ):
         user.groups.add(Group.objects.get(name=settings.GROUP_COMMITTERS))
-
-
-# TODO: refactor logic to not use this function
-def reset_group_permissions(**kwargs: Any) -> None:
-    """
-    Reset general permissions in case new tables were created.
-    """
-    logger.info("Resetting general group permissions...")
-
-    # Secury team members have admin permissions
-    security = Group.objects.get(name=settings.GROUP_SECURITY_TEAM)
-    security.permissions.set(Permission.objects.all())
-    security.save()
-
-    # Committers have write permissions on packages
-    committers = Group.objects.get(name=settings.GROUP_COMMITTERS)
-    # TODO: finetune filter
-    committers.permissions.set(
-        Permission.objects.filter(
-            (Q(codename__icontains="view_") | Q(codename__icontains="change_"))
-            & Q(codename__icontains="nix")
-        )
-    )
-    committers.save()
-
-    # Readers have read permissions on packages
-    readers = Group.objects.get(name="readers")
-    # TODO: finetune filter
-    readers.permissions.set(
-        Permission.objects.filter(
-            Q(codename__icontains="view_") & Q(codename__icontains="nix")
-        )
-    )
-    readers.save()
-
-
-# TODO: refactor logic to not use this function
-def update_maintainer_permissions(
-    action: str, user: User, metadata: NixDerivationMeta
-) -> None:
-    """
-    Update maintainer permissions over a package according to the m2m changed signal action.
-
-    A maintainer of a package is able to change:
-        - Derivations (NixDerivation) whose metadata points at them as a maintainer and
-          the metadata itself (NixDerivationMeta).
-        - Issues (NixpkgsIssue) that point to previous derivations as involved packages.
-    """
-
-    issues: QuerySet[NixpkgsIssue] = metadata.derivation.nixpkgsissue_set.all()  # type: ignore
-    if action == "post_add":
-        # assign_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
-        # assign_perm("change_nixderivationmeta", user, metadata) # type: ignore
-        for issue in issues:
-            pass
-            # assign_perm("change_nixpkgsissue", user, issue)
-    elif action == "post_remove":
-        # remove_perm("change_nixderivation", user, metadata.derivation)  # type: ignore
-        # remove_perm("change_nixderivationmeta", user, metadata)
-        for issue in issues:
-            pass
-            # remove_perm("change_nixpkgsissue", user, issue)
-    pass
-
-
-# TODO: refactor logic to not use this function
-def update_maintainer_permissions_m2m_receiver(
-    instance: NixDerivationMeta | NixMaintainer,
-    action: str,
-    reverse: bool,
-    pk_set: set[int],
-    **kwargs: Any,
-) -> None:
-    """
-    Update maintainer permissions when a package metadata is changed.
-
-    This function returns early in the following cases:
-        - When the action is not 'post_add' or 'post_remove'.
-        - When the pk_set is empty. For example, trying to add a maintainer
-          to a package that is already in its metadatadata, will not create a duplicate
-          entry in the database, which is reflected in the signal with an empty `pk_set`.
-
-    The direction of the signal trigger is:
-        - `derivation.metadata.maintainers.add(maintainer)` when `reverse` is `False`.
-        - `maintainer.nixderivationmeta_set.add(derivation.metadata)` when `reverse` is `True`.
-    """
-    if action not in ["post_add", "post_remove"]:
-        return
-    if pk_set == set():
-        return
-
-    if reverse:  # `instance` is NixMaintainer and `pk_set` contains metadata keys
-        maintainer: NixMaintainer = cast(NixMaintainer, instance)
-        user: User = User.objects.get(username=maintainer.github)
-        metadatas: QuerySet[NixDerivationMeta] = NixDerivationMeta.objects.filter(
-            id__in=pk_set
-        ).all()
-        for metadata in metadatas:
-            update_maintainer_permissions(action, user, metadata)
-
-    else:  # `instance` is NixDerivationMeta and `pk_set` contains maintainer keys
-        maintainer_usernames: set[str] = set(
-            NixMaintainer.objects.filter(github_id__in=pk_set)
-            .all()
-            .values_list("github", flat=True)
-        )
-        users: QuerySet[User] = User.objects.filter(username__in=maintainer_usernames)
-        metadata: NixDerivationMeta = cast(NixDerivationMeta, instance)
-        for user in users:
-            update_maintainer_permissions(action, user, metadata)
 
 
 # Request utilities
