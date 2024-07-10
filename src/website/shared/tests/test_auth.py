@@ -79,15 +79,59 @@ class AuthTests(TestCase):
 
     def test_superuser_can_add_issue_from_admin_site(self) -> None:
         self.client.login(username=self.superuser.username, password=self.password)
-        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"))
-        self.assertEqual(response.status_code, 200)
+        data = {
+            "code": "NIXPKGS-2024-0000",
+            "cve": [self.cve.id],  # type: ignore
+            "description": self.description.id,  # type: ignore
+            "status": "U",
+            "derivations": [self.derivation.id, self.derivation_not_related.id],  # type: ignore
+        }
+
+        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"), data=data)
+        self.assertRedirects(
+            response,
+            status_code=302,
+            expected_url=reverse("admin:shared_nixpkgsissue_changelist"),
+            target_status_code=200,
+        )
+
+        # Make sure that only one issue was created
+        self.assertEqual(models.NixpkgsIssue.objects.count(), 1)
+
+        # And that the changelist view only shows one issue
+        redirect_response = self.client.get(
+            reverse("admin:shared_nixpkgsissue_changelist")
+        )
+        self.assertContains(redirect_response, "1 nixpkgs issue", status_code=200)
 
     def test_security_can_add_issue_from_admin_site(self) -> None:
         self.client.login(
             username=self.security_member.username, password=self.password
         )
-        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"))
-        self.assertEqual(response.status_code, 200)
+        data = {
+            "code": "NIXPKGS-2024-0000",
+            "cve": [self.cve.id],  # type: ignore
+            "description": self.description.id,  # type: ignore
+            "status": "U",
+            "derivations": [self.derivation.id, self.derivation_not_related.id],  # type: ignore
+        }
+
+        response = self.client.post(reverse("admin:shared_nixpkgsissue_add"), data=data)
+        self.assertRedirects(
+            response,
+            status_code=302,
+            expected_url=reverse("admin:shared_nixpkgsissue_changelist"),
+            target_status_code=200,
+        )
+
+        # Make sure that only one issue was created
+        self.assertEqual(models.NixpkgsIssue.objects.count(), 1)
+
+        # And that the changelist view only shows one issue
+        redirect_response = self.client.get(
+            reverse("admin:shared_nixpkgsissue_changelist")
+        )
+        self.assertContains(redirect_response, "1 nixpkgs issue", status_code=200)
 
     def test_committer_cannot_add_non_related_issue_from_admin_site(self) -> None:
         # Committers can add issues that relate to derivations they maintain
@@ -100,16 +144,15 @@ class AuthTests(TestCase):
             "derivations": [self.derivation_not_related.id],  # type: ignore
         }
 
-        # TODO: Check form error messages
         response = self.client.post(reverse("admin:shared_nixpkgsissue_add"), data=data)
-        self.assertRedirects(
+
+        self.assertContains(
             response,
-            status_code=302,
-            expected_url=reverse("admin:shared_nixpkgsissue_changelist"),
-            target_status_code=200,
+            "Cannot add issues that relate to derivations you do not maintain.",
+            status_code=200,
         )
 
-        # Make sure that only one issue was created
+        # Make sure that no issue was created
         self.assertEqual(models.NixpkgsIssue.objects.count(), 0)
 
         # And that the changelist view only shows one issue

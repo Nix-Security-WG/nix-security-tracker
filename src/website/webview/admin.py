@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+from django import forms
 from django.apps import apps
 from django.contrib import admin
 from django.db import models
@@ -299,6 +300,60 @@ class NixpkgsIssueAdmin(
             )
 
         return queryset
+
+    def get_form(
+        self, request: Any, obj: models.Model | None = None, **kwargs: Any
+    ) -> type[forms.ModelForm]:
+        """
+        NOTE(alejandrosame): Why monkey patch the `form.clean` method?
+
+        The cleaner way to add the `is_pkg_maintainer` check is to set a custom
+        `NixpkgsIssueForm` that provides the extra logic below in it's `clean`
+        method (calling `super().clean()` to inherit default validation).
+
+        This custom form class can then be returned by the `get_form` method
+        by being created by a factory function that links the request to check
+        the currently logged user.
+
+        The problem with that approach here is that the corresponding view generated
+        doesn't contain all the autocomplete logic that the default form has. This
+        makes the form unusable in the frontend (the form will try to load all CVEs,
+        descriptions and derivations to populate the option values in the select fields).
+
+        By moneky patcing the extra clean logic the way it's done below, we can reuse
+        the view logic in the admin interface. Alternatively, we'd have to recreate the
+        `select2` widget used by the admin interface, which is not reusable. See [1] for
+        an example on how to add `select2` functionality to a custom form.
+
+        [1] https://michelenasti.com/2021/02/12/how-to-integrate-a-django_select2-component-in-django-admin.html
+        """
+        form = super().get_form(request, obj, **kwargs)
+        orig_clean = form.clean
+
+        if (
+            request.user.is_authenticated
+            and not isadmin(request.user)
+            and ismaintainer(request.user)
+        ):
+
+            def new_clean(self: Any, *args: Any, **kwargs: Any) -> dict[str, Any]:
+                cleaned_data = orig_clean(self, *args, **kwargs)
+                derivations = cleaned_data.get("derivations")
+                if derivations:
+                    for derivation in derivations:
+                        is_pkg_maintainer = derivation.metadata.maintainers.filter(
+                            github=request.user.username
+                        ).exists()
+                        if not is_pkg_maintainer:
+                            self.add_error(
+                                "derivations",
+                                "Cannot add issues that relate to derivations you do not maintain.",
+                            )
+                return cleaned_data
+
+            form.clean = new_clean
+
+        return form
 
 
 @override(NixDerivation)
