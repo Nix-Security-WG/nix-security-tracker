@@ -9,7 +9,7 @@ from django.apps import apps
 from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
-from shared.auth import isadmin, ismaintainer
+from shared.auth import isadmin, iscommitter, ismaintainer
 from shared.models import (
     Container,
     CveRecord,
@@ -64,13 +64,25 @@ class CustomAdminPermissionsMixin:
 
 
 class MaintainerPermissionsMixin(CustomAdminPermissionsMixin):
+    """A maintainer of a package is able to change:
+        - Derivations (NixDerivation) whose metadata points at them as a maintainer and
+          the metadata itself (NixDerivationMeta).
+        - Issues (NixpkgsIssue) that point to previous said derivations as involved packages.
+
+    Committers get the same permissions as maintainers, but on all packages.
+    """
+
     def has_view_permission(
         self, request: Any, obj: models.Model | None = None
     ) -> bool:
         if not request.user.is_authenticated:
             return False
 
-        return isadmin(request.user) or ismaintainer(request.user)
+        return (
+            isadmin(request.user)
+            or iscommitter(request.user)
+            or ismaintainer(request.user)
+        )
 
     def has_change_permission(
         self, request: Any, obj: models.Model | None = None
@@ -78,13 +90,21 @@ class MaintainerPermissionsMixin(CustomAdminPermissionsMixin):
         if not request.user.is_authenticated:
             return False
 
-        return isadmin(request.user) or ismaintainer(request.user)
+        return (
+            isadmin(request.user)
+            or iscommitter(request.user)
+            or ismaintainer(request.user)
+        )
 
     def has_add_permission(self, request: Any) -> bool:
         if not request.user.is_authenticated:
             return False
 
-        return isadmin(request.user) or ismaintainer(request.user)
+        return (
+            isadmin(request.user)
+            or iscommitter(request.user)
+            or ismaintainer(request.user)
+        )
 
     def has_delete_permission(
         self, request: Any, obj: models.Model | None = None
@@ -92,13 +112,21 @@ class MaintainerPermissionsMixin(CustomAdminPermissionsMixin):
         if not request.user.is_authenticated:
             return False
 
-        return isadmin(request.user) or ismaintainer(request.user)
+        return (
+            isadmin(request.user)
+            or iscommitter(request.user)
+            or ismaintainer(request.user)
+        )
 
     def has_module_permission(self, request: Any) -> bool:
         if not request.user.is_authenticated:
             return False
 
-        return isadmin(request.user) or ismaintainer(request.user)
+        return (
+            isadmin(request.user)
+            or iscommitter(request.user)
+            or ismaintainer(request.user)
+        )
 
 
 class ReadOnlyMixin:
@@ -216,6 +244,7 @@ class NixDerivationMetaAdmin(
         if (
             request.user.is_authenticated
             and not isadmin(request.user)
+            and not iscommitter(request.user)
             and ismaintainer(request.user)
         ):
             # Limit elements shown for pkg maintainer
@@ -286,6 +315,7 @@ class NixpkgsIssueAdmin(
         if (
             request.user.is_authenticated
             and not isadmin(request.user)
+            and not iscommitter(request.user)
             and ismaintainer(request.user)
         ):
             # Limit elements shown for pkg maintainer
@@ -333,6 +363,7 @@ class NixpkgsIssueAdmin(
         if (
             request.user.is_authenticated
             and not isadmin(request.user)
+            and not iscommitter(request.user)
             and ismaintainer(request.user)
         ):
 
@@ -368,6 +399,7 @@ class NixDerivationAdmin(
         if (
             request.user.is_authenticated
             and not isadmin(request.user)
+            and not iscommitter(request.user)
             and ismaintainer(request.user)
         ):
             # Limit elements shown for pkg maintainer

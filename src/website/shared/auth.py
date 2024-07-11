@@ -110,5 +110,10 @@ def isadmin(user: Any) -> bool:
 
 
 @lru_cache(maxsize=1)
+def iscommitter(user: Any) -> bool:
+    return user.groups.filter(name=settings.GROUP_COMMITTERS).exists()
+
+
+@lru_cache(maxsize=1)
 def ismaintainer(user: Any) -> bool:
     return NixMaintainer.objects.filter(github=user.username).exists()
