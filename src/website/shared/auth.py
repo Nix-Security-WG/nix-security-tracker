@@ -102,18 +102,15 @@ def init_user_groups(instance: SocialAccount, created: bool, **kwargs: Any) -> N
 
 
 # Request utilities
-@lru_cache(maxsize=1)
 def isadmin(user: Any) -> bool:
     return (
         user.is_staff or user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
     )
 
 
-@lru_cache(maxsize=1)
 def iscommitter(user: Any) -> bool:
     return user.groups.filter(name=settings.GROUP_COMMITTERS).exists()
 
 
-@lru_cache(maxsize=1)
 def ismaintainer(user: Any) -> bool:
     return NixMaintainer.objects.filter(github=user.username).exists()
