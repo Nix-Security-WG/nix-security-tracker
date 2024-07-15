@@ -42,6 +42,7 @@ in
       django-types
       django_4
       djangorestframework
+      httpretty
       ipython
       psycopg2
       pygithub

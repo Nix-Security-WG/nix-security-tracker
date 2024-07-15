@@ -291,6 +291,8 @@ GROUP_SECURITY_TEAM = (
 
 GH_WEBHOOK_SECRET = get_secret("GH_WEBHOOK_SECRET")
 
+TEST_RUNNER = "tracker.test_runner.CustomTestRunner"
+
 # Customization via user settings
 # This must be at the end, as it must be able to override the above
 user_settings_file = env.get("USER_SETTINGS_FILE", None)
