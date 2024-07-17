@@ -4,12 +4,13 @@ Test suite for GitHub sync utilities
 from typing import Any, TypedDict
 
 from allauth.socialaccount.models import SocialAccount, SocialLogin
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 
 from shared.auth import isadmin, iscommitter, ismaintainer
-from shared.auth.github_state import GithubState
+from shared.auth.github_state import GithubState, set_groups_for_new_user
 
 
 # Mock classes
@@ -25,6 +26,14 @@ class GithubTeamApiMock:
     def get_members(self) -> list[GithubNamedUserMock]:
         return [GithubNamedUserMock(id_value=id) for id in self.ids]
 
+    def has_in_members(self, named_user: GithubNamedUserMock) -> bool:
+        return named_user.id in self.ids
+
+
+class GithubMock:
+    def get_user_by_id(self, user_id: int) -> GithubNamedUserMock:
+        return GithubNamedUserMock(id_value=str(user_id))
+
 
 class GithubStateMock(GithubState):
     def __init__(
@@ -32,9 +41,7 @@ class GithubStateMock(GithubState):
     ) -> None:
         self.security_group = Group.objects.get(name=settings.GROUP_SECURITY_TEAM)
         self.committers_group = Group.objects.get(name=settings.GROUP_COMMITTERS)
-        self.github = (  # type: ignore
-            None  # Force failures if anyone tries to make calls with self.github
-        )
+        self.github = GithubMock()  # type: ignore
         self.security_team = GithubTeamApiMock(ids=security_ids)  # type: ignore
         self.committers_team = GithubTeamApiMock(ids=committer_ids)  # type: ignore
 
@@ -56,7 +63,7 @@ def create_sociallogin_for_user(user: User, user_uid: str) -> SocialLogin:
 class MockLoginDict(TypedDict):
     uid: str
     user: User
-    socialLogin: SocialLogin
+    sociallogin: SocialLogin
 
 
 def create_user_with_sociallogin(
@@ -219,3 +226,32 @@ class GithubSyncTests(TestCase):
 
         # Call sync again to check for imdempotency (no errors should be raised)
         gh_state.sync_groups_with_github_teams()
+
+    def test_sync_groups_for_new_users(self) -> None:
+        # Setup mock GitHub state
+        apps.get_app_config("shared").github_state = GithubStateMock(  # type: ignore
+            security_ids=[self.security_users[0]["uid"]],
+            committer_ids=[self.committer_users[0]["uid"]],
+        )
+
+        # "New" users don't have explicit permissions set
+        self.assertFalse(isadmin(self.security_users[0]["user"]))
+        self.assertFalse(iscommitter(self.security_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
+
+        self.assertFalse(isadmin(self.committer_users[0]["user"]))
+        self.assertFalse(iscommitter(self.committer_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
+
+        # Call the sign up signal receiver directly
+        set_groups_for_new_user(self.security_users[0]["sociallogin"])
+        set_groups_for_new_user(self.committer_users[0]["sociallogin"])
+
+        # After signal receiver setup, they have the permissions that correspond to their Github teams
+        self.assertTrue(isadmin(self.security_users[0]["user"]))
+        self.assertFalse(iscommitter(self.security_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
+
+        self.assertFalse(isadmin(self.committer_users[0]["user"]))
+        self.assertTrue(iscommitter(self.committer_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
