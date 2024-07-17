@@ -104,9 +104,9 @@ class GithubState:
 
         if self.committers_team.id == github_team_id:
             if action == "added":
-                user.groups.add(self.committers_team)
+                user.groups.add(self.committers_group)
             elif action == "removed":
-                user.groups.remove(self.committers_team)
+                user.groups.remove(self.committers_group)
 
 
 # On social sign up receiver
