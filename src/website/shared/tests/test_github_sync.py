@@ -11,6 +11,7 @@ from django.test import TestCase
 
 from shared.auth import isadmin, iscommitter, ismaintainer
 from shared.auth.github_state import GithubState, set_groups_for_new_user
+from shared.auth.github_webhook import handle_webhook
 
 
 # Mock classes
@@ -20,14 +21,15 @@ class GithubNamedUserMock:
 
 
 class GithubTeamApiMock:
-    def __init__(self, ids: list[str]) -> None:
-        self.ids = ids
+    def __init__(self, id: str, user_ids: list[str]) -> None:
+        self.user_ids = user_ids
+        self.id = id
 
     def get_members(self) -> list[GithubNamedUserMock]:
-        return [GithubNamedUserMock(id_value=id) for id in self.ids]
+        return [GithubNamedUserMock(id_value=id) for id in self.user_ids]
 
     def has_in_members(self, named_user: GithubNamedUserMock) -> bool:
-        return named_user.id in self.ids
+        return named_user.id in self.user_ids
 
 
 class GithubMock:
@@ -42,8 +44,8 @@ class GithubStateMock(GithubState):
         self.security_group = Group.objects.get(name=settings.GROUP_SECURITY_TEAM)
         self.committers_group = Group.objects.get(name=settings.GROUP_COMMITTERS)
         self.github = GithubMock()  # type: ignore
-        self.security_team = GithubTeamApiMock(ids=security_ids)  # type: ignore
-        self.committers_team = GithubTeamApiMock(ids=committer_ids)  # type: ignore
+        self.security_team = GithubTeamApiMock(id=1, user_ids=security_ids)  # type: ignore
+        self.committers_team = GithubTeamApiMock(id=2, user_ids=committer_ids)  # type: ignore
 
 
 # Object creation utilities
@@ -254,4 +256,61 @@ class GithubSyncTests(TestCase):
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertTrue(iscommitter(self.committer_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
+
+    def test_sync_groups_from_webhook_payload(self) -> None:
+        # Setup mock GitHub state
+        gh_state = GithubStateMock()
+        apps.get_app_config("shared").github_state = gh_state  # type: ignore
+
+        # Mocked webhook payloads
+        event = "membership"
+        action_added = {"action": "added"}
+        action_removed = {"action": "removed"}
+        common_payload_security = {
+            "team": {"id": gh_state.security_team.id},
+            "member": {"id": self.security_users[0]["uid"]},
+        }
+        common_payload_committer = {
+            "team": {"id": gh_state.committers_team.id},
+            "member": {"id": self.committer_users[0]["uid"]},
+        }
+        payload_security_added = {**action_added, **common_payload_security}
+        payload_committer_added = {**action_added, **common_payload_committer}
+        payload_security_removed = {**action_removed, **common_payload_security}
+        payload_committer_removed = {**action_removed, **common_payload_committer}
+
+        # Pre webhook request state
+        self.assertFalse(isadmin(self.security_users[0]["user"]))
+        self.assertFalse(iscommitter(self.security_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
+
+        self.assertFalse(isadmin(self.committer_users[0]["user"]))
+        self.assertFalse(iscommitter(self.committer_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
+
+        # Process mocked "added" payloads
+        handle_webhook(event=event, payload=payload_security_added)
+        handle_webhook(event=event, payload=payload_committer_added)
+
+        # After handling "added" webhooks
+        self.assertTrue(isadmin(self.security_users[0]["user"]))
+        self.assertFalse(iscommitter(self.security_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
+
+        self.assertFalse(isadmin(self.committer_users[0]["user"]))
+        self.assertTrue(iscommitter(self.committer_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
+
+        # Process mocked "removed" payloads
+        handle_webhook(event=event, payload=payload_security_removed)
+        handle_webhook(event=event, payload=payload_committer_removed)
+
+        # Check permissions are reset after "removed" payloads are processed
+        self.assertFalse(isadmin(self.security_users[0]["user"]))
+        self.assertFalse(iscommitter(self.security_users[0]["user"]))
+        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
+
+        self.assertFalse(isadmin(self.committer_users[0]["user"]))
+        self.assertFalse(iscommitter(self.committer_users[0]["user"]))
         self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
