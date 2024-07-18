@@ -7,13 +7,11 @@ from shared.models import NixMaintainer
 
 # Request utilities
 def isadmin(user: Any) -> bool:
-    return (
-        user.is_staff or user.groups.filter(name=settings.GROUP_SECURITY_TEAM).exists()
-    )
+    return user.is_staff or user.groups.filter(name=settings.DB_SECURITY_TEAM).exists()
 
 
 def iscommitter(user: Any) -> bool:
-    return user.groups.filter(name=settings.GROUP_COMMITTERS).exists()
+    return user.groups.filter(name=settings.DB_COMMITTERS_TEAM).exists()
 
 
 def ismaintainer(user: Any) -> bool:

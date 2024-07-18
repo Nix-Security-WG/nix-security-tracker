@@ -282,12 +282,10 @@ INTERNAL_IPS = [
 GH_ORGANIZATION = "NixOS"
 GH_COMMITTERS_TEAM = "nixpkgs-committers"
 GH_SECURITY_TEAM = "security"
-GROUP_COMMITTERS = (
-    "committers"  # This will be synced with GH_COMMITTERS_TEAM in GH_ORGANIZATION.
-)
-GROUP_SECURITY_TEAM = (
-    "security_team"  # This will be synced with GH_SECURITY_TEAM in GH_ORGANIZATION
-)
+# This will be synced with GH_COMMITTERS_TEAM in GH_ORGANIZATION.
+DB_COMMITTERS_TEAM = "committers"
+# This will be synced with GH_SECURITY_TEAM in GH_ORGANIZATION
+DB_SECURITY_TEAM = "security_team"
 
 GH_WEBHOOK_SECRET = get_secret("GH_WEBHOOK_SECRET")
 

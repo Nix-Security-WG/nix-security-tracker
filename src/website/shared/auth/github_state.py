@@ -44,8 +44,8 @@ class GithubState:
         self.committers_team: Team = self.organization.get_team_by_slug(
             slug=settings.GH_COMMITTERS_TEAM
         )
-        self.security_group = Group.objects.get(name=settings.GROUP_SECURITY_TEAM)
-        self.committers_group = Group.objects.get(name=settings.GROUP_COMMITTERS)
+        self.security_group = Group.objects.get(name=settings.DB_SECURITY_TEAM)
+        self.committers_group = Group.objects.get(name=settings.DB_COMMITTERS_TEAM)
 
     # All GithubState methods are sync functions
     def sync_groups_with_github_teams(self) -> None:
