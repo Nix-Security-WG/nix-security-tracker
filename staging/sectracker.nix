@@ -29,6 +29,7 @@ in
       SECRET_KEY = "/etc/secrets/django-secret-key";
       GH_CLIENT_ID = "/etc/secrets/gh-client";
       GH_SECRET = "/etc/secrets/gh-secret";
+      GH_WEBHOOK_SECRET = "/etc/secrets/gh-webhook-secret";
     };
   };
 }
