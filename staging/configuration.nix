@@ -25,9 +25,9 @@
   };
 
   # IPv4 connectivity.
-  networking.interfaces.enp6s19.useDHCP = true;
+  networking.interfaces.enp6s18.useDHCP = true;
   # Fixed IPv6.
-  networking.interfaces.enp6s18.ipv6.addresses = [
+  networking.interfaces.enp6s19.ipv6.addresses = [
     {
       address = "2001:bc8:38ee:100:a862:3eff:fe8a:54c8";
       prefixLength = 56;
