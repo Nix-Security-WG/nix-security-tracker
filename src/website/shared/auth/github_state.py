@@ -30,8 +30,11 @@ logger.info("Syncing initial GitHub state.")
 
 
 class GithubState:
-    def __init__(self) -> None:
-        self.github: Github = get_gh(per_page=100)  # 100 is the API limit
+    def __init__(
+        self,
+        github: Github = get_gh(per_page=100),  # 100 is the API limit
+    ) -> None:
+        self.github = github
         self.organization: Organization = self.github.get_organization(
             login=settings.GH_ORGANIZATION
         )

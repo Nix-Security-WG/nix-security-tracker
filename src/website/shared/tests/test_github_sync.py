@@ -6,7 +6,7 @@ from typing import Any, TypedDict
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from django.apps import apps
 from django.conf import settings
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.test import TestCase
 
 from shared.auth import isadmin, iscommitter
@@ -21,7 +21,7 @@ class GithubNamedUserMock:
 
 
 class GithubTeamApiMock:
-    def __init__(self, id: str, user_ids: list[str]) -> None:
+    def __init__(self, id: int, user_ids: list[str]) -> None:
         self.user_ids = user_ids
         self.id = id
 
@@ -32,20 +32,38 @@ class GithubTeamApiMock:
         return named_user.id in self.user_ids
 
 
-class GithubMock:
-    def get_user_by_id(self, user_id: int) -> GithubNamedUserMock:
-        return GithubNamedUserMock(id_value=str(user_id))
-
-
-class GithubStateMock(GithubState):
+class GithubOrganizationApiMock:
     def __init__(
         self, security_ids: list[str] = [], committer_ids: list[str] = []
     ) -> None:
-        self.security_group = Group.objects.get(name=settings.GROUP_SECURITY_TEAM)
-        self.committers_group = Group.objects.get(name=settings.GROUP_COMMITTERS)
-        self.github = GithubMock()  # type: ignore
-        self.security_team = GithubTeamApiMock(id=1, user_ids=security_ids)  # type: ignore
-        self.committers_team = GithubTeamApiMock(id=2, user_ids=committer_ids)  # type: ignore
+        self.teams = {}
+        self.teams[settings.GH_SECURITY_TEAM] = GithubTeamApiMock(
+            id=1, user_ids=security_ids
+        )
+        self.teams[settings.GH_COMMITTERS_TEAM] = GithubTeamApiMock(
+            id=2, user_ids=committer_ids
+        )
+
+    def get_team_by_slug(self, slug: str) -> GithubTeamApiMock:
+        return self.teams[slug]
+
+
+class GithubMock:
+    def __init__(
+        self, security_ids: list[str] = [], committer_ids: list[str] = []
+    ) -> None:
+        self.security_ids = security_ids
+        self.committer_ids = committer_ids
+
+    def get_user_by_id(self, user_id: int) -> GithubNamedUserMock:
+        return GithubNamedUserMock(id_value=str(user_id))
+
+    def get_organization(
+        self, *args: Any, **kwargs: dict[str, Any]
+    ) -> GithubOrganizationApiMock:
+        return GithubOrganizationApiMock(
+            security_ids=self.security_ids, committer_ids=self.committer_ids
+        )
 
 
 # Object creation utilities
@@ -108,7 +126,7 @@ class GithubSyncTests(TestCase):
         )
 
     def test_users_without_sociallogin(self) -> None:
-        gh_state = GithubStateMock()
+        gh_state = GithubState(github=GithubMock())  # type: ignore
         gh_state.sync_groups_with_github_teams()
 
         # Superusers bypass all auth logic, and get admin permissions
@@ -122,9 +140,11 @@ class GithubSyncTests(TestCase):
 
     def test_sync_groups_with_teams(self) -> None:
         # Setup mock GitHub state
-        gh_state = GithubStateMock(
-            security_ids=[self.security_users[0]["uid"]],
-            committer_ids=[self.committer_users[0]["uid"]],
+        gh_state = GithubState(
+            github=GithubMock(  # type: ignore
+                security_ids=[self.security_users[0]["uid"]],
+                committer_ids=[self.committer_users[0]["uid"]],
+            )
         )
 
         # Before running the sync, no user should have explicit permissions
@@ -165,18 +185,22 @@ class GithubSyncTests(TestCase):
 
     def test_sync_groups_with_teams_invert_permissions(self) -> None:
         # Setup mock GitHub state
-        gh_state = GithubStateMock(
-            security_ids=[self.security_users[0]["uid"]],
-            committer_ids=[self.committer_users[0]["uid"]],
+        gh_state = GithubState(
+            github=GithubMock(  # type: ignore
+                security_ids=[self.security_users[0]["uid"]],
+                committer_ids=[self.committer_users[0]["uid"]],
+            )
         )
 
         # Run sync
         gh_state.sync_groups_with_github_teams()
 
         # Now give permissions to the second users of each type
-        gh_state = GithubStateMock(
-            security_ids=[self.security_users[1]["uid"]],
-            committer_ids=[self.committer_users[1]["uid"]],
+        gh_state = GithubState(
+            github=GithubMock(  # type: ignore
+                security_ids=[self.security_users[1]["uid"]],
+                committer_ids=[self.committer_users[1]["uid"]],
+            )
         )
 
         # Run sync again
@@ -204,10 +228,13 @@ class GithubSyncTests(TestCase):
 
     def test_sync_groups_with_teams_is_idempotent(self) -> None:
         # Setup mock GitHub state
-        gh_state = GithubStateMock(
-            security_ids=[self.security_users[0]["uid"]],
-            committer_ids=[self.committer_users[0]["uid"]],
+        gh_state = GithubState(
+            github=GithubMock(  # type: ignore
+                security_ids=[self.security_users[0]["uid"]],
+                committer_ids=[self.committer_users[0]["uid"]],
+            )
         )
+
         # Sync once
         gh_state.sync_groups_with_github_teams()
 
@@ -216,9 +243,11 @@ class GithubSyncTests(TestCase):
 
     def test_sync_groups_for_new_users(self) -> None:
         # Setup mock GitHub state
-        apps.get_app_config("shared").github_state = GithubStateMock(  # type: ignore
-            security_ids=[self.security_users[0]["uid"]],
-            committer_ids=[self.committer_users[0]["uid"]],
+        apps.get_app_config("shared").github_state = GithubState(  # type: ignore
+            github=GithubMock(  # type: ignore
+                security_ids=[self.security_users[0]["uid"]],
+                committer_ids=[self.committer_users[0]["uid"]],
+            )
         )
 
         # "New" users don't have explicit permissions set
@@ -241,7 +270,7 @@ class GithubSyncTests(TestCase):
 
     def test_sync_groups_from_webhook_payload(self) -> None:
         # Setup mock GitHub state
-        gh_state = GithubStateMock()
+        gh_state = GithubState(github=GithubMock())  # type: ignore
         apps.get_app_config("shared").github_state = gh_state  # type: ignore
 
         # Mocked webhook payloads
