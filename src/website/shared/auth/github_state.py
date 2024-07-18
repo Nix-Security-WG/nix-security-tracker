@@ -1,13 +1,11 @@
 """
-Utilities to sync the tracker user groups (used to map permissions) with GitHub teams.
+Utilities to sync the user groups in our database with GitHub teams in order to correctly map permissions.
 
-So far, we keep in sync the following GitHub Organization teams with the local Django Auth groups:
-    - NixOS Security Team (which has the identifier, or slug, **settings.GH_SECURITY_TEAM**)
-        + to Django Auth Group with name **settings.GROUP_COMMITTERS**.
-    - NixOS Committers Team (which has the identifier, or slug, **settings.GH_COMMITTERS_TEAM**)
-
-Maintainers membership can be retrieved from the relationships in the models
-NixMaintainer, NixDerivation and NixDerivationMeta.
+We implement a class, an instance of which must be attached to the server on startup in order to conveniently:
+- register a hook to update user information on user signup
+- cache remote data that only needs to be fetched once
+- access data that needs to be fetched repeatedly
+It will persist for the entire application lifetime.
 """
 
 import logging

@@ -226,7 +226,7 @@ class GithubSyncTests(TestCase):
         # Sync once
         gh_state.sync_groups_with_github_teams()
 
-        # Call sync again to check for imdempotency (no errors should be raised)
+        # Call sync again to check for idempotency (no errors should be raised)
         gh_state.sync_groups_with_github_teams()
 
     def test_sync_groups_for_new_users(self) -> None:
