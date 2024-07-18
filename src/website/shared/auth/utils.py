@@ -17,4 +17,6 @@ def iscommitter(user: Any) -> bool:
 
 
 def ismaintainer(user: Any) -> bool:
-    return NixMaintainer.objects.filter(github=user.username).exists()
+    return NixMaintainer.objects.filter(
+        github_id=user.socialaccount_set.get(provider="github").uid
+    ).exists()
