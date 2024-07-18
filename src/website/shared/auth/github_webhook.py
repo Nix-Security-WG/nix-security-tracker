@@ -47,7 +47,6 @@ def handle_github_hook(request: HttpRequest) -> HttpResponse:
     )
     expected_signature = "sha1=" + signature.hexdigest()
     if not hmac.compare_digest(github_signature, expected_signature):
-        logger.warning("GITHUB WEBHOOK WITH INVALID SIGNATURE RECEIVED")
         return HttpResponseForbidden("Invalid signature header")
 
     # Sometimes the payload comes in as the request body, sometimes it comes in
