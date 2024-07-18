@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 
-from shared.auth import isadmin, iscommitter, ismaintainer
+from shared.auth import isadmin, iscommitter
 from shared.auth.github_state import GithubState, set_groups_for_new_user
 from shared.auth.github_webhook import handle_webhook
 
@@ -114,13 +114,11 @@ class GithubSyncTests(TestCase):
         # Superusers bypass all auth logic, and get admin permissions
         self.assertTrue(isadmin(self.superuser))
         self.assertFalse(iscommitter(self.user_without_social))
-        self.assertFalse(ismaintainer(self.user_without_social))
 
         # A user without a socialaccount doesn't get the option
         # to be admin (through security membership) or committer.
         self.assertFalse(isadmin(self.user_without_social))
         self.assertFalse(iscommitter(self.user_without_social))
-        self.assertFalse(ismaintainer(self.user_without_social))
 
     def test_sync_groups_with_teams(self) -> None:
         # Setup mock GitHub state
@@ -133,17 +131,14 @@ class GithubSyncTests(TestCase):
         for security_user in self.security_users:
             self.assertFalse(isadmin(security_user["user"]))
             self.assertFalse(iscommitter(security_user["user"]))
-            self.assertFalse(ismaintainer(security_user["user"]))
 
         for committer in self.committer_users:
             self.assertFalse(isadmin(committer["user"]))
             self.assertFalse(iscommitter(committer["user"]))
-            self.assertFalse(ismaintainer(committer["user"]))
 
         for reader in self.reader_users:
             self.assertFalse(isadmin(reader["user"]))
             self.assertFalse(iscommitter(reader["user"]))
-            self.assertFalse(ismaintainer(reader["user"]))
 
         # Run sync
         gh_state.sync_groups_with_github_teams()
@@ -152,26 +147,21 @@ class GithubSyncTests(TestCase):
         #  the first user of each type should have the appropiate permissions
         self.assertTrue(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertTrue(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
 
         #  but the second user of each type should have no explicit permissions
         self.assertFalse(isadmin(self.security_users[1]["user"]))
         self.assertFalse(iscommitter(self.security_users[1]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[1]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[1]["user"]))
         self.assertFalse(iscommitter(self.committer_users[1]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[1]["user"]))
 
         # the reader is still a reader
         for reader in self.reader_users:
             self.assertFalse(isadmin(reader["user"]))
             self.assertFalse(iscommitter(reader["user"]))
-            self.assertFalse(ismaintainer(reader["user"]))
 
     def test_sync_groups_with_teams_invert_permissions(self) -> None:
         # Setup mock GitHub state
@@ -196,26 +186,21 @@ class GithubSyncTests(TestCase):
         #  the first user of each type should have no explicit permissions
         self.assertFalse(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertFalse(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
 
         #  but the second user of each type should have the appropiate permissions
         self.assertTrue(isadmin(self.security_users[1]["user"]))
         self.assertFalse(iscommitter(self.security_users[1]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[1]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[1]["user"]))
         self.assertTrue(iscommitter(self.committer_users[1]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[1]["user"]))
 
         # the reader is still a reader
         for reader in self.reader_users:
             self.assertFalse(isadmin(reader["user"]))
             self.assertFalse(iscommitter(reader["user"]))
-            self.assertFalse(ismaintainer(reader["user"]))
 
     def test_sync_groups_with_teams_is_idempotent(self) -> None:
         # Setup mock GitHub state
@@ -239,11 +224,9 @@ class GithubSyncTests(TestCase):
         # "New" users don't have explicit permissions set
         self.assertFalse(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertFalse(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
 
         # Call the sign up signal receiver directly
         set_groups_for_new_user(self.security_users[0]["sociallogin"])
@@ -252,11 +235,9 @@ class GithubSyncTests(TestCase):
         # After signal receiver setup, they have the permissions that correspond to their Github teams
         self.assertTrue(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertTrue(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
 
     def test_sync_groups_from_webhook_payload(self) -> None:
         # Setup mock GitHub state
@@ -283,11 +264,9 @@ class GithubSyncTests(TestCase):
         # Pre webhook request state
         self.assertFalse(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertFalse(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
 
         # Process mocked "added" payloads
         handle_webhook(event=event, payload=payload_security_added)
@@ -296,11 +275,9 @@ class GithubSyncTests(TestCase):
         # After handling "added" webhooks
         self.assertTrue(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertTrue(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
 
         # Process mocked "removed" payloads
         handle_webhook(event=event, payload=payload_security_removed)
@@ -309,8 +286,6 @@ class GithubSyncTests(TestCase):
         # Check permissions are reset after "removed" payloads are processed
         self.assertFalse(isadmin(self.security_users[0]["user"]))
         self.assertFalse(iscommitter(self.security_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.security_users[0]["user"]))
 
         self.assertFalse(isadmin(self.committer_users[0]["user"]))
         self.assertFalse(iscommitter(self.committer_users[0]["user"]))
-        self.assertFalse(ismaintainer(self.committer_users[0]["user"]))
