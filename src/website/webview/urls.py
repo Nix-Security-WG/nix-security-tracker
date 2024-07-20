@@ -1,4 +1,5 @@
 from django.urls import path, re_path
+from shared.auth.github_webhook import handle_github_hook
 
 from webview.views import HomeView, NixpkgsIssueListView, NixpkgsIssueView
 
@@ -13,4 +14,5 @@ urlpatterns = [
         NixpkgsIssueView.as_view(),
         name="issue_detail",
     ),
+    path("github-webhook/", handle_github_hook, name="github_webhook"),
 ]

@@ -139,7 +139,6 @@ SECRET_KEY = get_secret("SECRET_KEY")
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 ASGI_APPLICATION = "tracker.asgi.application"
 INSTALLED_APPS = [
@@ -278,6 +277,19 @@ INTERNAL_IPS = [
     "127.0.0.1",
     "[::1]",
 ]
+
+# Github auth settings
+GH_ORGANIZATION = "NixOS"
+GH_COMMITTERS_TEAM = "nixpkgs-committers"
+GH_SECURITY_TEAM = "security"
+# This will be synced with GH_COMMITTERS_TEAM in GH_ORGANIZATION.
+DB_COMMITTERS_TEAM = "committers"
+# This will be synced with GH_SECURITY_TEAM in GH_ORGANIZATION
+DB_SECURITY_TEAM = "security_team"
+
+GH_WEBHOOK_SECRET = get_secret("GH_WEBHOOK_SECRET")
+
+TEST_RUNNER = "tracker.test_runner.CustomTestRunner"
 
 # Customization via user settings
 # This must be at the end, as it must be able to override the above

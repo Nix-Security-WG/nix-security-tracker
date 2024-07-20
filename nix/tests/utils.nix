@@ -35,6 +35,7 @@ in
             SECRET_KEY = pkgs.writeText "secret.key" "aaaaaaaaaaaaaaaaaaaa";
             GH_CLIENT_ID = pkgs.writeText "gh_client" "bonjour";
             GH_SECRET = pkgs.writeText "gh_secret" "secret";
+            GH_WEBHOOK_SECRET = pkgs.writeText "gh_secret" "webhook-secret";
           };
         };
       };

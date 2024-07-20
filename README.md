@@ -62,6 +62,20 @@ echo bar > .credentials/GH_CLIENT_ID
 echo baz > .credentials/GH_SECRET
 ```
 
+### Set up Github App webhooks
+
+For now, we require a GitHub webhook to receive push notifications when team memberships change. To configure the GitHub app and the webhook:
+
+1. In the GitHub organisation settings:
+
+- In **Code, planning, and automation** Webhooks, create a new webhook:
+  - In **Payload URL**, input "https://<APP_DOMAIN>/github-webhook".
+  - In **Content Type** choose **application/json**.
+  - Generate a token and put in **Secret**. This token should be in `./credentials/GH_WEBHOOK_SECRET`.
+  - Choose **Let me select individual events**
+    - Deselect **Pushes**.
+    - Select **Memberships**.
+
 ## Reseting the database
 
 Set up the database with known-good values to play around with:
