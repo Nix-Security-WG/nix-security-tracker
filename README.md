@@ -64,9 +64,8 @@ echo baz > .credentials/GH_SECRET
 
 ### Set up Github App webhooks
 
-For now, we require a GitHub webhook to receive push notifications when team memberships change. To configure the GitHub app and the webhook:
-
-1. In the GitHub organisation settings:
+For now, we require a GitHub webhook to receive push notifications when team memberships change.
+To configure the GitHub app and the webhook in the GitHub organisation settings:
 
 - In **Code, planning, and automation** Webhooks, create a new webhook:
   - In **Payload URL**, input "https://<APP_DOMAIN>/github-webhook".
