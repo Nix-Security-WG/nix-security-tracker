@@ -1,10 +1,13 @@
 from typing import Any
 
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
+from pgtrigger import UpdateSearchVector
 
 from .nix_evaluation import NixDerivation
 
@@ -86,8 +89,26 @@ class Description(models.Model):
     value = models.TextField()
     media = models.ManyToManyField(SupportingMedia)
 
+    search_vector = SearchVectorField(null=True)
+
     def __str__(self) -> str:
         return f"{self.value[:32]}..."
+
+    class Meta:
+        indexes = [
+            # Add a GIN index to speed up vector search queries
+            GinIndex(fields=["search_vector"]),
+        ]
+        triggers = [
+            # Add a trigger to maintain the search vector updated with row changes
+            UpdateSearchVector(
+                name="description_search_vector_idx",
+                vector_field="search_vector",
+                document_fields=[
+                    "value",
+                ],
+            )
+        ]
 
 
 class Tag(models.Model):
@@ -198,6 +219,22 @@ class Cpe(models.Model):
         ],
     )
 
+    search_vector = SearchVectorField(null=True)
+
+    class Meta:
+        indexes = [
+            # Add a GIN index to speed up vector search queries
+            GinIndex(fields=["search_vector"]),
+        ]
+        triggers = [
+            # Add a trigger to maintain the search vector updated with row changes
+            UpdateSearchVector(
+                name="cpe_search_vector_idx",
+                vector_field="search_vector",
+                document_fields=["name"],
+            )
+        ]
+
 
 class Module(models.Model):
     name = models.CharField(max_length=4096)
@@ -231,6 +268,27 @@ class AffectedProduct(models.Model):
     modules = models.ManyToManyField(Module)
     program_files = models.ManyToManyField(ProgramFile)
     program_routines = models.ManyToManyField(ProgramRoutine)
+
+    search_vector = SearchVectorField(null=True)
+
+    class Meta:
+        indexes = [
+            # Add a GIN index to speed up vector search queries
+            GinIndex(fields=["search_vector"]),
+        ]
+        triggers = [
+            # Add a trigger to maintain the search vector updated with row changes
+            UpdateSearchVector(
+                name="affected_search_vector",
+                vector_field="search_vector",
+                document_fields=[
+                    "vendor",
+                    "product",
+                    "package_name",
+                    "repo",
+                ],
+            )
+        ]
 
 
 class Container(models.Model):
@@ -267,8 +325,27 @@ class Container(models.Model):
     credits = models.ManyToManyField(Credit)
     source = models.JSONField(default=dict)
 
+    # Enable full-text search on CVE searches
+    search_vector = SearchVectorField(null=True)
+
     def __str__(self) -> str:
         return self.cve.cve_id
+
+    class Meta:
+        indexes = [
+            # Add a GIN index to speed up vector search queries
+            GinIndex(fields=["search_vector"]),
+        ]
+        triggers = [
+            # Add a trigger to maintain the search vector updated with row changes
+            UpdateSearchVector(
+                name="cve_container_search_vector",
+                vector_field="search_vector",
+                document_fields=[
+                    "title",
+                ],
+            )
+        ]
 
 
 ###
