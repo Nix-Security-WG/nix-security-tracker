@@ -1,0 +1,18 @@
+{{ form.non_field_errors }}
+
+<div class="issue-form-fields">
+{% for field in form %}
+    {% if field.label == "Cve" or field.label == "Derivations" %}
+        {% comment %}
+            Skip rendering cve and derivations fields.
+            They get rendered when looping over the grouped entities
+        {% endcomment %}
+    {% else %}
+        <div>
+            {{ field.label_tag }}
+            {{ field.errors }}
+            {{ field }}
+        </div>
+    {% endif %}
+{% endfor %}
+</div>

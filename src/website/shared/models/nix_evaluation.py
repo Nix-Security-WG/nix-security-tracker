@@ -1,6 +1,9 @@
 from django.contrib.postgres import fields
+from django.contrib.postgres.indexes import BTreeIndex, GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from pgtrigger import UpdateSearchVector
 
 
 def text_length(choices: type[models.TextChoices]) -> int:
@@ -110,8 +113,26 @@ class NixDerivationMeta(models.Model):
 
     position = models.URLField(null=True)
 
+    search_vector = SearchVectorField(null=True)
+
     def __str__(self) -> str | None:
         return self.description
+
+    class Meta:
+        indexes = [
+            # Add a GIN index to speed up vector search queries
+            GinIndex(fields=["search_vector"]),
+        ]
+        triggers = [
+            # Add a trigger to maintain the search vector updated with row changes
+            UpdateSearchVector(
+                name="description_search_vector_idx",
+                vector_field="search_vector",
+                document_fields=[
+                    "description",
+                ],
+            )
+        ]
 
 
 class NixOutput(models.Model):
@@ -274,6 +295,26 @@ class NixDerivation(models.Model):
         NixEvaluation, related_name="derivations", on_delete=models.CASCADE
     )
 
+    search_vector = SearchVectorField(null=True)
+
     def __str__(self) -> str:
         hash = self.derivation_path.split("-")[0].split("/")[-1]
         return f"{self.name} {hash[:8]}"
+
+    class Meta:
+        indexes = [
+            BTreeIndex(fields=["name"]),
+            GinIndex(fields=["search_vector"]),
+        ]
+
+        triggers = [
+            # Add a trigger to maintain the search vector updated with row changes
+            UpdateSearchVector(
+                name="attribute_name_search_vector_idx",
+                vector_field="search_vector",
+                document_fields=[
+                    "attribute",
+                    "name",
+                ],
+            )
+        ]
