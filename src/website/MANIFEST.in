@@ -9,6 +9,7 @@ recursive-include webview/management *
 recursive-include webview/migrations *
 recursive-include webview/static *
 recursive-include webview/templates *
+recursive-include webview/templatetags *
 recursive-include tracker/management *
 recursive-include tracker/migrations *
 recursive-include tracker/static *
