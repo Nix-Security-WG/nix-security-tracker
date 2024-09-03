@@ -17,7 +17,7 @@ let
     concatStringsSep
     recursiveUpdate
     ;
-  inherit (pkgs) writeScriptBin stdenv;
+  inherit (pkgs) writeScriptBin writeShellApplication stdenv;
   cfg = config.services.web-security-tracker;
   pythonFmt = pkgs.formats.pythonVars { };
 
@@ -37,15 +37,20 @@ let
       daphne
     ]
   );
-  wstManageScript = writeScriptBin "wst-manage" ''
-    #!${stdenv.shell}
-    sudo=exec
-    if [[ "$USER" != "web-security-tracker" ]]; then
-      sudo='exec /run/wrappers/bin/sudo -u web-security-tracker --preserve-env --preserve-env=PYTHONPATH'
-    fi
-    export PYTHONPATH=${toString cfg.package.pythonPath}
-    $sudo ${cfg.package}/bin/manage.py "$@"
-  '';
+  wstManageScript = writeShellApplication {
+    name = "wst-manage";
+
+    runtimeInputs = [ pkgs.git ];
+
+    text = ''
+      sudo="exec"
+      if [[ "$USER" != "web-security-tracker" ]]; then
+        sudo='exec /run/wrappers/bin/sudo -u web-security-tracker --preserve-env --preserve-env=PYTHONPATH'
+      fi
+      export PYTHONPATH=${toString cfg.package.pythonPath}
+      $sudo ${cfg.package}/bin/manage.py "$@"
+    '';
+  };
   credentials = mapAttrsToList (name: secretPath: "${name}:${secretPath}") cfg.secrets;
   databaseUrl = "postgres:///web-security-tracker";
   # This script has access to the credentials, no matter where it is.
