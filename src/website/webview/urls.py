@@ -28,6 +28,7 @@ urlpatterns = [
         NixderivationPerChannelView.as_view(),
         name="affected_list_per_channel",
     ),
+    # TODO: We may want to put an overview page here
     path(
         "affected/",
         RedirectView.as_view(url="nixos-unstable", permanent=True),
