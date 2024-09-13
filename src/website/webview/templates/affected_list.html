@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load viewutils %}
+
+{% block extra_head %}
+  <style>
+    ul#tab-channels { display: flex; flex-wrap: wrap; padding-left: 1em; list-style: none; padding: 0; margin: 0; }
+    ul#tab-channels li { float: left; border: 1px solid #bbb; border-bottom-width: 0; margin: 0; background: #eee; }
+    ul#tab-channels a {
+      font-size: 0.8em; text-decoration: none; display: block; background: #eee; padding: 0.24em 1em;
+			color: #00c; text-align: center; text-transform: uppercase;
+		}
+    ul#tab-channels .current { font-weight: bold; }
+
+    nav#pagination { background-color: white; justify-content: center; display: flex; gap: 10px; }
+    nav#pagination a { color: black; }
+    nav#pagination .current { font-weight: bold; }
+    nav#pagination ul { margin-left: unset; margin-right: 1em; }
+    nav#pagination li.index + li.index { margin-left: 0.1em; }
+    nav#pagination .count { color: dimgray; margin-left: unset; margin-right: auto; }
+
+    table { width: 100%; font-size: 0.875rem; text-align: left; border-collapse: collapse; }
+    table th, table td { padding: 5px; }
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even){ background-color: #f2f2f2; }
+    tr:hover { background-color: #ddd; }
+  </style>
+{% endblock %}
+
+{% block title %}
+  Affected derivations per channel
+{% endblock title %}
+
+{% block content %}
+  <h2>Affected derivations per channel</h2>
+
+  <ul id="tab-channels" >
+    {% for channel in channels %}
+      <li class="{% if channel == current_channel %}current {% endif %}">
+        <a href="{% url 'webview:affected_list'%}{{channel|lower}}">{{channel}}</a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <table>
+    <thead>
+      <tr>
+        {% for header in headers %}
+          <th>{{header}}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for drv in affected_list %}
+        <tr>
+          {% comment %}
+          <td><a href="{% url 'webview:drv_detail' drv.drv_id %}">{{ drv.drv_id }}</a></td>
+          {% endcomment %}
+          <td>{{ drv|getdrvname }}</td>
+          <td>{{ drv.drv_system }}</td>
+          <td><a href="{% url 'webview:issue_detail' drv.issue_code %}">{{ drv.issue_code }}</a> </td>
+          <td>{{ drv.cve_code }}</td>{% comment %}drv.cve_id{% endcomment %}
+          <td>{{ drv.cve_state }}</td>
+        </tr>
+      {% endfor %}
+    <tbody>
+  </table>
+{% endblock content %}
+
+{% block pagination %}
+  <ul>
+    {% for page_number in adjusted_elided_page_range %}
+      <li class="index">
+        {% if page_number == paginator.ELLIPSIS %}
+        {{page_number}}
+        {% else %}
+        <a href="{{request.path}}?page={{page_number}}" class="{% if page_number == page_obj.number %}current{% endif %}">
+          {{page_number}}
+        </a>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <span class="count">{{paginator.count}} affected derivations</span>
+{% endblock %}

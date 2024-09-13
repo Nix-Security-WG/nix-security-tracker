@@ -1,7 +1,14 @@
 from django.urls import path, re_path
+from django.views.generic.base import RedirectView
 from shared.auth.github_webhook import handle_github_hook
 
-from webview.views import HomeView, NixpkgsIssueListView, NixpkgsIssueView, TriageView
+from webview.views import (
+    HomeView,
+    NixderivationPerChannelView,
+    NixpkgsIssueListView,
+    NixpkgsIssueView,
+    TriageView,
+)
 
 app_name = "webview"
 
@@ -16,4 +23,15 @@ urlpatterns = [
         name="issue_detail",
     ),
     path("github-webhook/", handle_github_hook, name="github_webhook"),
+    re_path(
+        "^affected/(?P<channel>(nixos|nixpkgs)-.*)$",
+        NixderivationPerChannelView.as_view(),
+        name="affected_list_per_channel",
+    ),
+    # TODO: We may want to put an overview page here
+    path(
+        "affected/",
+        RedirectView.as_view(url="nixos-unstable", permanent=True),
+        name="affected_list",
+    ),
 ]
