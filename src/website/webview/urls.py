@@ -24,7 +24,7 @@ urlpatterns = [
     ),
     path("github-webhook/", handle_github_hook, name="github_webhook"),
     re_path(
-        "^affected/(?P<channel>nixos-.*)$",
+        "^affected/(?P<channel>(nixos|nixpkgs)-.*)$",
         NixderivationPerChannelView.as_view(),
         name="affected_list_per_channel",
     ),

@@ -410,6 +410,23 @@ class NixderivationPerChannelView(ListView):
     context_object_name = "affected_list"
     paginate_by = 4
 
+    def _get_ordered_channels(self) -> "ValuesQuerySet[NixChannel, Any]":
+        custom_order = Case(
+            When(state=NixChannel.ChannelState.STABLE, then=Value(1)),
+            When(state=NixChannel.ChannelState.UNSTABLE, then=Value(2)),
+            When(state=NixChannel.ChannelState.DEPRECATED, then=Value(3)),
+            default=Value(4),
+        )
+
+        ordered_channels = (
+            NixChannel.objects.alias(custom_order=custom_order)
+            .filter(custom_order__lt=4)
+            .order_by("custom_order", "channel_branch")
+            .values_list("channel_branch", flat=True)
+        )
+
+        return ordered_channels
+
     def get_queryset(self) -> Any:
         channel_filter_value = self.kwargs["channel"]
         channel = get_object_or_404(NixChannel, channel_branch=channel_filter_value)
@@ -435,8 +452,8 @@ class NixderivationPerChannelView(ListView):
 
     def get_context_data(self, **kwargs: Any) -> Any:
         context = super().get_context_data(**kwargs)
-        context["channels"] = ["NIXOS-UNSTABLE", "NIXOS-24.05", "NIXOS-23.11"]
-        context["current_channel"] = self.kwargs["channel"].upper()
+        context["channels"] = self._get_ordered_channels()
+        context["current_channel"] = self.kwargs["channel"]
         context["adjusted_elided_page_range"] = context[
             "paginator"
         ].get_elided_page_range(context["page_obj"].number)
