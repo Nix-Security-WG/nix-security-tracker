@@ -189,9 +189,12 @@ async def evaluation_entrypoint(
                 pathlib.Path(settings.EVALUATION_LOGS_DIRECTORY)
                 / f"evaluation-{evaluation.commit_sha1}.log"
             )
-            async with repo.extract_working_tree(
-                evaluation.commit_sha1, working_tree_path
-            ) as working_tree, aiofiles.open(evaluation_log_filepath, "w") as eval_log:
+            async with (
+                repo.extract_working_tree(
+                    evaluation.commit_sha1, working_tree_path
+                ) as working_tree,
+                aiofiles.open(evaluation_log_filepath, "w") as eval_log,
+            ):
                 # Kickstart the evaluation asynchronously.
                 eval_process = await perform_evaluation(
                     working_tree.path, eval_log.fileno()

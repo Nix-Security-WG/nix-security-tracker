@@ -10,12 +10,10 @@ let
     dir:
     with builtins;
     listToAttrs (
-      map
-        (name: {
-          inherit name;
-          value = callPackage (dir + "/${name}") { };
-        })
-        (attrNames (readDir dir))
+      map (name: {
+        inherit name;
+        value = callPackage (dir + "/${name}") { };
+      }) (attrNames (readDir dir))
     );
 in
 python3Packages

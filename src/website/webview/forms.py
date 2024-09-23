@@ -14,7 +14,7 @@ class NixpkgsIssueForm(forms.ModelForm):
     template_name = "triage_issue_form_snippet.html"
     description_text = forms.CharField(widget=forms.Textarea)
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         model = NixpkgsIssue
         fields = [
             "cve",

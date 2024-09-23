@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 from django.core.paginator import Paginator
@@ -10,10 +11,12 @@ class CustomCountPaginator(Paginator):
     the defaults will produce redundant, expensive queries.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.custom_count = kwargs.pop("custom_count")
+    def __init__(
+        self, *args: Any, custom_count: Callable[[], int], **kwargs: Any
+    ) -> None:
+        self.custom_count = custom_count
         super().__init__(*args, **kwargs)
 
     @cached_property
-    def count(self) -> int:
+    def count(self) -> int:  # type: ignore[override]
         return self.custom_count()

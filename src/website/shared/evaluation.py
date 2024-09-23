@@ -7,6 +7,7 @@ from itertools import chain
 from typing import Any, TypeVar
 
 from dataclass_wizard import DumpMixin, JSONWizard, LoadMixin
+from django.db.models import Model
 from django.db.utils import IntegrityError
 
 from shared.models.nix_evaluation import (
@@ -20,8 +21,8 @@ from shared.models.nix_evaluation import (
     NixStorePathOutput,
 )
 
-T = TypeVar("T")
-DeferredThrough = Callable[[int], T]
+T = TypeVar("T", bound=Model)
+DeferredThrough = Callable[[int], list[T]]
 logger = logging.getLogger(__name__)
 
 
@@ -151,14 +152,14 @@ def parse_evaluation_result(line: str) -> PartialEvaluatedAttribute:
 
 
 def parse_evaluation_results(
-    lines: Iterable[str]
+    lines: Iterable[str],
 ) -> Generator[PartialEvaluatedAttribute, None, None]:
     for line in lines:
         yield parse_evaluation_result(line)
 
 
 def bulkify(
-    gen: Generator[tuple[EvaluatedAttribute, list[T]], None, None]
+    gen: Generator[tuple[EvaluatedAttribute, list[T]], None, None],
 ) -> Generator[tuple[str, list[T]], None, None]:
     for origin, elements in gen:
         yield (origin.drv_path, elements)
@@ -240,8 +241,8 @@ class SyncBatchAttributeIngester:
         self, evaluation: EvaluatedAttribute
     ) -> tuple[
         NixDerivationMeta,
-        DeferredThrough[list[NixDerivationMeta.maintainers.through]],
-        DeferredThrough[list[NixDerivationMeta.licenses.through]],
+        DeferredThrough[NixMaintainer],
+        DeferredThrough[NixLicense],
     ]:
         metadata = evaluation.meta
         assert (
@@ -269,8 +270,8 @@ class SyncBatchAttributeIngester:
 
         # Those thunks are here to delay the evaluation of the M2M throughs.
         def thunk_maintainers_throughs(
-            meta_pk: int
-        ) -> list[NixDerivationMeta.maintainers.through]:
+            meta_pk: int,
+        ) -> list[NixMaintainer]:
             return [
                 NixDerivationMeta.maintainers.through(
                     nixderivationmeta_id=meta_pk, nixmaintainer_id=maintainer.pk
@@ -279,8 +280,8 @@ class SyncBatchAttributeIngester:
             ]
 
         def thunk_licenses_throughs(
-            meta_pk: int
-        ) -> list[NixDerivationMeta.licenses.through]:
+            meta_pk: int,
+        ) -> list[NixLicense]:
             return [
                 NixDerivationMeta.licenses.through(
                     nixderivationmeta_id=meta_pk, nixlicense_id=license.pk

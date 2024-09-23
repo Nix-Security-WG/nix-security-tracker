@@ -26,9 +26,7 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **kwargs: Any) -> str | None:
         print(
-            "Will clone {} into {}".format(
-                settings.GIT_CLONE_URL, settings.LOCAL_NIXPKGS_CHECKOUT
-            )
+            f"Will clone {settings.GIT_CLONE_URL} into {settings.LOCAL_NIXPKGS_CHECKOUT}"
         )
         repo = GitRepo(
             settings.LOCAL_NIXPKGS_CHECKOUT,
