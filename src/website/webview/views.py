@@ -1,9 +1,13 @@
 import re
 import typing
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
+
+from django.core.validators import RegexValidator
 
 if typing.TYPE_CHECKING:
+    # prevent typecheck from failing on some historic type
+    # https://stackoverflow.com/questions/60271481/django-mypy-valuesqueryset-type-hint
     from django.db.models.query import ValuesQuerySet
 
 from django.contrib.auth.decorators import login_required
@@ -23,6 +27,7 @@ from django.db.models import (
     When,
 )
 from django.db.models.manager import BaseManager
+from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -372,10 +377,18 @@ class NixpkgsIssueView(DetailView):
     template_name = "issue_detail.html"
     model = NixpkgsIssue
 
-    pattern = re.compile(CveRecord._meta.get_field("cve_id").validators[0].regex)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        validator = CveRecord._meta.get_field("cve_id").validators[0]
+        if isinstance(validator, RegexValidator):
+            self.pattern = re.compile(validator.regex)
+        else:
+            raise TypeError("Expected RegexValidator for CveRecord.cve_id")
 
-    def get_object(self, queryset: Any = None) -> Any:
-        issue = get_object_or_404(self.model, code=self.kwargs.get("code"))
+    def get_object(self, queryset: QuerySet | None = None) -> NixpkgsIssue:
+        issue = cast(
+            NixpkgsIssue, get_object_or_404(self.model, code=self.kwargs.get("code"))
+        )
         derivations = issue.derivations.all()  # type: ignore
         for drv in derivations:
             result = self.get_cves_for_derivation(drv)
@@ -385,16 +398,13 @@ class NixpkgsIssueView(DetailView):
 
         return issue
 
-    def get_cves_for_derivation(self, drv: Any) -> Any:
+    def get_cves_for_derivation(self, drv: Any) -> QuerySet | None:
         known_vulnerabilities = drv.metadata.known_vulnerabilities
         if not known_vulnerabilities:
             return None
         cves = [s for s in known_vulnerabilities if self.pattern.match(s)]
         existing_cves = Container.objects.filter(cve__cve_id__in=cves)
-        if not existing_cves:
-            return None
-        else:
-            return existing_cves
+        return existing_cves or None
 
 
 class NixpkgsIssueListView(ListView):

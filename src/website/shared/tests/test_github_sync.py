@@ -1,6 +1,7 @@
 """
 Test suite for GitHub sync utilities
 """
+
 from typing import Any, TypedDict
 
 from allauth.socialaccount.models import SocialAccount, SocialLogin

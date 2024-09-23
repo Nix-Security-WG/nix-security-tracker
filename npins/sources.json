@@ -8,27 +8,15 @@
         "repo": "gitignore"
       },
       "branch": "master",
-      "revision": "9e21c80adf67ebcb077d75bd5e7d724d21eeafd6",
-      "url": "https://github.com/hercules-ci/gitignore/archive/9e21c80adf67ebcb077d75bd5e7d724d21eeafd6.tar.gz",
-      "hash": "1lbkgn94y8850g7idqnbji12pscxjwrspnzmx8fmm7xmy9ablk5y"
-    },
-    "nixfmt": {
-      "type": "Git",
-      "repository": {
-        "type": "GitHub",
-        "owner": "piegamesde",
-        "repo": "nixfmt"
-      },
-      "branch": "rfc101-style",
-      "revision": "136edf487b0747c0dd0e59614356f306039864c9",
-      "url": "https://github.com/piegamesde/nixfmt/archive/136edf487b0747c0dd0e59614356f306039864c9.tar.gz",
-      "hash": "017zpd6n3yspal1nv81fiygyyx06vhj5gnsg5x139mzvlic8i03v"
+      "revision": "637db329424fd7e46cf4185293b9cc8c88c95394",
+      "url": "https://github.com/hercules-ci/gitignore/archive/637db329424fd7e46cf4185293b9cc8c88c95394.tar.gz",
+      "hash": "02wxkdpbhlm3yk5mhkhsp3kwakc16xpmsf2baw57nz1dg459qv8w"
     },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
-      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-24.05pre555839.0c6d8c783336/nixexprs.tar.xz",
-      "hash": "04dykgz00bfnbxlaw00x2s5jzzh0jjqpgkb1z0ibkd1qkfq0cfcr"
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-24.11pre683804.a1d92660c6b3/nixexprs.tar.xz",
+      "hash": "0lzd1g9x7ihscdajc2g9f0jyykymw6r1lq2ir5g0shjzjf0jc5la"
     },
     "pre-commit-hooks": {
       "type": "Git",
@@ -38,9 +26,9 @@
         "repo": "pre-commit-hooks.nix"
       },
       "branch": "master",
-      "revision": "e5ee5c5f3844550c01d2131096c7271cec5e9b78",
-      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/e5ee5c5f3844550c01d2131096c7271cec5e9b78.tar.gz",
-      "hash": "1wxn3pgi8aa6l7p32z04midpp4cr45ar6v5gwhdwxryk3xr9ygbs"
+      "revision": "4e743a6920eab45e8ba0fbe49dc459f1423a4b74",
+      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/4e743a6920eab45e8ba0fbe49dc459f1423a4b74.tar.gz",
+      "hash": "0fc69dsn5rhv2zb16c2bfgx84ja8cmn7d7j2mrw3n4m8y611x40g"
     }
   },
   "version": 3

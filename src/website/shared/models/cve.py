@@ -22,8 +22,8 @@ class Organization(models.Model):
     uuid = models.UUIDField(primary_key=True)
     short_name = models.CharField(max_length=32, null=True, default=None)
 
-    def __str__(self) -> str | None:
-        return self.short_name
+    def __str__(self) -> str:
+        return self.short_name or ""
 
 
 class CveRecord(models.Model):
@@ -60,7 +60,7 @@ class CveRecord(models.Model):
     def __str__(self) -> str:
         return self.cve_id
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             BTreeIndex(fields=["cve_id"]),
         ]
@@ -99,7 +99,7 @@ class Description(models.Model):
     def __str__(self) -> str:
         return f"{self.value[:32]}..."
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             # Add a GIN index to speed up vector search queries
             GinIndex(fields=["search_vector"]),
@@ -226,7 +226,7 @@ class Cpe(models.Model):
 
     search_vector = SearchVectorField(null=True)
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             # Add a GIN index to speed up vector search queries
             GinIndex(fields=["search_vector"]),
@@ -276,7 +276,7 @@ class AffectedProduct(models.Model):
 
     search_vector = SearchVectorField(null=True)
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             # Add a GIN index to speed up vector search queries
             GinIndex(fields=["search_vector"]),
@@ -336,7 +336,7 @@ class Container(models.Model):
     def __str__(self) -> str:
         return self.cve.cve_id
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             # Add a GIN index to speed up vector search queries
             GinIndex(fields=["search_vector"]),

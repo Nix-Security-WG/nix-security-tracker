@@ -32,8 +32,7 @@ let
     extraConfigFile
   ];
   pythonEnv = pkgs.python3.withPackages (
-    ps:
-    with ps; [
+    ps: with ps; [
       cfg.package
       daphne
     ]

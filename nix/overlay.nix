@@ -11,9 +11,6 @@ in
 {
   python3 = prev.lib.attrsets.recursiveUpdate prev.python3 { pkgs = extraPython3Packages; };
 
-  # RFC 166
-  nixfmt = (import sources.nixfmt).default;
-
   # go through the motions to make a flake-incompat project use the build
   # inputs we want
   pre-commit-hooks = final.callPackage "${sources.pre-commit-hooks}/nix/run.nix" {

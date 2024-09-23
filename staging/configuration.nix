@@ -21,7 +21,8 @@
   users.mutableUsers = false;
   users.users.root = {
     openssh.authorizedKeys.keyFiles =
-      with lib; map (n: ./keys/${n}) (attrNames (builtins.readDir ./keys));
+      with lib;
+      map (n: ./keys/${n}) (attrNames (builtins.readDir ./keys));
   };
 
   # IPv4 connectivity.

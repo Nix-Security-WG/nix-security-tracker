@@ -14,7 +14,7 @@ class TimeStampMixin(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         abstract = True
 
 
@@ -115,10 +115,10 @@ class NixDerivationMeta(models.Model):
 
     search_vector = SearchVectorField(null=True)
 
-    def __str__(self) -> str | None:
-        return self.description
+    def __str__(self) -> str:
+        return self.description or ""
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             # Add a GIN index to speed up vector search queries
             GinIndex(fields=["search_vector"]),
@@ -266,7 +266,7 @@ class NixEvaluation(TimeStampMixin):
     def __str__(self) -> str:
         return f"{self.channel} {self.commit_sha1[:8]}"
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         unique_together = ("channel", "commit_sha1")
 
 
@@ -301,7 +301,7 @@ class NixDerivation(models.Model):
         hash = self.derivation_path.split("-")[0].split("/")[-1]
         return f"{self.name} {hash[:8]}"
 
-    class Meta:
+    class Meta:  # type: ignore[override]
         indexes = [
             BTreeIndex(fields=["name"]),
             GinIndex(fields=["search_vector"]),

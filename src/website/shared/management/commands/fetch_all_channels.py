@@ -86,7 +86,7 @@ def fetch_from_monitoring() -> dict[str, MonitoredChannel]:
 
 
 async def wait_for_parallel_fetches(
-    parallel_fetches: list[Coroutine[Any, Any, bool]]
+    parallel_fetches: list[Coroutine[Any, Any, bool]],
 ) -> list[Any]:
     return await asyncio.gather(*parallel_fetches, return_exceptions=True)
 

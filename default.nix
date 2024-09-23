@@ -17,8 +17,6 @@ let
     pre-commit-check = pkgs.pre-commit-hooks {
       src = ./.;
 
-      settings.statix.ignore = [ "staging" ];
-
       hooks =
         let
           pythonExcludes = [
@@ -27,11 +25,11 @@ let
         in
         {
           # Nix setup
-          nixfmt = {
+          nixfmt-rfc-style.enable = true;
+          statix = {
             enable = true;
-            entry = pkgs.lib.mkForce "${pkgs.lib.getExe pkgs.nixfmt}";
+            settings.ignore = [ "staging" ];
           };
-          statix.enable = true;
           deadnix.enable = true;
 
           # Python setup
@@ -72,7 +70,7 @@ let
             excludes = [
               "\\.min.css$"
               "\\.html$"
-            ];
+            ] ++ pythonExcludes;
           };
           commitizen.enable = true;
         };
@@ -95,9 +93,12 @@ let
           manage
           package
           pkgs.nix-eval-jobs
+          pkgs.ruff
+          pkgs.nodePackages.prettier
+          pkgs.pyright
           pkgs.commitizen
           pkgs.npins
-          pkgs.nixfmt
+          pkgs.nixfmt-rfc-style
           pkgs.hivemind
         ];
 

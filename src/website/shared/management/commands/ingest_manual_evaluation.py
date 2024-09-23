@@ -30,7 +30,6 @@ log = logging.getLogger(__name__)
 
 
 class BulkSave:
-
     """
     Batches inserts, deletions and updates together to perform the minimum number of
     SQL queries.
@@ -200,9 +199,7 @@ class BulkSave:
             self.m2m[klass][mid] = {}
         # Assert that all models are of the same type
         assert len(set([type(m) for m in objects])) <= 1, Exception(
-            "Mixed models supplied to set_m2m: {} {}.{} = {}".format(
-                model, type(model), attname, objects
-            )
+            f"Mixed models supplied to set_m2m: {model} {type(model)}.{attname} = {objects}"
         )
 
         self.m2m[klass][mid][attname] = [
@@ -354,7 +351,7 @@ class BulkSave:
         # apt_contacts
         join_objects = ff.remote_field.through.objects
         # apt__in
-        filter_in = "%s__in" % ff.m2m_field_name()
+        filter_in = f"{ff.m2m_field_name()}__in"
         qwargs = {filter_in: models_to_lookup}
 
         # field names on the join object
@@ -781,9 +778,7 @@ class Command(BaseCommand):
         channel = NixChannel.objects.get(channel_branch=kwargs["channel_branch"])
         filename = kwargs["evaluation_result_file"]
         print(
-            "Ingesting evaluation contained in {} information from channel {}...".format(
-                filename, str(channel)
-            )
+            f"Ingesting evaluation contained in {filename} information from channel {str(channel)}..."
         )
         evaluation = NixEvaluation.objects.create(
             channel=channel, commit_sha1=kwargs["commit_sha1"]
