@@ -159,6 +159,7 @@ in
           path = [
             pythonEnv
             wstManageScript
+            pkgs.nix-eval-jobs
           ];
           serviceConfig = {
             User = "web-security-tracker";
