@@ -54,13 +54,13 @@ let
     #!${stdenv.shell}
     echo "${concatStringsSep " " credentials}"
     systemd-run --pty \
-      --same-dir \
       --wait \
       --collect \
       --service-type=exec \
       --unit "wst-manage.service" \
       --property "User=web-security-tracker" \
       --property "Group=web-security-tracker" \
+      --property "WorkingDirectory=/var/lib/web-security-tracker" \
       ${concatStringsSep "\n" (map (cred: "--property 'LoadCredential=${cred}' \\") credentials)}
       --property "Environment=DATABASE_URL=${databaseUrl} USER_SETTINGS_FILE=${settingsFile}" \
       "${wstManageScript}/bin/wst-manage" "$@"
