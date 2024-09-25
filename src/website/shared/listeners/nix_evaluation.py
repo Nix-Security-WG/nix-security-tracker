@@ -186,7 +186,7 @@ async def evaluation_entrypoint(
         with tempfile.TemporaryDirectory() as working_tree_path:
             # Extract a working tree out of it for our needs.
             evaluation_log_filepath = (
-                settings.EVALUATION_LOGS_DIRECTORY
+                pathlib.Path(settings.EVALUATION_LOGS_DIRECTORY)
                 / f"evaluation-{evaluation.commit_sha1}.log"
             )
             async with repo.extract_working_tree(
