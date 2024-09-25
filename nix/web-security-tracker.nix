@@ -159,6 +159,7 @@ in
           path = [
             pythonEnv
             wstManageScript
+            pkgs.git
           ];
           serviceConfig = {
             User = "web-security-tracker";
