@@ -100,7 +100,7 @@ class Command(BaseCommand):
             "--repository",
             type=str,
             help="Repository for those specific Nix channels",
-            default="https://github.com/NixOS/nixpkgs",
+            default=settings.GIT_CLONE_URL,
         )
 
     def handle(self, *args: Any, **kwargs: Any) -> str | None:

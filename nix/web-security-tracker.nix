@@ -160,6 +160,7 @@ in
             pythonEnv
             wstManageScript
             pkgs.git
+            pkgs.nix-eval-jobs
           ];
           serviceConfig = {
             User = "web-security-tracker";
