@@ -124,6 +124,7 @@ EVALUATION_GC_ROOTS_DIRECTORY: str = str(
 EVALUATION_LOGS_DIRECTORY: str = str(
     Path(BASE_DIR / ".." / ".." / "nixpkgs-evaluation-logs").resolve()
 )
+CVE_CACHE_DIR: str = str(Path(BASE_DIR / ".." / ".." / "cve-cache").resolve())
 # This can be tuned for your specific deployment,
 # this is used to wait for an evaluation slot to be available
 # It should be around the average evaluation time on your machine.
