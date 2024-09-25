@@ -109,7 +109,7 @@ in
         STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
         DEBUG = mkDefault false;
         ALLOWED_HOSTS = mkDefault [
-          cfg.domain
+          (with cfg; if production then domain else "*")
           "localhost"
           "127.0.0.1"
           "[::1]"
