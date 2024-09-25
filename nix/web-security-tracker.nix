@@ -159,6 +159,7 @@ in
           path = [
             pythonEnv
             wstManageScript
+            pkgs.git
             pkgs.nix-eval-jobs
           ];
           serviceConfig = {
