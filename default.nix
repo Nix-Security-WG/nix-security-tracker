@@ -93,14 +93,9 @@ let
           manage
           package
           pkgs.nix-eval-jobs
-          pkgs.ruff
-          pkgs.nodePackages.prettier
-          pkgs.pyright
-          pkgs.commitizen
           pkgs.npins
-          pkgs.nixfmt-rfc-style
           pkgs.hivemind
-        ];
+        ] ++ pre-commit-check.enabledPackages;
 
         shellHook = ''
           ${pre-commit-check.shellHook}
