@@ -4,7 +4,7 @@ result
 __pycache__
 .credentials
 *.jsonl
-.data_cache
+cve-cache
 nixpkgs
 nixpkgs-gc-roots/*
 nixpkgs-evaluation-logs/*.log

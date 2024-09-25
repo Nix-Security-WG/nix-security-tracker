@@ -83,7 +83,6 @@ let
         '';
       in
       pkgs.mkShell {
-        DATA_CACHE_DIRECTORY = toString ./. + "/.data_cache";
         REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
         # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
         # in the root of the repo. Make it the default here for local development.

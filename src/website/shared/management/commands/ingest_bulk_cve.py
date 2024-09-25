@@ -6,11 +6,11 @@ import tempfile
 import zipfile
 from datetime import date
 from glob import glob
-from os import environ as env
 from os import mkdir, path
 from typing import Any
 
 import requests
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from github.GitRelease import GitRelease
@@ -89,15 +89,8 @@ class Command(BaseCommand):
         return release
 
     def _set_cve_data_cache_dir(self) -> tuple[str, str]:
-        data_cache_dir = env.get("DATA_CACHE_DIRECTORY")
+        data_cache_dir = settings.CVE_CACHE_DIR
 
-        if data_cache_dir is None:
-            data_cache_dir = path.join(
-                path.dirname(path.realpath(__file__)), ".data_cache"
-            )
-            logger.warn("$DATA_CACHE_DIRECTORY was not set. Using the local dir.")
-
-        # Work in the $DATA_CACHE_DIRECTORY
         if not path.exists(data_cache_dir):
             mkdir(path.join(data_cache_dir))
 
