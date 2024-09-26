@@ -107,9 +107,6 @@ GIT_CLONE_URL = "https://github.com/NixOS/nixpkgs"
 # will be instantiated for this application's needs.
 # By default, in the root of this Git repository.
 LOCAL_NIXPKGS_CHECKOUT = (BASE_DIR / ".." / ".." / "nixpkgs").resolve()
-# If you have a reference Nixpkgs, you better set this
-# so you can benefit from faster cloning.
-NIXPKGS_REFERENCE_CHECKOUT = None
 # Evaluation concurrency
 # Do not go overboard with this, as Nixpkgs evaluation
 # is _very_ expensive.
