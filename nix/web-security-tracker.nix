@@ -75,6 +75,11 @@ in
       type = types.bool;
       default = true;
     };
+    restart = mkOption {
+      description = "systemd restart behavior";
+      type = types.str;
+      default = "always";
+    };
     domain = mkOption { type = types.str; };
     port = mkOption {
       type = types.port;
@@ -185,7 +190,7 @@ in
           ];
           requires = [ "postgresql.service" ];
           wantedBy = [ "multi-user.target" ];
-          serviceConfig.Restart = "always";
+          serviceConfig.Restart = cfg.restart;
           preStart = ''
             # Auto-migrate on first run or if the package has changed
             versionFile="/var/lib/web-security-tracker/package-version"

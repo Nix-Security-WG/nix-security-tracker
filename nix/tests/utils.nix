@@ -29,6 +29,7 @@ in
         imports = [ wstModule ];
         services.web-security-tracker = {
           enable = true;
+          restart = "no"; # fail fast
           production = false;
           domain = "example.org";
           secrets = {
