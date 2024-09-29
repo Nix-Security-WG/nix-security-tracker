@@ -5,6 +5,7 @@
 }:
 let
   self = rec {
+    inherit pkgs;
     inherit (pkgs) python3;
     localPythonPackages = import ./pkgs { inherit pkgs python3; };
 
