@@ -13,6 +13,7 @@ let
     overlays = [ overlay ];
     package = pkgs.web-security-tracker;
     module = import ./nix/web-security-tracker.nix;
+    dev-container = import ./staging/container.nix;
 
     pre-commit-check = pkgs.pre-commit-hooks {
       src = ./.;
@@ -81,6 +82,18 @@ let
         manage = pkgs.writeScriptBin "manage" ''
           ${python3}/bin/python ${toString ./src/website/manage.py} $@
         '';
+        create-credentials = pkgs.writeShellApplication {
+          name = "create-credentials";
+          text = ''
+            if [ ! -d .credentials ]; then
+              mkdir .credentials
+              echo foo > .credentials/SECRET_KEY
+              echo bar > .credentials/GH_CLIENT_ID
+              echo baz > .credentials/GH_SECRET
+              echo qux > .credentials/GH_WEBHOOK_SECRET
+            fi
+          '';
+        };
       in
       pkgs.mkShell {
         REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
@@ -98,6 +111,7 @@ let
 
         shellHook = ''
           ${pre-commit-check.shellHook}
+          ${pkgs.lib.getExe create-credentials}
 
           mkdir -p .credentials
           export DATABASE_URL=postgres:///nix-security-tracker
