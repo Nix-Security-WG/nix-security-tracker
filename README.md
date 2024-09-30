@@ -26,6 +26,8 @@ nix-shell
 
 Or set up [`nix-direnv`](https://github.com/nix-community/nix-direnv) on your system and run `direnv allow` to enter the development environment automatically when entering the project directory.
 
+### Set up a local database
+
 Currently only [PostgreSQL](https://www.postgresql.org/) is supported as a database.
 You can set up a database on NixOS like this:
 
@@ -37,6 +39,48 @@ services.postgresql.ensureUsers = [{
   ensureDBOwnership = true;
 }];
 ```
+
+### Set up a local container
+
+On NixOS, you can run the service in a [`systemd-nspawn` container](https://search.nixos.org/options?show=containers) to preview a deployment.
+
+Assuming you have a local checkout of this repository at `~/src/nix-security-tracker`, in your NixOS configuration, add the following entry t `imports` and rebuild your system:
+
+```nix
+{ ... }:
+{
+  imports = [
+    (import ~/src/nix-security-tracker { }).dev-container
+    # ...
+   ];
+}
+```
+
+The service will be accessible at <http://172.31.100.1>.
+
+To upload a pre-existing database dump into the container with [`nixos-container`](https://nixos.org/manual/nixos/unstable/#sec-imperative-containers):
+
+1. Stop the server, delete the initial database, and create an empty one.
+
+   ```bash
+   sudo nixos-container run nix-security-tracker -- bash << EOF
+   systemctl stop web-security-tracker-server.service
+   sudo -u postgres dropdb web-security-tracker
+   sudo -u postgres createdb web-security-tracker
+   EOF
+   ```
+
+2. Restore the dump.
+
+   ```bash
+   sudo nixos-container run nix-security-tracker -- sudo -u postgres pg_restore -d web-security-tracker -v < local_dump
+   ```
+
+3. Start the service again.
+
+   ```bash
+   sudo nixos-container run nix-security-tracker -- systemctl start web-security-tracker.service
+   ```
 
 ### Set up GitHub authentication
 

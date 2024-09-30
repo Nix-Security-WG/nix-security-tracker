@@ -246,6 +246,7 @@ SITE_ID = 1
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
+# TODO: make configurable so one can log in locally
 LOGIN_REDIRECT_URL = "webview:home"
 
 # Internationalization
