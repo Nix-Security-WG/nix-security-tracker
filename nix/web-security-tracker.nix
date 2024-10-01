@@ -80,7 +80,7 @@ in
       default = "always";
     };
     domain = mkOption { type = types.str; };
-    port = mkOption {
+    wsgi-port = mkOption {
       type = types.port;
       default = 8000;
     };
@@ -130,7 +130,7 @@ in
         ${cfg.domain} =
           {
             locations = {
-              "/".proxyPass = "http://localhost:${toString cfg.port}";
+              "/".proxyPass = "http://localhost:${toString cfg.wsgi-port}";
               "/static/".alias = "/var/lib/web-security-tracker/static/";
             };
           }
@@ -203,7 +203,10 @@ in
           script =
             let
               networking =
-                if cfg.unixSocket != null then "-u ${cfg.unixSocket}" else "-b 127.0.0.1 -p ${toString cfg.port}";
+                if cfg.unixSocket != null then
+                  "-u ${cfg.unixSocket}"
+                else
+                  "-b 127.0.0.1 -p ${toString cfg.wsgi-port}";
             in
             ''
               daphne ${networking} \
