@@ -9,7 +9,7 @@ let
     types
     mkIf
     mkEnableOption
-    mkPackageOptionMD
+    mkPackageOption
     mkOption
     mapAttrs
     mapAttrsToList
@@ -69,7 +69,7 @@ in
   options.services.web-security-tracker = {
     enable = mkEnableOption "web security tracker for Nixpkgs and similar monorepo";
 
-    package = mkPackageOptionMD pkgs "web-security-tracker" { };
+    package = mkPackageOption pkgs "web-security-tracker" { };
     production = mkOption {
       type = types.bool;
       default = true;
