@@ -1,7 +1,12 @@
 {
+  system ? builtins.currentSystem,
   sources ? import ./npins,
   overlay ? import ./nix/overlay.nix,
-  pkgs ? import sources.nixpkgs { overlays = [ overlay ]; },
+  pkgs ? import sources.nixpkgs {
+    config = { };
+    overlays = [ overlay ];
+    inherit system;
+  },
 }:
 let
   self = rec {
