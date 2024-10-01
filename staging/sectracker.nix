@@ -60,5 +60,6 @@ in
       GH_SECRET = "/etc/secrets/gh-secret";
       GH_WEBHOOK_SECRET = "/etc/secrets/gh-webhook-secret";
     };
+    maxJobProcessors = 3;
   };
 }

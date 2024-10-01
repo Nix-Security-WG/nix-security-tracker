@@ -101,8 +101,13 @@ in
       default = { };
     };
     maxJobProcessors = mkOption {
+      description = ''
+        How many channels to evaluate in parallel.
+
+        Each evaluation of Nixpkgs peaks at ~6GB of required RAM.
+      '';
       type = types.int;
-      default = 3;
+      default = 2;
     };
   };
 
