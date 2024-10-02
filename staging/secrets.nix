@@ -13,4 +13,5 @@ in
   "secrets/dev-nixpkgs-security-tracker.2024-10-04.private-key.pem.age".publicKeys = admins ++ [
     staging
   ];
+  "secrets/glitchtip-dsn.age".publicKeys = admins ++ [ staging ];
 }

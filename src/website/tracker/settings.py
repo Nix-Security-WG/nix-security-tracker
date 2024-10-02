@@ -16,6 +16,8 @@ from os import environ as env
 from pathlib import Path
 
 import dj_database_url
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,6 +37,16 @@ def get_secret(name: str, encoding: str = "utf-8") -> str:
 
     return secret
 
+
+## GlitchTip setup
+
+if "GLITCHTIP_DSN" in env:
+    sentry_sdk.init(
+        dsn=get_secret("GLITCHTIP_DSN"),
+        integrations=[DjangoIntegration()],
+        auto_session_tracking=False,
+        traces_sample_rate=0,
+    )
 
 ## Channel setup
 CHANNEL_LAYERS = {
