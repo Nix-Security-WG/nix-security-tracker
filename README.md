@@ -32,6 +32,7 @@ Currently only [PostgreSQL](https://www.postgresql.org/) is supported as a datab
 You can set up a database on NixOS like this:
 
 ```nix
+{ ... }:
 {
   imports = [
     (import nix-security-tracker { }).dev-setup
