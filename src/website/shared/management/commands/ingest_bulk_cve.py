@@ -50,7 +50,7 @@ class Command(BaseCommand):
         # Fetch the latest daily release
         release = repo.get_latest_release()
 
-        logger.warn(f"Fetched latest release: {release.title}")
+        logger.info(f"Fetched latest release: {release.title}")
 
         # Get the bulk cve list asset
         bundle = release.assets[0]
@@ -64,7 +64,7 @@ class Command(BaseCommand):
             tmp_arc = f"{tmp_dir}/cves.zip.zip"
 
             # Download the zip file
-            logger.warn(f"Downloading the bundle: {bundle.name}")
+            logger.info(f"Downloading the bundle: {bundle.name}")
             r = requests.get(bundle.browser_download_url)
 
             if r.status_code != 200:
@@ -77,12 +77,12 @@ class Command(BaseCommand):
 
             # Extract the archive into $DATA_CACHE_DIR
             with zipfile.ZipFile(tmp_arc) as z_arc:
-                logger.warn("Extract the first archive to cves.zip")
+                logger.info("Extract the first archive to cves.zip")
 
                 z_arc.extractall(path=tmp_dir)
 
             with zipfile.ZipFile(f"{tmp_dir}/cves.zip") as z_arc:
-                logger.warn("Extract the second archive to cves")
+                logger.info("Extract the second archive to cves")
 
                 z_arc.extractall(path=data_cache_dir)
 
@@ -115,7 +115,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             if kwargs["subset"] > 0:
                 cve_list = cve_list[-kwargs["subset"] :]
-            logger.warn(f"{len(cve_list)} CVEs to ingest.")
+            logger.info(f"{len(cve_list)} CVEs to ingest.")
 
             for j_cve in cve_list:
                 with open(j_cve) as fc:
@@ -125,7 +125,7 @@ class Command(BaseCommand):
             # Record the ingestion
             v_date = self.release.tag_name.split("_")[1]
 
-            logger.warn(f"Saving the ingestion valid up to {v_date}")
+            logger.info(f"Saving the ingestion valid up to {v_date}")
 
             CveIngestion.objects.create(
                 valid_to=date.fromisoformat(v_date), delta=False
