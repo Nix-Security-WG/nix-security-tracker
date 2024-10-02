@@ -51,6 +51,7 @@ in
       daphne
       channels
       aiofiles
+      sentry-sdk
     ];
 
     postInstall = ''
