@@ -5,7 +5,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -31,7 +30,6 @@ in
           ensureDBOwnership = true;
         }
       ];
-      extraPlugins = with config.services.postgresql.package.pkgs; [ postgis ];
       identMap = ''
         map-nix-security-tracker ${cfg.user} nix-security-tracker
       '';
