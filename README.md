@@ -31,13 +31,19 @@ Or set up [`nix-direnv`](https://github.com/nix-community/nix-direnv) on your sy
 Currently only [PostgreSQL](https://www.postgresql.org/) is supported as a database.
 You can set up a database on NixOS like this:
 
-```
-services.postgresql.enable = true;
-services.postgresql.ensureDatabases = [ "nix-security-tracker" ];
-services.postgresql.ensureUsers = [{
-  name = "nix-security-tracker";
-  ensureDBOwnership = true;
-}];
+```nix
+{ ... }:
+{
+  imports = [
+    (import nix-security-tracker { }).dev-setup
+  ];
+
+  nix-security-tracker-dev-environment = {
+    enable = true;
+    # The user you run the backend application as, so that you can access the local database
+    user = "myuser";
+  };
+}
 ```
 
 ### Set up a local container

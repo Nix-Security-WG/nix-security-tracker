@@ -19,6 +19,7 @@ rec {
   package = pkgs.web-security-tracker;
   module = import ./nix/web-security-tracker.nix;
   dev-container = import ./staging/container.nix;
+  dev-setup = import ./nix/dev-setup.nix;
 
   pre-commit-check = pkgs.pre-commit-hooks {
     src = ./.;
