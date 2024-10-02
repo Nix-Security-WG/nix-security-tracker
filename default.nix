@@ -101,7 +101,14 @@ rec {
       };
     in
     pkgs.mkShell {
-      REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
+      env = {
+        REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
+        DATABASE_URL = "postgres://nix-security-tracker@/nix-security-tracker";
+        # psql doesn't take DATABASE_URL
+        PGDATABASE = "nix-security-tracker";
+        PGUSER = "nix-security-tracker";
+      };
+
       # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
       # in the root of the repo. Make it the default here for local development.
       LOCAL_NIXPKGS_CHECKOUT = toString ./. + "/nixpkgs";
@@ -119,7 +126,6 @@ rec {
         ${lib.getExe create-credentials}
 
         mkdir -p .credentials
-        export DATABASE_URL=postgres:///nix-security-tracker
         export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
       '';
     };
