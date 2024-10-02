@@ -85,6 +85,9 @@ To upload a pre-existing database dump into the container with [`nixos-container
 ### Set up GitHub authentication
 
 1. Create a new or select an existing GitHub organisation to associate with the application
+
+   In the organisation settings, under **Personal access tokens** go through the questionnaire to allow personal access tokens.
+
 2. For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
    This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
@@ -97,7 +100,7 @@ To upload a pre-existing database dump into the container with [`nixos-container
 
 3. In the GitHub organisation settings, [create an OAuth application](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app):
 
-   - In **Personal access tokens** approve the request
+   - In **Personal access tokens** approve the request under **Pending requests** if approval is required
    - In **Developer settings** OAuth Apps, create a new application
 
      Store the **Client ID** in `.credentials/GH_CLIENT_ID`
