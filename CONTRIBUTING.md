@@ -82,19 +82,21 @@ To upload a pre-existing database dump into the container with [`nixos-container
    sudo nixos-container run nix-security-tracker -- systemctl start web-security-tracker.service
    ```
 
-### Set up GitHub authentication
+### Create Django secret key
 
-> [!NOTE]
-> GitHub credentials are required to use the OAuth login feature, but fake secrets can be used for local development.
-> To get going quickly, run the following script to generate secrets required by the server:
->
-> ```console
-> ./contrib/mkcredentials.sh
-> ```
+```console
+python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET_KEY
+```
+
+### Set up GitHub authentication
 
 1. Create a new or select an existing GitHub organisation to associate with the application
 
-   In the organisation settings, under **Personal access tokens** go through the questionnaire to allow personal access tokens.
+   - In the **Settings** tab under **Personal access tokens**, ensure that personal access tokens are allowed.
+   - In the **Teams** tab, ensure there are at least two teams, corresponding to [`nixpkgs-committers`](https://github.com/orgs/nixos/teams/nixpkgs-committers) and [`security`](https://github.com/orgs/nixos/teams/security)
+
+     These teams will be used for mapping user permissions.
+     The actual names are arbitrary and can be configured in the service settings.
 
 2. For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
@@ -103,6 +105,7 @@ To upload a pre-existing database dump into the container with [`nixos-container
    - Generate new token
      - In **Resource owner** select the GitHub organisation associated with the application
      - In **Repository access** select **Public Repositories (read-only)**
+     - In **Permissions**, set **Members** permissions to **Read-only**
      - No other permissions are required
    - Store the value in `.credentials/GH_TOKEN`
 
@@ -116,6 +119,8 @@ To upload a pre-existing database dump into the container with [`nixos-container
    - In the application settings **Generate a new client secret**
 
      Store the value in `.credentials/GH_SECRET`
+
+You currently need the credentials for starting the backend, as it tries to list team memberships on startup.
 
 ### Set up Github App webhooks
 
