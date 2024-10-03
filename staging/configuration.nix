@@ -1,16 +1,12 @@
 { pkgs, lib, ... }:
 {
   imports = [
-    ./hardware-configuration.nix
     ./kurisu-proxy.nix
     ./sectracker.nix
+    ./raito-datacenter.nix
   ];
 
-  nixpkgs.config.allowUnfree = true;
-
   zramSwap.enable = true;
-  services.logind.lidSwitch = "ignore";
-
   security.sudo.wheelNeedsPassword = false;
 
   networking.hostName = "staging";
@@ -25,15 +21,14 @@
       map (n: ./keys/${n}) (attrNames (builtins.readDir ./keys));
   };
 
-  # IPv4 connectivity.
-  networking.interfaces.enp6s18.useDHCP = true;
-  # Fixed IPv6.
-  networking.interfaces.enp6s19.ipv6.addresses = [
-    {
-      address = "2001:bc8:38ee:100:a862:3eff:fe8a:54c8";
-      prefixLength = 56;
-    }
-  ];
+  infra.hardware.raito-vm = {
+    enable = true;
+    networking.nat-lan-mac = "AE:93:5E:21:FA:C1";
+    networking.wan = {
+      address = "2001:bc8:38ee:100:a862:3eff:fe8a:54c8/56";
+      mac = "AA:62:3E:8A:54:C8";
+    };
+  };
 
   environment.systemPackages = with pkgs; [
     curl
