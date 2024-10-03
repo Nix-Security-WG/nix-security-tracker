@@ -24,28 +24,9 @@ We have all the derivations known in an evaluation of a given channel on one han
 
 Assuming we do have CPEs, we need a function to go from CPE URI to CPE WFNs.
 
-Assuming we have a CPE WFN of the following form `wfn:[part=X, vendor=Y, product=Z, version=V, target_hw=TH, target_sw=TS]`.
+Assuming we have a CPE WFN [1] of the following form `wfn:[part=X, vendor=Y, product=Z, version=V, target_hw=TH, target_sw=TS]`.
 
-We would like to find derivations which correspond to product `Z` and vendor `Y` in nixpkgs.
-
-Derivation names are usually: `$product-name-$version`.
-
-On our end, if we can first cut the version, which is possible if we can retrieve the `version` parameter so that we can trim it, we can obtain the `$product-name`.
-
-Given all product names in nixpkgs, we are reduced to a string matching problem:
-
-- exact matches are prioritized
-- in case of no exact matches, very low bigram similarity can be proposed as well (tuning is TBD).
-
-Once product names are obtained, we can look again at versions and try to match them over V.
-
-_Future work_ :
-
-Once versions are matched, we could look into the target hardware field `TH` and match it over or display to the user this information, this is non trivial because we would need probably to support the predicates form of platform support in nixpkgs.
-
-_Areas of improvements_ :
-
-We do not make use of the vendor at all and we could have multi-vendor albeit generic product names in nixpkgs.
+We would like to find derivations which correspond to product `Z` and vendor `Y` in nixpkgs, details on the matching are defined in [the CPE-based linkage document](./02_cpe-based_linkage.md).
 
 [1]: https://nvlpubs.nist.gov/nistpubs/Legacy/IR/nistir7695.pdf
 
