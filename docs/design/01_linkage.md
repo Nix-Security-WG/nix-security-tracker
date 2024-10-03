@@ -60,3 +60,41 @@ This is a CPE proposal that a security team has to validate, if it's wrong, the 
 _Future work_ :
 
 - Plug in the CPE dictionary and provide ways to expand our CPE dictionary with our own CPE taxonomy.
+
+# Technical details
+
+## How many CVE is there without any structured data?
+
+```python-session
+In [38]: CveRecord.objects.filter(container=None).count()
+Out[38]: 0
+```
+
+Good, we can assume the existence of at least one container.
+
+## How many CVE is there with a container containing an affected product at least?
+
+```
+In [84]: CveRecord.objects.filter(container__in=Container.objects.filter(affected=None).values_list('id', flat=True)).distinct().count()
+Out[84]: 261332
+```
+
+That is, 98 % of the CVEs.
+
+## How many affected products do we have without CPEs?
+
+```python-session
+In [33]: AffectedProduct.objects.filter(cpes=None).count()
+Out[33]: 299806
+
+In [34]: 299806/407168
+Out[34]: 0.7363201430367808
+```
+
+73 % of the affected products in the database, at the time of writing, have no CPEs.
+
+## Conclusion
+
+71 % of the CVE have a CPE string.
+
+An automatic regeneration of missing CPE is possible.
