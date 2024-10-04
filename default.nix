@@ -100,6 +100,7 @@ rec {
           fi
         '';
       };
+      deploymentSources = import ./staging/npins;
     in
     pkgs.mkShell {
       env = {
@@ -120,6 +121,7 @@ rec {
         pkgs.nix-eval-jobs
         pkgs.npins
         pkgs.hivemind
+        (import deploymentSources.agenix { inherit pkgs; }).agenix
       ] ++ pre-commit-check.enabledPackages;
 
       shellHook = ''
