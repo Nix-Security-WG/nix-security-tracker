@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   sectracker = import ../. { inherit pkgs; };
   obfuscate =
@@ -55,11 +60,18 @@ in
     domain = "sectracker.nixpkgs.lahfa.xyz";
     settings.DEBUG = true;
     secrets = {
-      SECRET_KEY = "/etc/secrets/django-secret-key";
-      GH_CLIENT_ID = "/etc/secrets/gh-client";
-      GH_SECRET = "/etc/secrets/gh-secret";
-      GH_WEBHOOK_SECRET = "/etc/secrets/gh-webhook-secret";
+      SECRET_KEY = config.age.secrets.django-secret-key.path;
+      GH_CLIENT_ID = config.age.secrets.gh-client.path;
+      GH_SECRET = config.age.secrets.gh-secret.path;
+      GH_WEBHOOK_SECRET = config.age.secrets.gh-webhook-secret.path;
     };
     maxJobProcessors = 3;
+  };
+
+  age.secrets = {
+    django-secret-key.file = ./secrets/django-secret-key.age;
+    gh-client.file = ./secrets/gh-client.age;
+    gh-secret.file = ./secrets/gh-secret.age;
+    gh-webhook-secret.file = ./secrets/gh-webhook-secret.age;
   };
 }
