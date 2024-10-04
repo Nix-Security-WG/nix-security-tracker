@@ -62,20 +62,8 @@ Out[84]: 261332
 
 That is, 98 % of the CVEs.
 
-## How many affected products do we have without CPEs?
-
-```python-session
-In [33]: AffectedProduct.objects.filter(cpes=None).count()
-Out[33]: 299806
-
-In [34]: 299806/407168
-Out[34]: 0.7363201430367808
-```
-
-73 % of the affected products in the database, at the time of writing, have no CPEs.
-
 ## Conclusion
 
-71 % of the CVE have a CPE string.
+98 % of the CVE have a recoverable CPE as the affected product model contain the vendor, product name, and sometimes even package name.
 
 An automatic regeneration of missing CPE is possible.
