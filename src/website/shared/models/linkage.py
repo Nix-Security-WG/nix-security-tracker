@@ -9,7 +9,7 @@ def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
 
-class CVEDerivationClusterProposals(TimeStampMixin):
+class CVEDerivationClusterProposal(TimeStampMixin):
     """
     A proposal to link a CVE to a set of derivations.
     """
