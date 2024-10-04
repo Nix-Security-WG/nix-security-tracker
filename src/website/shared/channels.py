@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pgpubsub.channel import TriggerChannel
 
 from shared.models import NixDerivation
+from shared.models.cve import Container
 from shared.models.nix_evaluation import NixChannel, NixEvaluation
 
 
@@ -29,3 +30,10 @@ class NixEvaluationChannel(TriggerChannel):
 @dataclass
 class NixDerivationChannel(TriggerChannel):
     model = NixDerivation
+
+
+@dataclass
+class ContainerChannel(TriggerChannel):
+    model = Container
+    # Process new structured data for a CVE only once.
+    lock_notifications = True
