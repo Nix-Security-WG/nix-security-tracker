@@ -6,6 +6,14 @@ set -eo pipefail
 DIR=$(git rev-parse --show-toplevel)
 VERB=${1:-switch}
 
+# Note: we could refactor the conditional here.
+# But `nixos-rebuild build --target-host ...` requiring network operations is an unexpected bug.
+# Therefore, we keep the two conditionals separated for the day when we will
+# replace `nixos-rebuild` by a tool that does not have this bug but similar
+# semantics.
+# Example: `colmena apply dry-activate` then `colmena build` does have these
+# properties and would make the second conditional disappear.
+
 if [[ "$VERB" != "build" ]]; then
   # Perform a dry-activation first.
   echo "dry-activating the configuration first..."
