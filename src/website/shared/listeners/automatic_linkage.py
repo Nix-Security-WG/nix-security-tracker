@@ -16,29 +16,39 @@ def produce_linkage_candidates(container: Container) -> set[NixDerivation]:
     # Our initialization must be as large as possible.
     candidates = set()
     for affected in container.affected.all():
+        # TODO: record what is used to expand the candidate list.
         if affected.package_name is not None:
             candidates |= set(
+                # TODO: improve accuracy by performing case normalization.
+                # TODO: improve accuracy by using bigrams similarity with a `| Q(...)` query.
                 NixDerivation.objects.filter(name__contains=affected.package_name)
             )
+
+        # TODO: restrain further the list by checking all version constraints.
+        # TODO: restrain further the list by checking hardware constraints or kernel constraints.
+        # Remove anything that says that it's *not* the list of potential kernel that are in use:
+        # macOS, Linux, Windows, *BSD.
+        # TODO: teach it about newcomers kernels such as Redox.
 
     return candidates
 
 
-@pgpubsub.post_insert_listener(ContainerChannel)
-def build_new_links(old: Container, new: Container) -> None:
-    if new.cve.triaged:
+def build_new_links(container: Container) -> None:
+    if container.cve.triaged:
         logger.info(
-            "New container received for '%s', but already triaged, skipping linkage.",
-            new.cve,
+            "Container received for '%s', but already triaged, skipping linkage.",
+            container.cve,
         )
         return
 
-    if CVEDerivationClusterProposal.objects.filter(cve=new.cve).exists():
-        logger.warning("Proposals already exist for '%s', skipping linkage.", new.cve)
+    if CVEDerivationClusterProposal.objects.filter(cve=container.cve).exists():
+        logger.warning(
+            "Proposals already exist for '%s', skipping linkage.", container.cve
+        )
         return
 
-    drvs = produce_linkage_candidates(new)
-    proposal = CVEDerivationClusterProposal.objects.create(cve=new.cve)
+    drvs = produce_linkage_candidates(container)
+    proposal = CVEDerivationClusterProposal.objects.create(cve=container.cve)
 
     drvs_throughs = [
         CVEDerivationClusterProposal.derivations.through(
@@ -56,3 +66,8 @@ def build_new_links(old: Container, new: Container) -> None:
             container.cve,
             len(drvs_throughs),
         )
+
+
+@pgpubsub.post_insert_listener(ContainerChannel)
+def build_new_links_following_new_containers(old: Container, new: Container) -> None:
+    build_new_links(new)
