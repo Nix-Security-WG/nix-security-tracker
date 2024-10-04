@@ -11,12 +11,22 @@ from shared.listeners.automatic_linkage import build_new_links
 logger = logging.getLogger(__name__)
 
 
+def check_delta_in_reasonable_range(value: str) -> int:
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"{value} is an invalid positive int value")
+    elif ivalue >= 365 * 100:
+        raise argparse.ArgumentTypeError(f"{value} is more than a century, unlikely")
+    return ivalue
+
+
 class Command(BaseCommand):
     help = "Propose new CVE links on all CVE of a certain time range"
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             "delta_range_in_days",
+            type=check_delta_in_reasonable_range,
             help="Since when should we redo all the links in days? e.g. `5` for 5 days ago.",
         )
 
