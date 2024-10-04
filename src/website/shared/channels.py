@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from pgpubsub.channel import TriggerChannel
 
 from shared.models import NixDerivation
-from shared.models.cve import CveRecord
 from shared.models.nix_evaluation import NixChannel, NixEvaluation
 
 
@@ -30,11 +29,3 @@ class NixEvaluationChannel(TriggerChannel):
 @dataclass
 class NixDerivationChannel(TriggerChannel):
     model = NixDerivation
-
-
-@dataclass
-class CveRecordChannel(TriggerChannel):
-    model = CveRecord
-    # We do not want to process more than once a CVE record Otherwise, we are
-    # wasting cycles as linkage is more expensive than locking.
-    lock_notifications = True
