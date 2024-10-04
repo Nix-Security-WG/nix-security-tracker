@@ -14,7 +14,13 @@ else
   echo "skipping the dry-activation as we are using an offline verb."
 fi
 
-# This requires IPv6 to work as SSH is only IPv6-only.
-# Sorry, not sorry.
-echo "$VERB-ing the configuration now."
-nixos-rebuild $VERB -I nixos-config=$DIR/staging/configuration.nix --target-host root@sectracker.nixpkgs.lahfa.xyz
+
+if [[ "$VERB" != "build" ]]; then
+  # This requires IPv6 to work as SSH is only IPv6-only.
+  # Sorry, not sorry.
+  echo "$VERB-ing the configuration now."
+  nixos-rebuild $VERB -I nixos-config=$DIR/staging/configuration.nix --target-host root@sectracker.nixpkgs.lahfa.xyz
+else
+  echo "building the configuration now."
+  nixos-rebuild build -I nixos-config=$DIR/staging/configuration.nix
+fi
