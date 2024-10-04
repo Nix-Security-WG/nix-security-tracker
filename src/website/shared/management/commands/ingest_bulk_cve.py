@@ -119,7 +119,7 @@ class Command(BaseCommand):
 
             for j_cve in cve_list:
                 with open(j_cve) as fc:
-                    make_cve(json.load(fc), triaged=True)
+                    make_cve(json.load(fc), triaged=False)
                     print(".", end="")
 
         if not path.exists(cve_data_cache_dir):
