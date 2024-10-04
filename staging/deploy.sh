@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-DIR=$(dirname $DIRENV_FILE)
+DIR=$(git rev-parse --show-toplevel)
 VERB=${1:-switch}
 
 # Perform a dry-activation first.
