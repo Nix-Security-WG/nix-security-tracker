@@ -1,10 +1,19 @@
 { pkgs, lib, ... }:
+let
+  sources = import ./npins;
+in
 {
   imports = [
+    "${sources.agenix}/modules/age.nix"
     ./kurisu-proxy.nix
     ./sectracker.nix
     ./raito-datacenter.nix
   ];
+
+  # Propagate `inputs` everywhere in our NixOS module signatures.
+  _module.args.inputs = {
+    inherit sources;
+  };
 
   zramSwap.enable = true;
   security.sudo.wheelNeedsPassword = false;
