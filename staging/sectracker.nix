@@ -64,6 +64,7 @@ in
       GH_CLIENT_ID = config.age.secrets.gh-client.path;
       GH_SECRET = config.age.secrets.gh-secret.path;
       GH_WEBHOOK_SECRET = config.age.secrets.gh-webhook-secret.path;
+      GH_APP_PRIVATE_KEY = config.age.secrets.gh-app-private-key.path;
     };
     maxJobProcessors = 3;
   };
@@ -73,5 +74,6 @@ in
     gh-client.file = ./secrets/gh-client.age;
     gh-secret.file = ./secrets/gh-secret.age;
     gh-webhook-secret.file = ./secrets/gh-webhook-secret.age;
+    gh-app-private-key.file = ./secrets/dev-nixpkgs-security-tracker.2024-10-04.private-key.pem.age;
   };
 }
