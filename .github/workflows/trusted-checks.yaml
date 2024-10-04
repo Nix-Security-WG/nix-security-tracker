@@ -1,5 +1,10 @@
 name: Trusted checks
 on:
+  # Run them only once the checks are done.
+  workflow_run:
+    workflows: ["checks"]
+    types:
+      - completed
   pull_request_target:
 jobs:
   # Prepare staging for a deployment by doing the copy closure.
