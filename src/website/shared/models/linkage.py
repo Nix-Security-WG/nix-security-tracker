@@ -30,3 +30,8 @@ class CVEDerivationClusterProposal(TimeStampMixin):
     status = models.CharField(
         max_length=text_length(Status), choices=Status.choices, default=Status.PENDING
     )
+
+    # TODO: record what was used to do the matching
+    # was it the package_name?
+    # TODO: used_fields
+    # TODO: used_terms
