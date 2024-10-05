@@ -1,15 +1,17 @@
-name: Deployments
+name: Dry activations
 on:
-  # Run the deployment only once staging has been prepared.
+  # Run them only once the checks are done.
   workflow_run:
-    workflows: ["Trusted checks"]
-    branches: [main]
+    workflows: ["Builds"]
     types:
       - completed
-  push:
-    branches: main
+  # Dry activations can theoretically perform side-effects if the user write evil code.
+  # They are TRUSTED workflows.
+  pull_request_target:
 jobs:
-  deploy-to-staging:
+  # Prepare staging for a deployment by doing the copy closure.
+  # Once the PR lands, it will be deployed by the deployment workflow.
+  staging:
     runs-on: ubuntu-latest
     steps:
       - name: Setup WARP to gain IPv6
@@ -26,4 +28,4 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       - name: Trust staging server public SSH host keys
         run: cat ./staging/staging_host_keys >> ~/.ssh/known_hosts
-      - run: ./staging/deploy.sh
+      - run: ./staging/deploy.sh dry-activate

@@ -1,17 +1,18 @@
-name: checks
+name: Builds
 on:
   pull_request:
   push:
     branches: main
 jobs:
-  test:
+  # Only put untrusted jobs here.
+  development:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v22
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: nix-build
-  build-staging:
+  staging:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
