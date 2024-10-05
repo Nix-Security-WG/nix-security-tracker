@@ -10,6 +10,7 @@ in
   "secrets/gh-client.age".publicKeys = admins ++ [ staging ];
   "secrets/gh-secret.age".publicKeys = admins ++ [ staging ];
   "secrets/gh-webhook-secret.age".publicKeys = admins ++ [ staging ];
+  "secrets/gh-app-installation-id.age".publicKeys = admins ++ [ staging ];
   "secrets/dev-nixpkgs-security-tracker.2024-10-04.private-key.pem.age".publicKeys = admins ++ [
     staging
   ];
