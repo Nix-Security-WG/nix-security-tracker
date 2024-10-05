@@ -84,16 +84,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
-            "date", help="End date until which we will download all the missing deltas."
+            "date",
+            type=datetime.date.fromisoformat,
+            help="End date until which we will download all the missing deltas.",
         )
 
     def handle(self, *args: Any, **kwargs: Any) -> None:
-        _date = kwargs["date"]
-
-        try:
-            date = datetime.date.fromisoformat(_date)
-        except ValueError:
-            raise CommandError(f"Not a valid date format: {_date}")
+        date = kwargs["date"]
 
         if CveIngestion.objects.filter(valid_to__gte=date).exists():
             logger.warning(
