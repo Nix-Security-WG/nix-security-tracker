@@ -1,8 +1,6 @@
 import logging
-import time
 from os import environ as env
 
-import jwt
 from github import Auth, Github
 from tracker.settings import get_secret
 
@@ -34,12 +32,9 @@ def get_gh(per_page: int = 30) -> Github:
 
         try:
             with open(f"{credentials_dir}/GH_APP_PRIVATE_KEY", encoding="utf-8") as f:
-                payload = {
-                    "iat": int(time.time()),
-                    "exp": int(time.time()) + 600,
-                    "iss": get_secret("GH_CLIENT_ID"),
-                }
-                gh_auth = Auth.Token(jwt.encode(payload, f.read(), algorithm="RS256"))
+                gh_auth = Auth.AppAuth(
+                    get_secret("GH_CLIENT_ID"), f.read()
+                ).get_installation_auth(int(get_secret("GH_APP_INSTALLATION_ID")))
         except FileNotFoundError:
             logger.warning(
                 "No token available in the credentials directory, "
