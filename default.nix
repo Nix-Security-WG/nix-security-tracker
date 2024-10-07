@@ -121,6 +121,7 @@ rec {
         pkgs.nix-eval-jobs
         pkgs.npins
         pkgs.hivemind
+        pkgs.awscli
         (import deploymentSources.agenix { inherit pkgs; }).agenix
       ] ++ pre-commit-check.enabledPackages;
 
