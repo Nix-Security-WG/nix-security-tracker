@@ -12,6 +12,7 @@ in
     ./kurisu-proxy.nix
     ./sectracker.nix
     ./raito-datacenter.nix
+    ./s3-revproxy
   ];
 
   # Propagate `inputs` everywhere in our NixOS module signatures.

@@ -15,4 +15,5 @@ in
     staging
   ];
   "secrets/glitchtip-dsn.age".publicKeys = admins ++ [ staging ];
+  "secrets/s3-revproxy-env.age".publicKeys = admins ++ [ staging ];
 }
