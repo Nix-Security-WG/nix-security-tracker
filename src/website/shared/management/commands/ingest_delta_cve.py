@@ -30,12 +30,13 @@ def ingest_day(repo: Repository, day: datetime.datetime) -> CveIngestion:
     logger.info(f"Fetched release: {release.title}")
 
     # Get the bulk cve list asset
+    if not release.assets:
+        raise CommandError(f"End of day release for {day} has no asset attached.")
+
     bundle = release.assets[0]
 
     if bundle.name != f"{day}_delta_CVEs_at_end_of_day.zip":
-        logger.error(f"Wrong delta asset: {bundle.name}")
-
-        raise CommandError("Unable to get delta CVEs.")
+        raise CommandError(f"Delta asset has unexpected name: {bundle.name}")
 
     # Create a temporary directory to work in
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -73,10 +74,11 @@ def ingest_day(repo: Repository, day: datetime.datetime) -> CveIngestion:
                         record=models.CveRecord.objects.filter(cve_id=cve_id).first(),
                     )
 
-    # Record the ingestion
-    logger.info(f"Saving the ingestion valid up to {day}")
+            # Record the ingestion
+            logger.info(f"Saving the ingestion valid up to {day}")
 
-    return CveIngestion.objects.create(valid_to=day, delta=True)
+            # This needs to be tucked _in_ the atomic transaction.
+            return CveIngestion.objects.create(valid_to=day, delta=True)
 
 
 class Command(BaseCommand):
@@ -126,4 +128,9 @@ class Command(BaseCommand):
             next_ingestion + datetime.timedelta(days=x)
             for x in range((date - next_ingestion).days + 1)
         ):
-            ingest_day(repo, day)
+            try:
+                ingest_day(repo, day)
+            except UnknownObjectException:
+                logger.exception(
+                    f"CVE ingestion on day {day} failed, continuing for the next days"
+                )
