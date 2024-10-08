@@ -17,3 +17,5 @@ src/website/static
 # A shallow checkout of nixpkgs
 nixpkgs/
 nixpkgs-gc-roots/
+# Never checkout local versions of .envrc
+.envrc-local
