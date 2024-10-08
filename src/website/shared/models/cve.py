@@ -163,6 +163,25 @@ class Metric(models.Model):
             _("CHANGED"),
         )
 
+    class AttackVectors(models.TextChoices):
+        PHYSICAL = ("PHYSICAL", _("PHYSICAL"))
+        LOCAL = (
+            "LOCAL",
+            _("LOCAL"),
+        )
+        ADJACENT_NETWORK = (
+            "ADJACENT_NETWORK",
+            _("ADJACENT_NETWORK"),
+        )
+        NETWORK = ("NETWORK", _("NETWORK"))
+
+    class Severity(models.TextChoices):
+        NONE = ("NONE", _("NONE"))
+        LOW = ("LOW", _("LOW"))
+        MEDIUM = ("MEDIUM", _("MEDIUM"))
+        HIGH = ("HIGH", _("HIGH"))
+        CRITICAL = ("CRITICAL", _("CRITICAL"))
+
     # TODO: we do not support antyhing beyond
     # `cvssV3_1` for now.
     format = models.CharField(max_length=64)
@@ -176,16 +195,54 @@ class Metric(models.Model):
     base_score = models.FloatField(null=True, default=None)
     vector_string = models.CharField(max_length=128, null=True, default=None)
 
-    # TODO:
-    # choices over LOW, MEDIUM, HIGH.
-    # attack_vector = models.CharField()
-    # base_severity = models.CharField()
-    # integrity_impact = models.CharField()
-    # user_interaction = models.CharField()
-    # attack_complexity = models.CharField()
-    # availability_impact = models.CharField()
-    # privileges_required = models.CharField()
-    # confidentiality_impact = models.CharField()
+    attack_vector = models.CharField(
+        max_length=text_length(AttackVectors),
+        choices=AttackVectors.choices,
+        null=True,
+        default=None,
+    )
+    base_severity = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
+    integrity_impact = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
+    user_interaction = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
+    attack_complexity = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
+    availability_impact = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
+    privileges_required = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
+    confidentiality_impact = models.CharField(
+        max_length=text_length(Severity),
+        choices=Severity.choices,
+        null=True,
+        default=None,
+    )
 
 
 class Event(models.Model):
