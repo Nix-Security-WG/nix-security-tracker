@@ -9,6 +9,11 @@ set -eo pipefail
 # We are using Garage.
 export AWS_DEFAULT_REGION="garage"
 
+if [[ ! -z "${AWS_ACCESS_KEY_ID}" ]] || [[ ! -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
+  echo "No credential are set. Backups cannot be done."
+  exit 1
+fi
+
 S3_PATH="staging-sectracker-db"
 DELETE_AFTER="7 days"
 
