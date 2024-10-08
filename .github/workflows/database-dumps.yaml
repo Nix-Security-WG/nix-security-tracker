@@ -3,6 +3,12 @@ on:
   schedule:
     # At 04:00 every day.
     - cron: "* 4 * * *"
+  # Let end users trigger a dump.
+  workflow_dispatch:
+# Don't do multiple database dumps at the same time!
+concurrency:
+  group: database-dump
+  cancel-in-progress: true
 jobs:
   dump-database-to-raito-s3:
     runs-on: ubuntu-latest
