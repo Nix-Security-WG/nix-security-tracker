@@ -20,18 +20,23 @@ from shared.utils import get_gh
 logger = logging.getLogger(__name__)
 
 
+class NoReleaseError(Exception):
+    def __init__(self, day: datetime.datetime) -> None:
+        super().__init__(f"No release for day {day}")
+
+
 def ingest_day(repo: Repository, day: datetime.datetime) -> CveIngestion:
     # Fetch the latest daily release
     try:
         release = repo.get_release(f"cve_{day}_at_end_of_day")
     except UnknownObjectException:
-        raise CommandError(f"No end of day release for {day} found.")
+        raise NoReleaseError(day)
 
     logger.info(f"Fetched release: {release.title}")
 
     # Get the bulk cve list asset
     if not release.assets:
-        raise CommandError(f"End of day release for {day} has no asset attached.")
+        raise NoReleaseError(day)
 
     bundle = release.assets[0]
 
@@ -130,7 +135,7 @@ class Command(BaseCommand):
         ):
             try:
                 ingest_day(repo, day)
-            except UnknownObjectException:
+            except NoReleaseError:
                 logger.exception(
-                    f"CVE ingestion on day {day} failed, continuing for the next days"
+                    f"CVE ingestion on day {day} is impossible as there's no release, continuing for the next days"
                 )
