@@ -153,9 +153,39 @@ class Impact(models.Model):
 class Metric(models.Model):
     """Class representing an impact information related to a CVE record."""
 
+    class Scopes(models.TextChoices):
+        UNCHANGED = (
+            "UNCHANGED",
+            _("UNCHANGED"),
+        )
+        CHANGED = (
+            "CHANGED",
+            _("CHANGED"),
+        )
+
+    # TODO: we do not support antyhing beyond
+    # `cvssV3_1` for now.
     format = models.CharField(max_length=64)
     scenarios = models.ManyToManyField(Description)
-    content = models.JSONField()
+    raw_cvss_json = models.JSONField()
+
+    scope = models.CharField(
+        max_length=text_length(Scopes), choices=Scopes.choices, null=True, default=None
+    )
+    # FIXME: add integrity on between 0.0 and 10.0
+    base_score = models.FloatField(null=True, default=None)
+    vector_string = models.CharField(max_length=128, null=True, default=None)
+
+    # TODO:
+    # choices over LOW, MEDIUM, HIGH.
+    # attack_vector = models.CharField()
+    # base_severity = models.CharField()
+    # integrity_impact = models.CharField()
+    # user_interaction = models.CharField()
+    # attack_complexity = models.CharField()
+    # availability_impact = models.CharField()
+    # privileges_required = models.CharField()
+    # confidentiality_impact = models.CharField()
 
 
 class Event(models.Model):

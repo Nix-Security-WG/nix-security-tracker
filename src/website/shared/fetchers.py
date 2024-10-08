@@ -90,7 +90,16 @@ def make_problem_type(data: dict[str, Any]) -> models.ProblemType:
 def make_metric(data: dict[str, Any]) -> models.Metric:
     ctx: dict[str, Any] = dict()
     ctx["format"] = "cvssV3_1"
-    ctx["content"] = data.get("cvssV3_1", {})
+    raw_cvss = data.get("cvssV3_1", {})
+    ctx["raw_cvss_json"] = raw_cvss
+
+    if raw_cvss:
+        ctx["scope"] = raw_cvss.get("scope")
+        ctx["vector_string"] = raw_cvss.get("vectorString")
+        ctx["base_score"] = int(raw_cvss.get("baseScore"))
+
+        # TODO: Parse vector string into the various elements
+        # and verify conformance with the "parsed" fields for us.
 
     obj = models.Metric.objects.create(**ctx)
     obj.scenarios.set(map(make_description, data.get("scenarios", [])))
