@@ -87,6 +87,17 @@ def make_problem_type(data: dict[str, Any]) -> models.ProblemType:
     return obj
 
 
+def to_camel_case(name: str) -> str:
+    """
+    >>> to_camel_case("abc_def")
+    abcDef
+    """
+    from re import sub
+
+    s = sub(r"(_|-)+", " ", name).title().replace(" ", "")
+    return "".join([s[0].lower(), s[1:]])
+
+
 def make_metric(data: dict[str, Any]) -> models.Metric:
     ctx: dict[str, Any] = dict()
     ctx["format"] = "cvssV3_1"
@@ -97,6 +108,19 @@ def make_metric(data: dict[str, Any]) -> models.Metric:
         ctx["scope"] = raw_cvss.get("scope")
         ctx["vector_string"] = raw_cvss.get("vectorString")
         ctx["base_score"] = int(raw_cvss.get("baseScore"))
+
+        vector_fields = (
+            "attack_complexity",
+            "attack_vector",
+            "availability_impact",
+            "confidentiality_impact",
+            "integrity_impact",
+            "privileges_required",
+            "user_interaction",
+        )
+
+        for field in vector_fields:
+            ctx[field] = raw_cvss.get(to_camel_case(field))
 
         # TODO: Parse vector string into the various elements
         # and verify conformance with the "parsed" fields for us.
