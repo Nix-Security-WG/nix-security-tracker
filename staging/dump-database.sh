@@ -6,6 +6,9 @@ set -eo pipefail
 # Inspired from https://github.com/gabfl/pg_dump-to-s3/blob/main/pg_dump-to-s3.sh
 # and adapted for our needs.
 
+# We are using Garage.
+export AWS_DEFAULT_REGION="garage"
+
 S3_PATH="staging-sectracker-db"
 DELETE_AFTER="7 days"
 
@@ -21,7 +24,7 @@ for db in "${DBS[@]}"; do
 
   echo "-> backing up $db..."
 
-  ssh root@sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump -Z1 -O -Fc $db" | pv | aws s3 cp - s3://$S3_PATH/$FILENAME
+  ssh root@sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump -Z1 -O -Fc $db" | pv | aws --endpoint-url https://s3.dc1.lahfa.xyz s3 cp - s3://$S3_PATH/$FILENAME
 
   echo "$db has been backed up."
 done
