@@ -790,7 +790,7 @@ class Command(BaseCommand):
                 lines = f.readlines()
                 if kwargs["subset"] > 0:
                     lines = lines[: kwargs["subset"]]
-                log.warn(f"{len(lines)} entries to ingest.")
+                log.info(f"{len(lines)} entries to ingest.")
                 for result in tqdm(parse_evaluation_results(lines), total=len(lines)):
                     if result.error is not None:
                         if not quiet:
