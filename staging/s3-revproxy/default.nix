@@ -5,7 +5,7 @@ let
   mkTarget =
     {
       name,
-      ...
+      bucket ? name,
     }:
     {
       mount = {
@@ -18,6 +18,16 @@ let
           # e.g. /2.90 will 404, so it will redirect to /2.90/ if it is a directory
           redirectWithTrailingSlashForNotFoundFile = true;
           indexDocument = "index.html";
+        };
+      };
+
+      bucket = {
+        name = bucket;
+        region = "garage";
+        s3Endpoint = "https://${domain}";
+        credentials = {
+          accessKey.env = "AWS_ACCESS_KEY_ID";
+          secretKey.env = "AWS_SECRET_KEY";
         };
       };
     };
