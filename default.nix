@@ -23,6 +23,11 @@ rec {
 
   pre-commit-check = pkgs.pre-commit-hooks {
     src = ./.;
+    # Do not run at pre-commit time, it prevent the workflow where
+    # we just absorb things up.
+    default_stages = [
+      "pre-push"
+    ];
 
     hooks =
       let
@@ -79,7 +84,11 @@ rec {
             "\\.html$"
           ] ++ pythonExcludes;
         };
-        commitizen.enable = true;
+        commitizen = {
+          enable = true;
+          # This should check the commit message, so better warn early.
+          stages = [ "commit-msg" ];
+        };
       };
   };
 
