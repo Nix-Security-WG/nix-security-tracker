@@ -41,6 +41,9 @@ from shared.models import (
     NixDerivation,
     NixpkgsIssue,
 )
+from shared.models.linkage import (
+    CVEDerivationClusterProposal,
+)
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
@@ -470,4 +473,17 @@ class NixderivationPerChannelView(ListView):
 
         context["headers"] = ["ID", "PLATFORM", "ISSUE", "CVE", "CVE STATE"]
 
+        return context
+
+
+class SuggestionListView(ListView):
+    template_name = "suggestion_list.html"
+    model = CVEDerivationClusterProposal
+    paginate_by = 10
+    context_object_name = "objects"
+
+    def get_context_data(self, **kwargs: Any) -> Any:
+        context = super().get_context_data(**kwargs)
+        for obj in context["objects"]:
+            obj.cve_container = obj.cve.container_set.all().first()
         return context

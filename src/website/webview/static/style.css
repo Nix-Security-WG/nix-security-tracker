@@ -53,7 +53,7 @@
   font-family: "IBM Plex Sans";
   font-style: normal;
   font-weight: 400;
-  src: url("/static/ibm-plex-sans-v19-latin-regular.woff2") format("woff2"); 
+  src: url("/static/ibm-plex-sans-v19-latin-regular.woff2") format("woff2");
 }
 /* ibm-plex-sans-italic - latin */
 @font-face {
@@ -112,6 +112,10 @@
   src: url("/static/ibm-plex-sans-v19-latin-700italic.woff2") format("woff2");
 }
 
+:root {
+  --grey: #b5b2b1;
+}
+
 body {
   padding: 0;
   margin: 0;
@@ -152,4 +156,35 @@ article {
 
 footer {
   text-align: center;
+}
+
+#suggestion-list {
+  max-width: 55rem;
+  margin: auto;
+  display: flex;
+  row-gap: 5px;
+  padding: 5px;
+  flex-direction: column;
+}
+
+article .suggestion {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--grey);
+  border-radius: 5px;
+  display: flex;
+  align-items: start;
+  align-content: stretch;
+  justify-content: start;
+  column-gap: 10px;
+  row-gap: 8px;
+  padding: 20px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  flex-grow: 1;
+}
+
+article .cve-number {
+  color: var(--grey);
+  font-size: 0.8rem;
 }
