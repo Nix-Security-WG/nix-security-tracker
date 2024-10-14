@@ -184,7 +184,23 @@ article .suggestion {
   flex-grow: 1;
 }
 
-article .cve-number {
+article .cve-id {
   color: var(--grey);
   font-size: 0.8rem;
+}
+
+#suggestion-list article .row1 {
+  display: flex;
+  flex-direction: row;
+}
+
+.nixpkgs-package {
+  border: 1px solid var(--grey);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: row;
+}
+
+.nixpkgs-package h3 {
+  flex: 1;
 }
