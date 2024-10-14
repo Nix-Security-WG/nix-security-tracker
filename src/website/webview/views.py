@@ -21,6 +21,7 @@ from django.db.models import (
     Case,
     Count,
     F,
+    Func,
     Max,
     Q,
     Value,
@@ -486,4 +487,39 @@ class SuggestionListView(ListView):
         context = super().get_context_data(**kwargs)
         for obj in context["objects"]:
             obj.cve_container = obj.cve.container_set.all().first()
+            obj.packages = dict()
+            for derivation in obj.derivations.all():
+                attribute = derivation.attribute.removesuffix(f".{derivation.system}")
+                channel = derivation.parent_evaluation.channel.channel_branch
+                # FIXME this is super hacky and most of the time wrong. Replace
+                # with something like builtins.parseDrvName
+                version = derivation.name.split("-")[-1]
+                if attribute not in obj.packages:
+                    obj.packages[attribute] = dict()
+                obj.packages[attribute][channel] = version
         return context
+
+    def get_queryset(self) -> Any:
+        queryset = super().get_queryset()
+
+        # Some stuff only for demo and development purposes, to have more interesting data on the page
+        ordering_seed = "1234"
+
+        class MD5(Func):
+            function = "MD5"
+
+        class CastToText(Func):
+            function = "CAST"
+            template = f"(CAST (%(expressions)s AS text)) || {ordering_seed}"
+
+        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
+        # queryset = queryset.order_by(MD5(CastToText("id")))
+        queryset = queryset.distinct("cve__cve_id")
+
+        queryset = queryset.annotate(
+            package_name=F("cve__container__affected__package_name"),
+            base_severity=F("cve__container__metrics__base_severity"),
+            title=F("cve__container__title"),
+            description=F("cve__container__descriptions__value"),
+        )
+        return queryset
