@@ -9,7 +9,7 @@ let
     }:
     {
       mount = {
-        host = "${name}.${domain}";
+        host = name;
         path = [ "/" ];
       };
       actions.GET = {
@@ -33,8 +33,6 @@ let
     };
   # Makes a subdomain that gets proxied through s3-proxy to provide directory
   # listings and reasonable 404 pages.
-  # This is not used on cache, since there a directory listing for cache is a
-  # liability at best.
   mkProxiedSubdomain = _: {
     enableACME = true;
     forceSSL = true;
@@ -99,7 +97,10 @@ in
         };
       };
       targets = {
-        staging-sectracker-db = mkTarget { name = "staging-sectracker-db"; };
+        staging-sectracker-db = mkTarget {
+          name = "dumps.sectracker.nixpkgs.lahfa.xyz";
+          bucket = "staging-sectracker-db";
+        };
       };
     };
     environmentFile = config.age.secrets.s3-revproxy-api-key-env.path;
