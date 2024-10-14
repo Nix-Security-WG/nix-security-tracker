@@ -27,5 +27,7 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       - name: Trust staging server public SSH host keys
         run: cat ./staging/staging_host_keys >> ~/.ssh/known_hosts
+      - name: Debug credentials
+        run: nix-shell -p awscli --run "aws configure list"
       - name: Dump database to S3
         run: ./staging/dump-database.sh
