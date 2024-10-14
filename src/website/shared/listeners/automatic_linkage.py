@@ -1,4 +1,5 @@
 import logging
+from enum import IntFlag, auto
 
 import pgpubsub
 
@@ -10,19 +11,36 @@ from shared.models.nix_evaluation import NixDerivation
 logger = logging.getLogger(__name__)
 
 
-def produce_linkage_candidates(container: Container) -> set[NixDerivation]:
+class ProvenanceFlags(IntFlag):
+    PACKAGE_NAME_MATCH = auto()
+    VERSION_CONSTRAINT_INRANGE = auto()
+    VERSION_CONSTRAINT_OUTOFRANGE = auto()
+    NO_SOURCE_VERSION_CONSTRAINT = auto()
+    # Whether the hardware constraint is matched for this derivation.
+    HARDWARE_CONSTRAINT_INRANGE = auto()
+    KERNEL_CONSTRAINT_INRANGE = auto()
+
+
+def produce_linkage_candidates(
+    container: Container,
+) -> dict[NixDerivation, ProvenanceFlags]:
     # Methodology:
     # We start with a large list and we remove things as we sort out that list.
     # Our initialization must be as large as possible.
-    candidates = set()
+    candidates: dict[NixDerivation, ProvenanceFlags] = {}
     for affected in container.affected.all():
         # TODO: record what is used to expand the candidate list.
         if affected.package_name is not None:
-            candidates |= set(
+            drvs = set(
                 # TODO: improve accuracy by performing case normalization.
                 # TODO: improve accuracy by using bigrams similarity with a `| Q(...)` query.
                 NixDerivation.objects.filter(name__contains=affected.package_name)
             )
+            for d in drvs:
+                if d in candidates:
+                    candidates[d] |= ProvenanceFlags.PACKAGE_NAME_MATCH
+                else:
+                    candidates[d] = ProvenanceFlags.PACKAGE_NAME_MATCH
 
         # TODO: restrain further the list by checking all version constraints.
         # TODO: restrain further the list by checking hardware constraints or kernel constraints.
@@ -52,9 +70,9 @@ def build_new_links(container: Container) -> None:
 
     drvs_throughs = [
         CVEDerivationClusterProposal.derivations.through(
-            cvederivationclusterproposal_id=proposal.pk, nixderivation_id=drv.pk
+            proposal_id=proposal.pk, derivation_id=drv.pk, provenance_flags=flags
         )
-        for drv in drvs
+        for drv, flags in drvs.items()
     ]
 
     # We create all the set in one shot.
