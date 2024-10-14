@@ -15,7 +15,7 @@ if [[ ! -z "${AWS_ACCESS_KEY_ID}" ]] || [[ ! -z "${AWS_SECRET_ACCESS_KEY}" ]]; t
 fi
 
 S3_PATH="staging-sectracker-db"
-DELETE_AFTER="7 days"
+DELETE_AFTER="1 day"
 
 NOW=$(date +"%Y-%m-%d-at-%H-%M-%S")
 DELETION_TIMESTAMP=`[ "$(uname)" = Linux ] && date +%s --date="-$DELETE_AFTER"` # Maximum date (will delete all files older than this date)
@@ -25,11 +25,11 @@ echo "Backup in progress..."
 DBS=('web-security-tracker')
 
 for db in "${DBS[@]}"; do
-  FILENAME="$NOW_$db"
+  FILENAME="$NOW"_"$db"
 
   echo "-> backing up $db..."
 
-  ssh root@sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump -Z1 -O -Fc $db" | pv | aws --endpoint-url https://s3.dc1.lahfa.xyz s3 cp - s3://$S3_PATH/$FILENAME
+  ssh root@sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump -Z5 -O -Fc $db" | pv | aws --endpoint-url https://s3.dc1.lahfa.xyz s3 cp - s3://$S3_PATH/$FILENAME
 
   echo "$db has been backed up."
 done
