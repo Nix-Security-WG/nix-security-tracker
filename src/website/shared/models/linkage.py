@@ -1,3 +1,5 @@
+from enum import STRICT, IntFlag, auto
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -24,14 +26,35 @@ class CVEDerivationClusterProposal(TimeStampMixin):
     )
     # NixDerivations of the same product and with a version in the affected range
     derivations = models.ManyToManyField(
-        NixDerivation, related_name="cve_links_proposals"
+        NixDerivation,
+        related_name="cve_links_proposals",
+        through="DerivationClusterProposalLink",
     )
 
     status = models.CharField(
         max_length=text_length(Status), choices=Status.choices, default=Status.PENDING
     )
 
-    # TODO: record what was used to do the matching
-    # was it the package_name?
-    # TODO: used_fields
-    # TODO: used_terms
+
+class ProvenanceFlags(IntFlag, boundary=STRICT):
+    PACKAGE_NAME_MATCH = auto()
+    VERSION_CONSTRAINT_INRANGE = auto()
+    VERSION_CONSTRAINT_OUTOFRANGE = auto()
+    NO_SOURCE_VERSION_CONSTRAINT = auto()
+    # Whether the hardware constraint is matched for this derivation.
+    HARDWARE_CONSTRAINT_INRANGE = auto()
+    KERNEL_CONSTRAINT_INRANGE = auto()
+
+
+class DerivationClusterProposalLink(models.Model):
+    """
+    A link between a NixDerivation and a CVEDerivationClusterProposal.
+    """
+
+    proposal = models.ForeignKey(CVEDerivationClusterProposal, on_delete=models.CASCADE)
+
+    derivation = models.ForeignKey(NixDerivation, on_delete=models.CASCADE)
+
+    # TODO: how to design the integrity here?
+    # we probably want to add a fancy check here.
+    provenance_flags = models.IntegerField()
