@@ -7,6 +7,10 @@ from django.contrib import admin
 from django.db import models
 from django.db.models import CharField, ForeignKey, ManyToManyField, TextField
 from shared.models import Container, NixDerivationMeta, NixpkgsIssue
+from shared.models.linkage import (
+    CVEDerivationClusterProposal,
+    DerivationClusterProposalLink,
+)
 
 
 class ReadOnlyMixin:
@@ -129,3 +133,7 @@ class ContainerAdmin(ReadOnlyMixin, AutocompleteMixin, admin.ModelAdmin):
 @admin.register(NixpkgsIssue)
 class NixpkgsIssueAdmin(AutocompleteMixin, admin.ModelAdmin):
     readonly_fields = ["code"]
+
+
+admin.site.register(CVEDerivationClusterProposal)
+admin.site.register(DerivationClusterProposalLink)
