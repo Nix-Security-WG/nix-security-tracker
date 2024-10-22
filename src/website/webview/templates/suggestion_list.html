@@ -4,29 +4,45 @@
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
-      <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
-        {{ object.cve.cve_id }}
-      </a>
       <div class="row1">
-        <h2 class="affected_package">{{ object.package_name }}</h2>
-        <div class="severity">{{ object.base_severity__display }}</div>
+        <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
+          {{ object.cve.cve_id }}
+        </a>
+        <div class="severity {{ object.base_severity }}">
+          {% if object.base_severity == "LOW" %}
+            Low
+          {% elif object.base_severity == "MEDIUM" %}
+            Medium
+          {% elif object.base_severity == "HIGH" %}
+            High
+          {% elif object.base_severity == "CRITICAL" %}
+            Critical
+          {% elif object.base_severity == "NONE" %}
+            No severity data
+          {% else %}
+            Unknown Severity
+          {% endif %}
+        </div>
       </div>
-      {{ object.title }}<br>
+      <h2 class="affected_package">{{ object.package_name }}</h2>
+      <h3> {{ object.title }} </h3>
       <!-- TODO Build a Show more button -->
-      {{ object.description|truncatewords:10 }}
-      {% for attribute, nixos_channels in object.packages.items %}
-        <article class="nixpkgs-package">
-          <h3>pkgs.{{ attribute }}</h3>
-          <table>
-            {% for nixos_channel, version in nixos_channels.items %}
-              <tr>
-                <td>{{ nixos_channel }}</td>
-                <td>: {{ version }}</td>
-              </tr>
-            {% endfor %}
-          </table>
-        </article>
-      {% endfor %}
+      {{ object.description|truncatewords:20 }}
+      <div class="nixpkgs-packages">
+        {% for attribute, nixos_channels in object.packages.items %}
+          <article class="nixpkgs-package">
+            <h3>pkgs.{{ attribute }}</h3>
+            <table>
+              {% for nixos_channel, val in nixos_channels.items %}
+                <tr>
+                  <td {% if val.major %}class="major-channel"{% endif %}>{{ nixos_channel }}</td>
+                  <td>: {{ val.version }}</td>
+                </tr>
+              {% endfor %}
+            </table>
+          </article>
+        {% endfor %}
+      </div>
     </article>
   {% endfor %}
 </div>
