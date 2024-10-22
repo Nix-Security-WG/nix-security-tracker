@@ -150,6 +150,13 @@ class Impact(models.Model):
     description = models.ManyToManyField(Description)
 
 
+class Severity(models.TextChoices):
+   NONE = ("NONE", _("NONE"))
+   LOW = ("LOW", _("LOW"))
+   MEDIUM = ("MEDIUM", _("MEDIUM"))
+   HIGH = ("HIGH", _("HIGH"))
+   CRITICAL = ("CRITICAL", _("CRITICAL"))
+
 class Metric(models.Model):
     """Class representing an impact information related to a CVE record."""
 
@@ -174,13 +181,6 @@ class Metric(models.Model):
             _("ADJACENT_NETWORK"),
         )
         NETWORK = ("NETWORK", _("NETWORK"))
-
-    class Severity(models.TextChoices):
-        NONE = ("NONE", _("NONE"))
-        LOW = ("LOW", _("LOW"))
-        MEDIUM = ("MEDIUM", _("MEDIUM"))
-        HIGH = ("HIGH", _("HIGH"))
-        CRITICAL = ("CRITICAL", _("CRITICAL"))
 
     # TODO: we do not support antyhing beyond
     # `cvssV3_1` for now.
