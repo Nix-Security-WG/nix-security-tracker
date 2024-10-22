@@ -151,11 +151,12 @@ class Impact(models.Model):
 
 
 class Severity(models.TextChoices):
-   NONE = ("NONE", _("NONE"))
-   LOW = ("LOW", _("LOW"))
-   MEDIUM = ("MEDIUM", _("MEDIUM"))
-   HIGH = ("HIGH", _("HIGH"))
-   CRITICAL = ("CRITICAL", _("CRITICAL"))
+    NONE = ("NONE", _("NONE"))
+    LOW = ("LOW", _("LOW"))
+    MEDIUM = ("MEDIUM", _("MEDIUM"))
+    HIGH = ("HIGH", _("HIGH"))
+    CRITICAL = ("CRITICAL", _("CRITICAL"))
+
 
 class Metric(models.Model):
     """Class representing an impact information related to a CVE record."""

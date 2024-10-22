@@ -218,6 +218,11 @@ article .severity {
   font-size: 0.8rem;
 }
 
+article .suggestion h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 article .nixpkgs-packages {
   display: flex;
   flex-direction: column;

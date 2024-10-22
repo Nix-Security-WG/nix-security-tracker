@@ -25,7 +25,9 @@
         </div>
       </div>
       <h2 class="affected_package">{{ object.package_name }}</h2>
-      <h3> {{ object.title }} </h3>
+      {% if object.title %}
+        <h3> {{ object.title }} </h3>
+      {% endif %}
       <!-- TODO Build a Show more button -->
       {{ object.description|truncatewords:20 }}
       <div class="nixpkgs-packages">
