@@ -27,7 +27,7 @@ from django.db.models import (
     Value,
     When,
 )
-from django.db.models.functions import (Coalesce)
+from django.db.models.functions import Coalesce
 from django.db.models.manager import BaseManager
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
@@ -490,7 +490,7 @@ class SuggestionListView(ListView):
 
         # Major channels are the important channels that a user wants to keep an eye on.
         # FIXME make it dynamic
-        major_channels = [ "nixos-23.11", "nixos-24.05", "nixos-24.11", "nixos-unstable" ]
+        major_channels = ["nixos-23.11", "nixos-24.05", "nixos-24.11", "nixos-unstable"]
 
         for obj in context["objects"]:
             obj.cve_container = obj.cve.container_set.all().first()
@@ -502,7 +502,10 @@ class SuggestionListView(ListView):
                 version = derivation.name.split("-")[-1]
                 if attribute not in obj.packages:
                     obj.packages[attribute] = dict()
-                obj.packages[attribute][channel] = { "version": version, "major": channel in major_channels }
+                obj.packages[attribute][channel] = {
+                    "version": version,
+                    "major": channel in major_channels,
+                }
         return context
 
     def get_queryset(self) -> Any:
@@ -522,10 +525,11 @@ class SuggestionListView(ListView):
         # queryset = queryset.order_by(MD5(CastToText("id")))
         queryset = queryset.distinct("cve__cve_id")
 
-
         queryset = queryset.annotate(
             package_name=F("cve__container__affected__package_name"),
-            base_severity=Coalesce(F("cve__container__metrics__base_severity"), Value(Severity.NONE)),
+            base_severity=Coalesce(
+                F("cve__container__metrics__base_severity"), Value(Severity.NONE)
+            ),
             title=F("cve__container__title"),
             description=F("cve__container__descriptions__value"),
         )
