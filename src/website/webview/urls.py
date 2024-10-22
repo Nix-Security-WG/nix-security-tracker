@@ -7,6 +7,7 @@ from webview.views import (
     NixderivationPerChannelView,
     NixpkgsIssueListView,
     NixpkgsIssueView,
+    SuggestionListView,
     TriageView,
 )
 
@@ -34,4 +35,5 @@ urlpatterns = [
         RedirectView.as_view(url="nixos-unstable", permanent=True),
         name="affected_list",
     ),
+    path("suggestions/", SuggestionListView.as_view(), name="suggestions_view"),
 ]
