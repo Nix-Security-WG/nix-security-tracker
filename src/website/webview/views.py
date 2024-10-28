@@ -492,8 +492,7 @@ class SuggestionListView(ListView):
         # FIXME make it dynamic
         major_channels = ["nixos-23.11", "nixos-24.05", "nixos-24.11", "nixos-unstable"]
 
-        for obj in context["objects"]:
-            obj.cve_container = obj.cve.container_set.all().first()
+        for obj in context["object_list"]:
             obj.packages = dict()
             for derivation in obj.derivations.all():
                 attribute = derivation.attribute.removesuffix(f".{derivation.system}")
@@ -509,7 +508,12 @@ class SuggestionListView(ListView):
         return context
 
     def get_queryset(self) -> Any:
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("cve")
+            .prefetch_related("derivations", "derivations__parent_evaluation")
+        )
 
         # Some stuff only for demo and development purposes, to have more interesting data on the page
         ordering_seed = "1234"

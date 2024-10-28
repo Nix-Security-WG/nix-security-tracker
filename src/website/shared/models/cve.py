@@ -4,6 +4,7 @@ from django.contrib.postgres.indexes import BTreeIndex, GinIndex
 from django.contrib.postgres.search import SearchVectorField
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Index, Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -366,6 +367,11 @@ class AffectedProduct(models.Model):
 
     class Meta:  # type: ignore[override]
         indexes = [
+            Index(
+                fields=["package_name"],
+                name="affprod_with_pkgnames_idx",
+                condition=Q(package_name__isnull=False),
+            ),
             # Add a GIN index to speed up vector search queries
             GinIndex(fields=["search_vector"]),
         ]
@@ -393,7 +399,9 @@ class Container(models.Model):
 
     _type = models.CharField(max_length=3, choices=Type.choices, default=Type.CNA)
 
-    cve = models.ForeignKey(CveRecord, on_delete=models.CASCADE)
+    cve = models.ForeignKey(
+        CveRecord, related_name="container", on_delete=models.CASCADE
+    )
 
     provider = models.ForeignKey(Organization, on_delete=models.CASCADE)
     title = models.CharField(max_length=256, null=True, default=None)
