@@ -10,7 +10,7 @@ This file contains general contribution information, but the other directories i
 
 The service is implemented in Python using [Django](https://www.djangoproject.com/).
 
-## Quick start
+## Running the service in a development environment
 
 Start a development shell:
 
@@ -40,11 +40,22 @@ You can set up a database on NixOS like this:
 }
 ```
 
-### Set up a local container
+### Start the service
+
+The service is comprised of the Django server and workers for ingesting CVEs and derivations.
+What needs to be run is defined in the [`Procfile`](../Procfile) managed by [hivemind](https://github.com/DarthSim/hivemind).
+
+Run everything with:
+
+```bash
+hivemind
+```
+
+## Running the service in a container
 
 On NixOS, you can run the service in a [`systemd-nspawn` container](https://search.nixos.org/options?show=containers) to preview a deployment.
 
-Assuming you have a local checkout of this repository at `~/src/nix-security-tracker`, in your NixOS configuration, add the following entry t `imports` and rebuild your system:
+Assuming you have a local checkout of this repository at `~/src/nix-security-tracker`, in your NixOS configuration, add the following entry to `imports` and rebuild your system:
 
 ```nix
 { ... }:
@@ -58,13 +69,22 @@ Assuming you have a local checkout of this repository at `~/src/nix-security-tra
 
 The service will be accessible at <http://172.31.100.1>.
 
+### Using a database dump
+
 To upload a pre-existing database dump into the container with [`nixos-container`](https://nixos.org/manual/nixos/unstable/#sec-imperative-containers):
+
+0. Get the most recent database dump:
+
+   ```bash
+   curl https://dumps.sectracker.nixpkgs.lahfa.xyz/web-security-tracker --output dump
+   ```
 
 1. Stop the server, delete the initial database, and create an empty one.
 
    ```bash
    sudo nixos-container run nix-security-tracker -- bash << EOF
    systemctl stop web-security-tracker-server.service
+   systemctl stop web-security-tracker-worker.service
    sudo -u postgres dropdb web-security-tracker
    sudo -u postgres createdb web-security-tracker
    EOF
@@ -73,13 +93,16 @@ To upload a pre-existing database dump into the container with [`nixos-container
 2. Restore the dump.
 
    ```bash
-   sudo nixos-container run nix-security-tracker -- sudo -u postgres pg_restore -d web-security-tracker -v < local_dump
+   sudo nixos-container run nix-security-tracker -- sudo -u postgres pg_restore -d web-security-tracker -v < dump
    ```
 
 3. Start the service again.
 
    ```bash
-   sudo nixos-container run nix-security-tracker -- systemctl start web-security-tracker.service
+   sudo nixos-container run nix-security-tracker -- bash << EOF
+   systemctl start web-security-tracker-server.service
+   systemctl start web-security-tracker-worker.service
+   EOF
    ```
 
 ### Create Django secret key
@@ -141,12 +164,6 @@ Set up the database with known-good values to play around with:
 
 ```console
 ./contrib/reset.sh
-```
-
-Start the server and its workers:
-
-```console
-hivemind
 ```
 
 ## Running tests
