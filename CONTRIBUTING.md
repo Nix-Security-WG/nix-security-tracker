@@ -105,13 +105,19 @@ To upload a pre-existing database dump into the container with [`nixos-container
    EOF
    ```
 
-### Create Django secret key
+## Set up credentials
+
+The service connects to GitHub on startup, in order to manage permissions according to GitHub team membership in the configured organisation.
+
+<details><summary>Create a Django secret key</summary>
 
 ```console
 python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET_KEY
 ```
 
-### Set up GitHub authentication
+</details>
+
+<details><summary>Set up GitHub authentication</summary>
 
 1. Create a new or select an existing GitHub organisation to associate with the application
 
@@ -143,9 +149,9 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
 
      Store the value in `.credentials/GH_SECRET`
 
-You currently need the credentials for starting the backend, as it tries to list team memberships on startup.
+</details>
 
-### Set up Github App webhooks
+<details><summary>Set up Github App webhooks</summary>
 
 For now, we require a GitHub webhook to receive push notifications when team memberships change.
 To configure the GitHub app and the webhook in the GitHub organisation settings:
@@ -158,7 +164,9 @@ To configure the GitHub app and the webhook in the GitHub organisation settings:
     - Deselect **Pushes**.
     - Select **Memberships**.
 
-## Reseting the database
+</details>
+
+## Resetting the database
 
 Set up the database with known-good values to play around with:
 
