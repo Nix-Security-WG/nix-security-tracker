@@ -10,6 +10,67 @@ This file contains general contribution information, but the other directories i
 
 The service is implemented in Python using [Django](https://www.djangoproject.com/).
 
+## Setting up credentials
+
+The service connects to GitHub on startup, in order to manage permissions according to GitHub team membership in the configured organisation.
+
+<details><summary>Create a Django secret key</summary>
+
+```console
+python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET_KEY
+```
+
+</details>
+
+<details><summary>Set up GitHub authentication</summary>
+
+1. Create a new or select an existing GitHub organisation to associate with the application
+
+   - In the **Settings** tab under **Personal access tokens**, ensure that personal access tokens are allowed.
+   - In the **Teams** tab, ensure there are at least two teams, corresponding to [`nixpkgs-committers`](https://github.com/orgs/nixos/teams/nixpkgs-committers) and [`security`](https://github.com/orgs/nixos/teams/security)
+
+     These teams will be used for mapping user permissions.
+     The actual names are arbitrary and can be configured in the service settings.
+
+2. For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+
+   This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
+
+   - Generate new token
+     - In **Resource owner** select the GitHub organisation associated with the application
+     - In **Repository access** select **Public Repositories (read-only)**
+     - In **Permissions**, set **Members** permissions to **Read-only**
+     - No other permissions are required
+   - Store the value in `.credentials/GH_TOKEN`
+
+3. In the GitHub organisation settings, [create an OAuth application](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app):
+
+   - In **Personal access tokens** approve the request under **Pending requests** if approval is required
+   - In **Developer settings** OAuth Apps, create a new application
+
+     Store the **Client ID** in `.credentials/GH_CLIENT_ID`
+
+   - In the application settings **Generate a new client secret**
+
+     Store the value in `.credentials/GH_SECRET`
+
+</details>
+
+<details><summary>Set up Github App webhooks</summary>
+
+For now, we require a GitHub webhook to receive push notifications when team memberships change.
+To configure the GitHub app and the webhook in the GitHub organisation settings:
+
+- In **Code, planning, and automation** Webhooks, create a new webhook:
+  - In **Payload URL**, input "https://<APP_DOMAIN>/github-webhook".
+  - In **Content Type** choose **application/json**.
+  - Generate a token and put in **Secret**. This token should be in `./credentials/GH_WEBHOOK_SECRET`.
+  - Choose **Let me select individual events**
+    - Deselect **Pushes**.
+    - Select **Memberships**.
+
+</details>
+
 ## Running the service in a development environment
 
 Start a development shell:
@@ -104,67 +165,6 @@ To upload a pre-existing database dump into the container with [`nixos-container
    systemctl start web-security-tracker-worker.service
    EOF
    ```
-
-## Set up credentials
-
-The service connects to GitHub on startup, in order to manage permissions according to GitHub team membership in the configured organisation.
-
-<details><summary>Create a Django secret key</summary>
-
-```console
-python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET_KEY
-```
-
-</details>
-
-<details><summary>Set up GitHub authentication</summary>
-
-1. Create a new or select an existing GitHub organisation to associate with the application
-
-   - In the **Settings** tab under **Personal access tokens**, ensure that personal access tokens are allowed.
-   - In the **Teams** tab, ensure there are at least two teams, corresponding to [`nixpkgs-committers`](https://github.com/orgs/nixos/teams/nixpkgs-committers) and [`security`](https://github.com/orgs/nixos/teams/security)
-
-     These teams will be used for mapping user permissions.
-     The actual names are arbitrary and can be configured in the service settings.
-
-2. For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
-
-   This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
-
-   - Generate new token
-     - In **Resource owner** select the GitHub organisation associated with the application
-     - In **Repository access** select **Public Repositories (read-only)**
-     - In **Permissions**, set **Members** permissions to **Read-only**
-     - No other permissions are required
-   - Store the value in `.credentials/GH_TOKEN`
-
-3. In the GitHub organisation settings, [create an OAuth application](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app):
-
-   - In **Personal access tokens** approve the request under **Pending requests** if approval is required
-   - In **Developer settings** OAuth Apps, create a new application
-
-     Store the **Client ID** in `.credentials/GH_CLIENT_ID`
-
-   - In the application settings **Generate a new client secret**
-
-     Store the value in `.credentials/GH_SECRET`
-
-</details>
-
-<details><summary>Set up Github App webhooks</summary>
-
-For now, we require a GitHub webhook to receive push notifications when team memberships change.
-To configure the GitHub app and the webhook in the GitHub organisation settings:
-
-- In **Code, planning, and automation** Webhooks, create a new webhook:
-  - In **Payload URL**, input "https://<APP_DOMAIN>/github-webhook".
-  - In **Content Type** choose **application/json**.
-  - Generate a token and put in **Secret**. This token should be in `./credentials/GH_WEBHOOK_SECRET`.
-  - Choose **Let me select individual events**
-    - Deselect **Pushes**.
-    - Select **Memberships**.
-
-</details>
 
 ## Resetting the database
 
