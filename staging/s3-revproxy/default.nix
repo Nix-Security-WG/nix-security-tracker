@@ -39,6 +39,10 @@ let
     locations."/" = {
       recommendedProxySettings = true;
       proxyPass = "http://127.0.0.1:${toString config.services.s3-revproxy.settings.server.port}/";
+      extraConfig = ''
+        # Disable buffering to a temporary file.
+        proxy_max_temp_file_size 0;
+      '';
     };
   };
 in
