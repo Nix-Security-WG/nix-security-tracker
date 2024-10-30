@@ -200,7 +200,7 @@ in
           requires = [ "postgresql.service" ];
           wantedBy = [ "multi-user.target" ];
           serviceConfig.Restart = cfg.restart;
-          serviceConfig.TimeoutStartSec = "10m";
+          serviceConfig.TimeoutStartSec = lib.mkDefault "10m";
           preStart = ''
             # Auto-migrate on first run or if the package has changed
             versionFile="/var/lib/web-security-tracker/package-version"
