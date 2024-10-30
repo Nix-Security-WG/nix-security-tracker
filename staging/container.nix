@@ -23,6 +23,11 @@ in
     group = "web-security-tracker";
   };
   users.groups.web-security-tracker = { };
+  systemd.services."container@nix-security-tracker" = {
+    serviceConfig = {
+      TimeoutStartSec = lib.mkForce "15m";
+    };
+  };
   containers.nix-security-tracker = {
     autoStart = true;
     privateNetwork = true;
