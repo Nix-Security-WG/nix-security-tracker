@@ -140,6 +140,8 @@ rec {
 
         mkdir -p .credentials
         export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
+        touch .settings.py
+        export USER_SETTINGS_FILE=${builtins.toString ./.settings.py}
       '';
     };
 

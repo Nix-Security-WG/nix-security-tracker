@@ -32,6 +32,21 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
      These teams will be used for mapping user permissions.
      The actual names are arbitrary and can be configured in the service settings.
 
+   - Put the organisation name and team names into `.settings.py` so it gets picked up :
+
+     ```python
+     GH_ORGANIZATION = "my-org"
+     GH_COMMITTERS_TEAM = "team1"
+     GH_SECURITY_TEAM = "team2"
+     ```
+
+     <!--
+     TODO: this only works for the local dev environment. staging and prod still need work:
+     https://github.com/Nix-Security-WG/nix-security-tracker/issues/239
+     https://github.com/Nix-Security-WG/nix-security-tracker/issues/240
+     https://github.com/Nix-Security-WG/nix-security-tracker/issues/285
+     -->
+
 2. For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
    This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
