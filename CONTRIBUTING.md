@@ -112,6 +112,17 @@ Run everything with:
 hivemind
 ```
 
+### Resetting the database
+
+In order to start over, delete the database and recreate it, then restore it from a dump, and (just in case the dump is behind the code) run migrations:
+
+```bash
+dropdb nix-security-tracker
+sudo -u postgres createdb -O nix-security-tracker nix-security-tracker
+pg_restore -O -d nix-security-tracker -v < dump
+manage migrate
+```
+
 ## Running the service in a container
 
 On NixOS, you can run the service in a [`systemd-nspawn` container](https://search.nixos.org/options?show=containers) to preview a deployment.
@@ -209,33 +220,6 @@ manage migrate
 ```
 
 This is the default Django workflow.
-
-## Fixtures
-
-If you haven't changed the schema, using fixtures is faster than resetting the database completely.
-
-Remove all data:
-
-```console
-manage flush
-```
-
-A fixture file is availble for the `shared` app, located at `src/website/shared/fixtures/sample.json`.
-
-To load it into the database:
-
-```console
-manage loaddata sample
-```
-
-Where `sample` is the name of the fixture JSON file.
-Django will look inside the app folders for a fixture to match this name.
-
-To create (or update) a fixture file:
-
-```console
-manage dumpdata shared > src/website/shared/fixtures/sample.json
-```
 
 ## Manual ingestion
 
