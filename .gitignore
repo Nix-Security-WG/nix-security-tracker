@@ -19,3 +19,5 @@ nixpkgs/
 nixpkgs-gc-roots/
 # Never checkout local versions of .envrc
 .envrc-local
+# user settings file
+.settings.py
