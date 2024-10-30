@@ -50,7 +50,7 @@ in
         # work around that the credential files are owned by a user on the host
         # which almost certainly won't be the same as the user under which the service runs
         boot.postBootCommands = ''
-          cp -r ${secretsGuestPath} ${secretsPath}
+          cp -r ${secretsGuestPath}/* ${secretsPath}
           chown web-security-tracker ${secretsPath}
         '';
         networking.firewall.allowedTCPPorts = map (forward: forward.containerPort) (
@@ -70,9 +70,7 @@ in
             DEBUG = true;
             CSRF_TRUSTED_ORIGINS = lib.mkAfter [ "http://${cfg.hostAddress}" ];
           };
-          secrets =
-            with builtins;
-            mapAttrs (name: _: "${secretsGuestPath}/${name}") (readDir secretsHostPath);
+          secrets = with builtins; mapAttrs (name: _: "${secretsPath}/${name}") (readDir secretsHostPath);
         };
       };
   };
