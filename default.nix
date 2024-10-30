@@ -97,18 +97,6 @@ rec {
       manage = pkgs.writeScriptBin "manage" ''
         ${python3}/bin/python ${toString ./src/website/manage.py} $@
       '';
-      create-credentials = pkgs.writeShellApplication {
-        name = "create-credentials";
-        text = ''
-          if [ ! -d .credentials ]; then
-            mkdir .credentials
-            echo foo > .credentials/SECRET_KEY
-            echo bar > .credentials/GH_CLIENT_ID
-            echo baz > .credentials/GH_SECRET
-            echo qux > .credentials/GH_WEBHOOK_SECRET
-          fi
-        '';
-      };
       deploymentSources = import ./staging/npins;
     in
     pkgs.mkShell {
@@ -136,7 +124,6 @@ rec {
 
       shellHook = ''
         ${pre-commit-check.shellHook}
-        ${lib.getExe create-credentials}
 
         mkdir -p .credentials
         export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
