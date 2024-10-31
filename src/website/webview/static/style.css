@@ -389,13 +389,20 @@ article .nixpkgs-packages {
   color: var(--grey);
 }
 
-.nixpkgs-package .branch-version {
-  display: flex;
-  justify-content: flex-end;
+.nixpkgs-package .channel-list {
+  list-style-type: none;
+  padding-left: 0;
 }
 
-.nixpkgs-package .minor {
+.nixpkgs-package .branch-minor {
+  display: flex;
+  justify-content: flex-end;
   color: var(--grey);
+}
+
+.nixpkgs-package .branch-major {
+  display: inline-flex;
+  justify-content: flex-end;
 }
 
 .nixpkgs-package .branch-name {
