@@ -368,6 +368,7 @@ article .suggestion h3 {
 
 article .nixpkgs-packages {
   margin-top: 0.5rem;
+  display: flex;
   flex-direction: column;
   row-gap: 0.8rem;
   font-family: "IBM Plex Mono";
@@ -376,8 +377,6 @@ article .nixpkgs-packages {
 .nixpkgs-package {
   border: 1px solid var(--grey);
   border-radius: 5px;
-  display: flex;
-  flex-direction: row;
 }
 
 .nixpkgs-package h3 {
