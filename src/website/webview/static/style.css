@@ -434,17 +434,6 @@ article .nixpkgs-packages {
   text-align: end;
 }
 
-.suggestion .add-package {
-  align-self: start;
-  background: none;
-  border: none;
-  text-decoration: underline;
-}
-
-.suggestion .add-package:hover {
-  color: var(--grey);
-}
-
 .suggestion .change-issue-state {
   display: flex;
   margin-top: 0.8em;
