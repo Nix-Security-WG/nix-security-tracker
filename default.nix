@@ -93,6 +93,33 @@ rec {
       };
   };
 
+  # shell environment for continuous integration runs
+  ci =
+    let
+      deploy = pkgs.writeShellApplication {
+        name = "deploy";
+        text = builtins.readFile ./staging/deploy.sh;
+        runtimeInputs = with pkgs; [
+          nixos-rebuild
+          coreutils
+        ];
+      };
+      dump-database = pkgs.writeShellApplication {
+        name = "dump-database";
+        text = builtins.readFile ./staging/dump-database.sh;
+        runtimeInputs = with pkgs; [
+          awscli
+          pv
+        ];
+      };
+    in
+    pkgs.mkShellNoCC {
+      packages = [
+        deploy
+        dump-database
+      ];
+    };
+
   shell =
     let
       manage = pkgs.writeScriptBin "manage" ''

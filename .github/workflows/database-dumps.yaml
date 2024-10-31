@@ -19,15 +19,11 @@ jobs:
           stack: dual
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v29
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable-small
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       - name: Trust staging server public SSH host keys
         run: cat ./staging/staging_host_keys >> ~/.ssh/known_hosts
-      - name: Debug credentials
-        run: nix-shell -p awscli --run "aws configure list"
       - name: Dump database to S3
-        run: ./staging/dump-database.sh
+        run: nix-shell default.nix -A ci --run "dump-database"

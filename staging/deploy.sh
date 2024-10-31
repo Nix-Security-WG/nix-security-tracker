@@ -1,10 +1,14 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -i bash -p nixos-rebuild
+#!nix-shell -i bash -p nixos-rebuild coreutils
 
 set -eo pipefail
 
 DIR=$(git rev-parse --show-toplevel)
 VERB=${1:-switch}
+# make sure we're building with the version of Nixpkgs under our control
+# TODO: fix the build on the latest nixpkgs-unstable and use that one for deployment
+# export NIX_PATH=nixpkgs=$(nix-instantiate --eval -E '(import ./staging/npins).nixpkgs.outPath' | tr -d '"')
+export NIX_PATH=nixpkgs=$(nix-instantiate --eval -A pkgs.path)
 
 # Note: we could refactor the conditional here.
 # But `nixos-rebuild build --target-host ...` requiring network operations is an unexpected bug.

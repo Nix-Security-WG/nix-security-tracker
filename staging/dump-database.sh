@@ -3,6 +3,9 @@
 
 set -eo pipefail
 
+# Debug credentials
+aws configure list
+
 # Inspired from https://github.com/gabfl/pg_dump-to-s3/blob/main/pg_dump-to-s3.sh
 # and adapted for our needs.
 
