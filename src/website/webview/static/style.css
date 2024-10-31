@@ -388,55 +388,35 @@ article .nixpkgs-packages {
 .nixpkgs-package h3 {
   margin: unset;
 }
+
 .nixpkgs-package h3 .pkgs {
   color: var(--grey);
 }
 
-.nixpkgs-package table {
-  margin-left: auto;
-  border-collapse: collapse;
+.nixpkgs-package .channel-list {
+  list-style-type: none;
+  padding-left: 0;
 }
 
-.nixpkgs-package table .branch-name {
-  width: 13em;
-}
-
-.nixpkgs-package .minor {
+.nixpkgs-package .branch-minor {
+  display: flex;
+  justify-content: flex-end;
   color: var(--grey);
 }
 
-.nixpkgs-package .togglecollapsed {
-  text-align: right;
+.nixpkgs-package .branch-major {
+  display: inline-flex;
+  justify-content: flex-end;
 }
 
-.nixpkgs-package .togglecollapsed::before {
-  content: "▼";
+.nixpkgs-package .branch-name {
+  width: 13em;
+  display: inline-block;
 }
 
-.nixpkgs-package .collapsed .togglecollapsed::before {
-  content: "▶";
-}
-
-.nixpkgs-package .minor {
-  opacity: 1;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.nixpkgs-package .collapsed .minor {
-  line-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  font-size: 0;
-  opacity: 0;
-}
-
-.nixpkgs-package .collapsed .minor td {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-.nixpkgs-package table .version {
+.nixpkgs-package .version {
   width: 5em;
+  display: inline-block;
   text-align: end;
 }
 
