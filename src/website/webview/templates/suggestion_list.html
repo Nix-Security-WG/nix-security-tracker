@@ -38,27 +38,22 @@
         {% for attribute, nixos_channels in object.packages.items %}
           <article class="nixpkgs-package">
             <h3><span class="pkgs">pkgs.</span>{{ attribute }}</h3>
-            <table>
+            <div>
               {% for major_channel, val in nixos_channels %}
-                <tbody {% if not val.uniform_versions %}class="collapsed"{% endif %}>
-                  <tr>
-                    <td
-                      class="togglecollapsed"
-                      onclick="this.parentElement.parentElement.classList.toggle('collapsed')">
-                    </td>
-                    <td class="branch-name">{{ major_channel }}</td>
-                    <td class="version">{% if val.major_version %}{{ val.major_version }}{% else %}???{% endif %}</td>
-                  <tr>
+                <details {% if val.uniform_versions %}open{% endif %}>
+                  <summary>
+                    <span class="branch-name">{{ major_channel }}</span>
+                    <span class="version">{% if val.major_version %}{{ val.major_version }}{% else %}???{% endif %}</span>
+                  </summary>
                   {% for branch_name, version in val.sub_branches %}
-                    <tr class="minor">
-                      <td></td>
-                      <td class="branch-name">{{ branch_name }}</td>
-                      <td class="version">{{ version }}</td>
-                    </tr>
+                    <div class="branch-version minor">
+                      <span class="branch-name">{{ branch_name }}</span>
+                      <span class="version">{{ version }}</span>
+                    </div>
                   {% endfor %}
-                </tbody>
+                </details>
               {% endfor %}
-            </table>
+            </div>
           </article>
         {% endfor %}
       </div>
