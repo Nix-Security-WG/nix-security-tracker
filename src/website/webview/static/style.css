@@ -380,7 +380,6 @@ article .nixpkgs-packages {
 }
 
 .nixpkgs-package h3 {
-  flex: 1;
   margin: unset;
 }
 .nixpkgs-package h3 .pkgs {
@@ -433,6 +432,37 @@ article .nixpkgs-packages {
 .nixpkgs-package table .version {
   width: 5em;
   text-align: end;
+}
+
+.suggestion .add-package {
+  align-self: start;
+  background: none;
+  border: none;
+  text-decoration: underline;
+}
+
+.suggestion .add-package:hover {
+  color: var(--grey);
+}
+
+.suggestion .change-issue-state {
+  display: flex;
+  margin-top: 0.8em;
+  font-weight: 500;
+}
+
+.suggestion .change-issue-state .create-draft {
+  margin-left: auto;
+  background: #1f883d;
+  color: white;
+  border: none;
+  border-radius: 0.3em;
+  padding: 0.5em;
+}
+
+.suggestion .change-issue-state .create-draft:hover {
+  color: var(--grey);
+  background: #16682e;
 }
 
 /* Desktop */
