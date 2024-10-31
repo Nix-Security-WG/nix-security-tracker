@@ -7,6 +7,10 @@ on:
   # Allow manual trigger
   workflow_dispatch:
 
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
+
 jobs:
   update-npins:
     runs-on: ubuntu-latest
