@@ -318,3 +318,59 @@ class NixDerivation(models.Model):
                 ],
             )
         ]
+
+
+# Major channels are the important channels that a user wants to keep an eye on.
+# FIXME figure this out dynamically
+MAJOR_CHANNELS = ["23.11", "24.05", "24.11", "unstable"]
+
+
+# The major channel that a branch name (e.g. nixpkgs-24.05-darwin) belongs to
+def get_major_channel(branch_name: str) -> str | None:
+    for mc in MAJOR_CHANNELS:
+        if mc in branch_name:
+            return f"nixos-{mc}"
+    return None
+
+
+# For a list of derivations, massage the data so that in can rendered easily in the suggestions view
+def channel_structure(derivations: list[NixDerivation]) -> dict:
+    packages = dict()
+    for derivation in derivations:
+        attribute = derivation.attribute.removesuffix(f".{derivation.system}")
+        # FIXME This is wrong. Replace with something like builtins.parseDrvName
+        version = derivation.name.split("-")[-1]
+        if attribute not in packages:
+            packages[attribute] = dict()
+        branch_name = derivation.parent_evaluation.channel.channel_branch
+        major_channel = get_major_channel(branch_name)
+        # FIXME This quietly drops unfamiliar branch names
+        if major_channel:
+            if major_channel not in packages[attribute]:
+                packages[attribute][major_channel] = {
+                    "major_version": None,
+                    "uniform_versions": None,
+                    "sub_branches": dict(),
+                }
+            if not branch_name == major_channel:
+                packages[attribute][major_channel]["sub_branches"][branch_name] = (
+                    version
+                )
+            else:
+                packages[attribute][major_channel]["major_version"] = version
+    for package in packages:
+        for mc in packages[package].keys():
+            uniform_versions = True
+            major_version = packages[package][mc]["major_version"]
+            for _branch_name, version in packages[package][mc]["sub_branches"].items():
+                uniform_versions = uniform_versions and major_version == version
+            packages[package][mc]["uniform_versions"]
+            # We just sort branch names by length to get a good-enough order
+            packages[package][mc]["sub_branches"] = sorted(
+                packages[package][mc]["sub_branches"].items(),
+                reverse=True,
+                key=lambda item: len(item[0]),
+            )
+        # Sorting major channel names happens to work out well
+        packages[package] = sorted(packages[package].items())
+    return packages
