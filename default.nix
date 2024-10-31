@@ -92,6 +92,13 @@ rec {
       };
   };
 
+  # shell environment for continuous integration runs
+  ci = pkgs.mkShellNoCC {
+    packages = with pkgs; [
+      npins
+    ];
+  };
+
   shell =
     let
       manage = pkgs.writeScriptBin "manage" ''
@@ -99,7 +106,7 @@ rec {
       '';
       deploymentSources = import ./staging/npins;
     in
-    pkgs.mkShell {
+    pkgs.mkShellNoCC {
       env = {
         REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
         DATABASE_URL = "postgres://nix-security-tracker@/nix-security-tracker";
