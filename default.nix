@@ -82,6 +82,7 @@ rec {
           excludes = [
             "\\.min.css$"
             "\\.html$"
+            "npins/sources\\.json$"
           ] ++ pythonExcludes;
         };
         commitizen = {
