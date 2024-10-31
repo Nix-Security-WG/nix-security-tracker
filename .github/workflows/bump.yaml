@@ -15,7 +15,7 @@ jobs:
       - uses: cachix/install-nix-action@v29
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - run: |
-          nix-shell --run "npins -d ./staging update"
+          nix-shell default.nix -A ci --run "npins -d ./staging/npins update"
       - uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
