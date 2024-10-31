@@ -282,13 +282,12 @@ footer {
 
 article .suggestion {
   position: relative;
-  width: 100%;
   border: 1px solid var(--grey);
   border-radius: 5px;
   align-items: start;
   align-content: stretch;
   justify-content: start;
-  padding: 20px;
+  padding: 1rem;
   flex-direction: column;
   flex-wrap: nowrap;
   flex-grow: 1;
@@ -331,15 +330,46 @@ article .severity {
   font-size: 0.8rem;
 }
 
+article .suggestion h2 {
+  margin-top: unset;
+  margin-bottom: 0.8em;
+}
+
 article .suggestion h3 {
   font-size: 1rem;
   font-weight: 600;
 }
 
+.description .show-more,
+.show-less {
+  color: var(--grey);
+}
+
+.description .show-more:hover,
+.show-less:hover {
+  color: #555555;
+}
+
+.description:not(.collapsed) .description-truncated {
+  display: none;
+}
+
+.description:not(.collapsed) .show-more {
+  display: none;
+}
+
+.description.collapsed .show-less {
+  display: none;
+}
+
+.description.collapsed .description-long {
+  display: none;
+}
+
 article .nixpkgs-packages {
-  display: flex;
+  margin-top: 0.5rem;
   flex-direction: column;
-  row-gap: 0.3rem;
+  row-gap: 0.8rem;
   font-family: "IBM Plex Mono";
 }
 
@@ -352,8 +382,90 @@ article .nixpkgs-packages {
 
 .nixpkgs-package h3 {
   flex: 1;
+  margin: unset;
+}
+.nixpkgs-package h3 .pkgs {
+  color: var(--grey);
 }
 
-.nixpkgs-package .major-channel {
-  font-weight: 700;
+.nixpkgs-package table {
+  margin-left: auto;
+  border-collapse: collapse;
+}
+
+.nixpkgs-package table .branch-name {
+  width: 13em;
+}
+
+.nixpkgs-package .minor {
+  color: var(--grey);
+}
+
+.nixpkgs-package .togglecollapsed {
+  text-align: right;
+}
+
+.nixpkgs-package .togglecollapsed::before {
+  content: "▼";
+}
+
+.nixpkgs-package .collapsed .togglecollapsed::before {
+  content: "▶";
+}
+
+.nixpkgs-package .minor {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.nixpkgs-package .collapsed .minor {
+  line-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0;
+  opacity: 0;
+}
+
+.nixpkgs-package .collapsed .minor td {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.nixpkgs-package table .version {
+  width: 5em;
+  text-align: end;
+}
+
+/* Desktop */
+@media (min-width: 801px) {
+}
+
+/* Smartphone */
+@media (max-width: 800px) {
+  article {
+    padding: 0;
+  }
+
+  article .suggestion {
+    padding: 0.5rem;
+  }
+
+  article .suggestion h2 {
+    margin-bottom: 0.3em;
+  }
+
+  article .suggestion h3 {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+  }
+
+  .nixpkgs-package {
+    flex-direction: column;
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+  }
+
+  .nixpkgs-package h3 .pkgs {
+    display: none;
+  }
 }

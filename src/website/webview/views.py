@@ -47,6 +47,9 @@ from shared.models import (
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
+from shared.models.nix_evaluation import (
+    channel_structure,
+)
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
@@ -488,23 +491,8 @@ class SuggestionListView(ListView):
     def get_context_data(self, **kwargs: Any) -> Any:
         context = super().get_context_data(**kwargs)
 
-        # Major channels are the important channels that a user wants to keep an eye on.
-        # FIXME make it dynamic
-        major_channels = ["nixos-23.11", "nixos-24.05", "nixos-24.11", "nixos-unstable"]
-
         for obj in context["object_list"]:
-            obj.packages = dict()
-            for derivation in obj.derivations.all():
-                attribute = derivation.attribute.removesuffix(f".{derivation.system}")
-                channel = derivation.parent_evaluation.channel.channel_branch
-                # FIXME This is wrong. Replace with something like builtins.parseDrvName
-                version = derivation.name.split("-")[-1]
-                if attribute not in obj.packages:
-                    obj.packages[attribute] = dict()
-                obj.packages[attribute][channel] = {
-                    "version": version,
-                    "major": channel in major_channels,
-                }
+            obj.packages = channel_structure(obj.derivations.all())
         return context
 
     def get_queryset(self) -> Any:
