@@ -24,22 +24,39 @@
           {% endif %}
         </div>
       </div>
-      <h2 class="affected_package">{{ object.package_name }}</h2>
+      <h2>{{ object.package_name }}</h2>
       {% if object.title %}
         <h3> {{ object.title }} </h3>
       {% endif %}
-      <!-- TODO Build a Show more button -->
-      {{ object.description|truncatewords:20 }}
+      <div class="description collapsed">
+        <span class="description-truncated">{{ object.description|truncatewords:10 }}</span>
+        <span class="show-more" onclick="this.parentElement.classList.toggle('collapsed')">Show more</span>
+        <span class="description-long">{{ object.description }}</span>
+        <span class="show-less" onclick="this.parentElement.classList.toggle('collapsed')">Show less</span>
+      </div>
       <div class="nixpkgs-packages">
         {% for attribute, nixos_channels in object.packages.items %}
           <article class="nixpkgs-package">
-            <h3>pkgs.{{ attribute }}</h3>
+            <h3><span class="pkgs">pkgs.</span>{{ attribute }}</h3>
             <table>
-              {% for nixos_channel, val in nixos_channels.items %}
-                <tr>
-                  <td {% if val.major %}class="major-channel"{% endif %}>{{ nixos_channel }}</td>
-                  <td>: {{ val.version }}</td>
-                </tr>
+              {% for major_channel, val in nixos_channels %}
+                <tbody {% if not val.uniform_versions %}class="collapsed"{% endif %}>
+                  <tr>
+                    <td
+                      class="togglecollapsed"
+                      onclick="this.parentElement.parentElement.classList.toggle('collapsed')">
+                    </td>
+                    <td class="branch-name">{{ major_channel }}</td>
+                    <td class="version">{% if val.major_version %}{{ val.major_version }}{% else %}???{% endif %}</td>
+                  <tr>
+                  {% for branch_name, version in val.sub_branches %}
+                    <tr class="minor">
+                      <td></td>
+                      <td class="branch-name">{{ branch_name }}</td>
+                      <td class="version">{{ version }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
               {% endfor %}
             </table>
           </article>
