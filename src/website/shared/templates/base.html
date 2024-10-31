@@ -45,6 +45,12 @@
         {% endblock %}
       </ul>
     </nav>
+    {% if debug %}
+      <div id="testing-disclaimer">
+        <em>⚠️ You are using a <b>publicly accessible</b> testing environment.
+        Don’t enter secrets into this system, especially not by reusing passwords for your user account.</em>
+      </div>
+    {% endif %}
 
     {% block layout %}
     <article>

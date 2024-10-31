@@ -263,6 +263,12 @@ nav a:visited {
   margin: 0;
 }
 
+#testing-disclaimer {
+  text-align: center;
+  background: #f2f1ac;
+  padding: 0.2em;
+}
+
 article {
   padding: 1em;
 }
