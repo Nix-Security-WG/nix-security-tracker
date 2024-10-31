@@ -16,7 +16,7 @@ from django.contrib.postgres.search import (
     SearchQuery,
     SearchRank,
 )
-from django.core.paginator import Page
+from django.core.paginator import Page, Paginator
 from django.db.models import (
     Case,
     Count,
@@ -483,8 +483,27 @@ class NixderivationPerChannelView(ListView):
 
 
 class SuggestionListView(ListView):
+    class LargeTablePaginator(Paginator):
+        """
+        Overrides the count method to get an estimate instead of actual count when not filtered
+        """
+
+        _count = None
+
+        @property
+        def count(self) -> int:
+            """
+            Changed to use an estimate if the estimate is greater than 10,000
+            Returns the total number of objects, across all pages.
+            """
+            if self._count is None:
+                self._count = CVEDerivationClusterProposal.objects.count()
+
+            return self._count
+
     template_name = "suggestion_list.html"
     model = CVEDerivationClusterProposal
+    paginator_class = LargeTablePaginator
     paginate_by = 10
     context_object_name = "objects"
 
@@ -515,7 +534,8 @@ class SuggestionListView(ListView):
 
         queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
         # queryset = queryset.order_by(MD5(CastToText("id")))
-        queryset = queryset.distinct("cve__cve_id")
+        # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
+        # queryset = queryset.distinct("cve__cve_id")
 
         queryset = queryset.annotate(
             package_name=F("cve__container__affected__package_name"),
