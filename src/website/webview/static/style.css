@@ -393,9 +393,15 @@ article .nixpkgs-packages {
   color: var(--grey);
 }
 
+.nixpkgs-package summary {
+  width: 19.5em; /* .version + .branch-name + 1.5em for the unfold triangle */
+  margin-left: auto;
+}
+
 .nixpkgs-package .channel-list {
   list-style-type: none;
   padding-left: 0;
+  margin: 0;
 }
 
 .nixpkgs-package .branch-minor {
