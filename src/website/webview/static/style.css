@@ -247,6 +247,9 @@ nav ul {
   padding: 0;
   margin: 0;
 }
+nav.header ul {
+  margin-left: auto;
+}
 nav ul li {
   margin-left: 2em;
   display: inline;
@@ -255,7 +258,8 @@ nav ul li {
 nav a {
   text-decoration: none;
 }
-nav a:visited {
+nav.header a:visited {
+  color: white;
   margin: 0;
 }
 nav#pagination {
