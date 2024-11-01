@@ -1,0 +1,25 @@
+name: npins update helper
+on:
+  pull_request_target:
+    branches: [main]
+
+jobs:
+  trigger-build:
+    if: github.head_ref == 'npins-auto-update'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # here we trust our supply chain not to mess up
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'builds.yaml',
+              ref: '${{ github.event.pull_request.head.ref }}',
+            });
