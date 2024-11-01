@@ -119,6 +119,7 @@ rec {
     in
     pkgs.mkShellNoCC {
       packages = [
+        pkgs.npins
         deploy
         dump-database
       ];
@@ -131,7 +132,7 @@ rec {
       '';
       deploymentSources = import ./staging/npins;
     in
-    pkgs.mkShell {
+    pkgs.mkShellNoCC {
       env = {
         REDIS_SOCKET_URL = "unix:///run/redis/redis.sock";
         DATABASE_URL = "postgres://nix-security-tracker@/nix-security-tracker";
