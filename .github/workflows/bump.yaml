@@ -2,9 +2,9 @@ name: Weekly npins update
 
 on:
   schedule:
-    # Runs at 00:00 UTC every Monday
+    # run at 00:00 UTC every Monday
     - cron: "0 0 * * 1"
-  # Allow manual trigger
+  # allow manual trigger
   workflow_dispatch:
 
 permissions:
@@ -23,7 +23,7 @@ jobs:
       - uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: npins update for staging"
+          commit-message: "chore: npins update"
           title: "chore: weekly npins update"
           body: |
             Automatic npins update performed by GitHub Actions
