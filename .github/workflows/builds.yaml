@@ -6,6 +6,7 @@ on:
 jobs:
   # Only put untrusted jobs here.
   development:
+    if: github.head_ref != 'npins-auto-update'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
