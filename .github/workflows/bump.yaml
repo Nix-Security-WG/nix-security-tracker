@@ -29,5 +29,4 @@ jobs:
             Automatic npins update performed by GitHub Actions
           branch: npins-auto-update
           delete-branch: true
-          # TODO: change back to main
-          base: auto-npins-update
+          base: main

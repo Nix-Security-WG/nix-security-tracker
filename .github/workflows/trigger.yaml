@@ -1,25 +1,10 @@
 name: npins update helper
 on:
   pull_request_target:
-    # TODO: only opened
-    types: [opened, reopened]
-    # TODO: change back to main
-    branches: [auto-npins-update]
+    types: [opened]
+    branches: [main]
 
 jobs:
-  # TODO: remove debugging
-  debug-trigger:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Debug Event
-        env:
-          EVENT_CONTEXT: ${{ toJSON(github.event) }}
-        run: |
-          echo "Event type: ${{ github.event_name }}"
-          echo "Head ref: ${{ github.head_ref }}"
-          echo "Base ref: ${{ github.base_ref }}"
-          echo "Full event context:"
-          echo "$EVENT_CONTEXT"
   trigger-build:
     if: github.head_ref == 'npins-auto-update'
     runs-on: ubuntu-latest
