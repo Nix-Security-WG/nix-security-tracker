@@ -512,6 +512,9 @@ class SuggestionListView(ListView):
 
         for obj in context["object_list"]:
             obj.packages = channel_structure(obj.derivations.all())
+        context["adjusted_elided_page_range"] = context[
+            "paginator"
+        ].get_elided_page_range(context["page_obj"].number)
         return context
 
     def get_queryset(self) -> Any:
