@@ -247,7 +247,7 @@ nav ul {
   padding: 0;
   margin: 0;
 }
-nav ul {
+nav.header ul {
   margin-left: auto;
 }
 nav ul li {
@@ -258,9 +258,14 @@ nav ul li {
 nav a {
   text-decoration: none;
 }
-nav a:visited {
+nav.header a:visited {
   color: white;
   margin: 0;
+}
+nav#pagination {
+  background-color: unset;
+  color: black;
+  justify-content: center;
 }
 
 #testing-disclaimer {
