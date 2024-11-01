@@ -64,7 +64,7 @@
         {% endfor %}
       </div>
       <div class="change-issue-state">
-        <form class="dismiss" method="post" action="">
+        <form method="post" action="">
           {% csrf_token %}
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="REJECTED">
@@ -72,7 +72,7 @@
             Dismiss
           </button>
         </form>
-        <form class="create-draft" method="post" action="">
+        <form method="post" action="">
           {% csrf_token %}
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="ACCEPTED">

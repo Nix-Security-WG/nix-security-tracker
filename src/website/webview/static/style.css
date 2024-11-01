@@ -226,7 +226,8 @@
 }
 
 :root {
-  --grey: #b5b2b1;
+  --grey: #d5d2d1;
+  --dark-grey: #b5b2b1;
 }
 
 body {
@@ -433,29 +434,33 @@ article .nixpkgs-packages {
 
 .suggestion .change-issue-state {
   display: flex;
+  justify-content: space-between;
   margin-top: 0.8em;
   font-weight: 500;
 }
 
-.suggestion .change-issue-state form .dismiss {
+.suggestion .change-issue-state form button {
   padding: 0.5em;
-}
-
-.suggestion .change-issue-state .create-draft {
-  margin-left: auto;
-}
-
-.suggestion .change-issue-state form .create-draft {
-  background: #1f883d;
-  color: white;
   border: none;
   border-radius: 0.3em;
-  padding: 0.5em;
 }
 
-.suggestion .change-issue-state .create-draft:hover {
-  color: var(--grey);
-  background: #16682e;
+.dismiss {
+  background: red;
+  color: white;
+}
+
+.dismiss:hover {
+  background: darkred;
+}
+
+.create-draft {
+  background: green;
+  color: white;
+}
+
+.create-draft:hover {
+  background: darkgreen;
 }
 
 /* Desktop */
