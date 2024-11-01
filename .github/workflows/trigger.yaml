@@ -1,10 +1,13 @@
 name: npins update helper
 on:
   pull_request_target:
+    # TODO: only opened
     types: [opened, reopened]
-    branches: [main]
+    # TODO: change back to main
+    branches: [auto-npins-update]
 
 jobs:
+  # TODO: remove debugging
   debug-trigger:
     runs-on: ubuntu-latest
     steps:
