@@ -3,6 +3,8 @@ on:
   pull_request:
   push:
     branches: main
+  # allow "manual" triggering from automatic PRs
+  workflow_dispatch:
 jobs:
   # Only put untrusted jobs here.
   development:
