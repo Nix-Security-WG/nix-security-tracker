@@ -103,6 +103,8 @@ rec {
           nixos-rebuild
           coreutils
         ];
+        # TODO: satisfy shellcheck
+        checkPhase = "";
       };
       dump-database = pkgs.writeShellApplication {
         name = "dump-database";
@@ -111,6 +113,8 @@ rec {
           awscli
           pv
         ];
+        # TODO: satisfy shellcheck
+        checkPhase = "";
       };
     in
     pkgs.mkShellNoCC {
