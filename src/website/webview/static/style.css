@@ -437,8 +437,15 @@ article .nixpkgs-packages {
   font-weight: 500;
 }
 
+.suggestion .change-issue-state form .dismiss {
+  padding: 0.5em;
+}
+
 .suggestion .change-issue-state .create-draft {
   margin-left: auto;
+}
+
+.suggestion .change-issue-state form .create-draft {
   background: #1f883d;
   color: white;
   border: none;

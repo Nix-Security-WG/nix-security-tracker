@@ -31,7 +31,7 @@ from django.db.models.functions import Coalesce
 from django.db.models.manager import BaseManager
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
 from shared.models import (
@@ -536,6 +536,7 @@ class SuggestionListView(ListView):
             template = f"(CAST (%(expressions)s AS text)) || {ordering_seed}"
 
         queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
+        queryset = queryset.filter(status=CVEDerivationClusterProposal.Status.PENDING)
         # queryset = queryset.order_by(MD5(CastToText("id")))
         # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
         # queryset = queryset.distinct("cve__cve_id")
@@ -549,3 +550,14 @@ class SuggestionListView(ListView):
             description=F("cve__container__descriptions__value"),
         )
         return queryset
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        suggestion_id = request.POST.get("suggestion_id")
+        new_status = request.POST.get("new_status")
+        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        if new_status == "REJECTED":
+            suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
+        elif new_status == "ACCEPTED":
+            suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
+        suggestion.save()
+        return redirect("/suggestions")
