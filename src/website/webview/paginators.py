@@ -1,7 +1,9 @@
+import json
 from collections.abc import Callable
 from typing import Any
 
 from django.core.paginator import Paginator
+from django.db.models import QuerySet
 from django.utils.functional import cached_property
 
 
@@ -23,18 +25,20 @@ class CustomCountPaginator(Paginator):
 
 class LargeTablePaginator(Paginator):
     """
-    Overrides the count method to get an estimate instead of actual count when not filtered
+    Return an estimate for large numbers
     """
-
-    _count = None
 
     @property
     def count(self) -> int:
-        """
-        Changed to use an estimate if the estimate is greater than 10,000
-        Returns the total number of objects, across all pages.
-        """
-        if self._count is None:
-            self._count = self.object_list.model.objects.count()
+        if not isinstance(self.object_list, QuerySet):
+            return len(self.object_list)
 
-        return self._count
+        plan = self.object_list.explain(format="json")
+        try:
+            estimate = json.loads(plan)[0]["Plan"]["Plan Rows"]
+            if estimate > 1000:
+                return estimate
+        except (KeyError, IndexError, TypeError):
+            pass
+
+        return self.object_list.count()
