@@ -51,7 +51,7 @@ from shared.models.nix_evaluation import (
 )
 
 from webview.forms import NixpkgsIssueForm
-from webview.paginators import CustomCountPaginator
+from webview.paginators import CustomCountPaginator, LargeTablePaginator
 
 
 class HomeView(TemplateView):
@@ -482,24 +482,6 @@ class NixderivationPerChannelView(ListView):
 
 
 class SuggestionListView(ListView):
-    class LargeTablePaginator(Paginator):
-        """
-        Overrides the count method to get an estimate instead of actual count when not filtered
-        """
-
-        _count = None
-
-        @property
-        def count(self) -> int:
-            """
-            Changed to use an estimate if the estimate is greater than 10,000
-            Returns the total number of objects, across all pages.
-            """
-            if self._count is None:
-                self._count = CVEDerivationClusterProposal.objects.count()
-
-            return self._count
-
     template_name = "suggestion_list.html"
     model = CVEDerivationClusterProposal
     paginator_class = LargeTablePaginator
@@ -550,3 +532,4 @@ class SuggestionListView(ListView):
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
         return redirect("/suggestions")
+
