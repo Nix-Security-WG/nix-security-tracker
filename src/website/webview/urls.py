@@ -3,6 +3,8 @@ from django.views.generic.base import RedirectView
 from shared.auth.github_webhook import handle_github_hook
 
 from webview.views import (
+    DismissedListView,
+    DraftListView,
     HomeView,
     NixderivationPerChannelView,
     NixpkgsIssueListView,
@@ -36,4 +38,6 @@ urlpatterns = [
         name="affected_list",
     ),
     path("suggestions/", SuggestionListView.as_view(), name="suggestions_view"),
+    path("dismissed/", DismissedListView.as_view(), name="dismissed_view"),
+    path("drafts/", DraftListView.as_view(), name="drafts_view"),
 ]

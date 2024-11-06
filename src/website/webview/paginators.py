@@ -23,6 +23,7 @@ class CustomCountPaginator(Paginator):
     def count(self) -> int:  # type: ignore[override]
         return self.custom_count()
 
+
 class LargeTablePaginator(Paginator):
     """
     Return an estimate for large numbers

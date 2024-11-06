@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Automatic suggestions</h1>
+<h1>Drafts</h1>
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
@@ -26,15 +26,13 @@
         </div>
       </div>
       <h2>{{ object.package_name }}</h2>
-      {% if object.title %}
-        <h3> {{ object.title }} </h3>
-      {% endif %}
-      <div class="description collapsed">
-        <span class="description-truncated">{{ object.description|truncatewords:10 }}</span>
-        <span class="show-more" onclick="this.parentElement.classList.toggle('collapsed')">Show more</span>
-        <span class="description-long">{{ object.description }}</span>
-        <span class="show-less" onclick="this.parentElement.classList.toggle('collapsed')">Show less</span>
-      </div>
+      <!-- XXX: just another idea how to do it -->
+      <details class="description">
+        <summary>
+            {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
+        </summary>
+        <p class="description-long as-details">{{ object.description }}</p>
+      </details>
       <div class="nixpkgs-packages">
         {% for attribute, nixos_channels in object.packages.items %}
           <article class="nixpkgs-package">
@@ -78,7 +76,7 @@
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="ACCEPTED">
           <button class="green-button">
-            Create draft
+            Ǫ̶̈́p̷̢̓e̵͚̔n̴̯̒ ̷̠͑í̶̢s̸̰͋s̶̰̆u̶͗͜e̴̼̚
           </button>
         </form>
       </div>

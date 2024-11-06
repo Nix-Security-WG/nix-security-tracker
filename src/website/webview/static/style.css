@@ -275,6 +275,12 @@ nav#pagination {
   padding: 0.2em;
 }
 
+h1 {
+  max-width: 55rem;
+  margin: auto;
+  margin-bottom: 1rem;
+}
+
 article {
   padding: 1em;
 }
@@ -356,6 +362,11 @@ article .suggestion h3 {
 .show-less {
   color: var(--grey);
   cursor: pointer;
+}
+
+.description-long.as-details {
+  margin-left: 1em;
+  margin-top: 0.5em;
 }
 
 .description .show-more:hover,
@@ -440,29 +451,43 @@ article .nixpkgs-packages {
   font-weight: 500;
 }
 
+.suggestion .dismissed {
+  justify-content: right;
+  gap: 1em;
+}
+
 .suggestion .change-issue-state form button {
   padding: 0.5em;
   border: none;
   border-radius: 0.3em;
 }
 
-.dismiss {
+.red-button {
   background: red;
   color: white;
   cursor: pointer;
 }
 
-.dismiss:hover {
+.red-button:hover {
   background: darkred;
 }
 
-.create-draft {
+.grey-button {
+  background: grey;
+  color: white;
+}
+
+.grey-button:hover {
+  background: darkgrey;
+}
+
+.green-button {
   background: green;
   color: white;
   cursor: pointer;
 }
 
-.create-draft:hover {
+.green-button:hover {
   background: darkgreen;
 }
 

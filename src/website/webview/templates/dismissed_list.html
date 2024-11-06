@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Automatic suggestions</h1>
+<h1>Dismissed suggestions</h1>
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
@@ -64,13 +64,13 @@
           </article>
         {% endfor %}
       </div>
-      <div class="change-issue-state">
+      <div class="change-issue-state dismissed">
         <form method="post" action="">
           {% csrf_token %}
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="REJECTED">
-          <button class="red-button">
-            Dismiss
+          <input type="hidden" name="new_status" value="PENDING">
+          <button class="grey-button">
+            Back to triage queue
           </button>
         </form>
         <form method="post" action="">
