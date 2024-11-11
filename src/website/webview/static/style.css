@@ -360,24 +360,18 @@ article .suggestion h3 {
 
 details.description > summary {
   display: block;
-  position: relative;
-  padding-left: 1em;
+  font-weight: 600;
 }
 
-details.description > summary:before {
-  content: "▾";
-  position: absolute;
-  left: 0;
+details.description > summary:after {
+  content: "Show more...";
+  color: var(--dark-grey);
+  cursor: pointer;
+  font-weight: normal;
 }
 
-/* Optional: Style for when details is open */
-details.description[open] > summary:before {
-  content: "▾";
-}
-
-/* Optional: Style for when details is closed */
-details.description:not([open]) > summary:before {
-  content: "▸";
+details.description[open] > summary:after {
+  content: "Show less...";
 }
 
 .description .show-more,
@@ -387,7 +381,6 @@ details.description:not([open]) > summary:before {
 }
 
 .description-long.as-details {
-  margin-left: 1em;
   margin-top: 0.5em;
 }
 
