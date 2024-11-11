@@ -633,7 +633,5 @@ class DraftListView(ListView):
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
-        elif new_status == "ACCEPTED":
-            suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
-            suggestion.save()
+        suggestion.save()
         return redirect("/drafts")
