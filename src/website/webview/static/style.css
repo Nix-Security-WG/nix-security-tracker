@@ -358,6 +358,22 @@ article .suggestion h3 {
   font-weight: 600;
 }
 
+details.description > summary {
+  display: block;
+  font-weight: 600;
+}
+
+details.description > summary:after {
+  content: "Show more...";
+  color: var(--dark-grey);
+  cursor: pointer;
+  font-weight: normal;
+}
+
+details.description[open] > summary:after {
+  content: "Show less...";
+}
+
 .description .show-more,
 .show-less {
   color: var(--grey);
@@ -365,7 +381,6 @@ article .suggestion h3 {
 }
 
 .description-long.as-details {
-  margin-left: 1em;
   margin-top: 0.5em;
 }
 
