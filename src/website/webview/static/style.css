@@ -355,6 +355,7 @@ article .suggestion h3 {
 .description .show-more,
 .show-less {
   color: var(--grey);
+  cursor: pointer;
 }
 
 .description .show-more:hover,
@@ -448,6 +449,7 @@ article .nixpkgs-packages {
 .dismiss {
   background: red;
   color: white;
+  cursor: pointer;
 }
 
 .dismiss:hover {
@@ -457,6 +459,7 @@ article .nixpkgs-packages {
 .create-draft {
   background: green;
   color: white;
+  cursor: pointer;
 }
 
 .create-draft:hover {
