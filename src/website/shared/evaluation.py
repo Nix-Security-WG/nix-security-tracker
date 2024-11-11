@@ -405,6 +405,7 @@ class SyncBatchAttributeIngester:
         maintainers_throughs = []
         licenses_throughs = []
         metadatas = []
+        metadata_map = {}
         start = time.time()
         for index, evaluation in enumerate(self.evaluations):
             eval_dependencies = dependencies[evaluation.drv_path]
@@ -424,6 +425,7 @@ class SyncBatchAttributeIngester:
                     (metadata_index, drv_licenses_throughs)
                 )
                 metadatas.append(metadata)
+                metadata_map[evaluation.drv_path] = metadata_index
 
             derivations[evaluation.drv_path] = self.ingest_derivation_shell(
                 evaluation, parent_evaluation, None
@@ -441,6 +443,11 @@ class SyncBatchAttributeIngester:
             len(metadatas),
             time.time() - start,
         )
+
+        # Update derivations with their metadata
+        for drv_path, metadata_index in metadata_map.items():
+            if drv_path in derivations:
+                derivations[drv_path].metadata = metadatas[metadata_index]
 
         derivations = {
             drv.derivation_path: drv
