@@ -21,7 +21,6 @@ from django.db.models import (
     Case,
     Count,
     F,
-    Func,
     Max,
     Q,
     Value,
@@ -525,22 +524,12 @@ class SuggestionListView(ListView):
             .prefetch_related("derivations", "derivations__parent_evaluation")
         )
 
-        # Some stuff only for demo and development purposes, to have more interesting data on the page
-        ordering_seed = "1234"
-
-        class MD5(Func):
-            function = "MD5"
-
-        class CastToText(Func):
-            function = "CAST"
-            template = f"(CAST (%(expressions)s AS text)) || {ordering_seed}"
-
+        # FIXME(kerstin) Some stuff only for demo and development purposes, to have more interesting data on the page
         queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
-        queryset = queryset.filter(status=CVEDerivationClusterProposal.Status.PENDING)
-        # queryset = queryset.order_by(MD5(CastToText("id")))
         # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
         # queryset = queryset.distinct("cve__cve_id")
 
+        queryset = queryset.filter(status=CVEDerivationClusterProposal.Status.PENDING)
         queryset = queryset.annotate(
             package_name=F("cve__container__affected__package_name"),
             base_severity=Coalesce(
