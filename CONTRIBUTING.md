@@ -138,6 +138,12 @@ pg_restore -O -d nix-security-tracker -v < dump
 manage migrate
 ```
 
+If you have SSH access to the staging environment, you can instead dump and restore a fresh dump:
+
+```bash
+ssh sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump --create web-security-tracker | zstd" | zstdcat | sed 's|web-security-tracker|nix-security-tracker|g' | pv | psql
+```
+
 ## Running the service in a container
 
 On NixOS, you can run the service in a [`systemd-nspawn` container](https://search.nixos.org/options?show=containers) to preview a deployment.
