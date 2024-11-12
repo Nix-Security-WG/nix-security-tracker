@@ -138,7 +138,7 @@ pg_restore -O -d nix-security-tracker -v < dump
 manage migrate
 ```
 
-If you have SSH access to the staging environment, you can instead dump and restore a fresh dump:
+If you have SSH access to the staging environment, you can instead dump and restore the latest state directly:
 
 ```bash
 ssh sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump --create web-security-tracker | zstd" | zstdcat | sed 's|web-security-tracker|nix-security-tracker|g' | pv | psql
