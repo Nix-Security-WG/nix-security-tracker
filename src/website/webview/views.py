@@ -579,9 +579,7 @@ class DismissedListView(ListView):
         suggestion_id = request.POST.get("suggestion_id")
         new_status = request.POST.get("new_status")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-        if new_status == "PENDING":
-            suggestion.status = CVEDerivationClusterProposal.Status.PENDING
-        elif new_status == "ACCEPTED":
+        if new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
         return redirect("/dismissed")
@@ -634,4 +632,4 @@ class DraftListView(ListView):
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
         suggestion.save()
-        return redirect("/drafts")
+        return redirect("/selected")

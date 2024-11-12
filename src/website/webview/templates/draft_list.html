@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Drafts</h1>
+<h1>Selected suggestions</h1>
+<p>
+<span class="hint green-button">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing. <s><a href="/drafts">View all drafts</a></s>
+</p>
+<p>
+<span class="hint red-button">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+</p>
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
@@ -68,7 +74,7 @@
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="REJECTED">
           <button class="red-button">
-            Dismiss draft
+            Dismiss
           </button>
         </form>
         <form method="post" action="">
@@ -76,7 +82,7 @@
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="ACCEPTED">
           <button type="button" class="green-button">
-            Ǫ̶̈́p̷̢̓e̵͚̔n̴̯̒ ̷̠͑í̶̢s̸̰͋s̶̰̆u̶͗͜e̴̼̚
+            C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
           </button>
         </form>
       </div>

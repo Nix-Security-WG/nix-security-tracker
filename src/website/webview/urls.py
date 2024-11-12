@@ -37,7 +37,12 @@ urlpatterns = [
         RedirectView.as_view(url="nixos-unstable", permanent=True),
         name="affected_list",
     ),
+    # TODO: clean up the file names
+    # TODO: this should probably be something like
+    #       suggestions/queue
+    #       suggestions/dismissed
+    #       suggestions/selected
     path("suggestions/", SuggestionListView.as_view(), name="suggestions_view"),
     path("dismissed/", DismissedListView.as_view(), name="dismissed_view"),
-    path("drafts/", DraftListView.as_view(), name="drafts_view"),
+    path("selected/", DraftListView.as_view(), name="drafts_view"),
 ]

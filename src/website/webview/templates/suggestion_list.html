@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Automatic suggestions</h1>
+<h1>Automatically generated suggestions</h1>
+<p>
+<span class="hint green-button">Select</span> to queue a suggestion for refinement. <a href="/selected">View all selected suggestions</a></s>
+</p>
+<p>
+<span class="hint red-button">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+</p>
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
@@ -78,7 +84,7 @@
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="ACCEPTED">
           <button class="green-button">
-            Create draft
+            Select
           </button>
         </form>
       </div>

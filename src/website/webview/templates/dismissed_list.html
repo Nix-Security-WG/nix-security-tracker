@@ -2,6 +2,12 @@
 
 {% block content %}
 <h1>Dismissed suggestions</h1>
+<p>
+These automatic suggestions were dimissed after initial triaging. <a href="/suggestions">View all untriaged suggestions</a>
+</p>
+<p>
+<span class="hint red-button">Restore</span> to select a suggestion for a revision. <a href="/selected">View all selected suggestions</a>
+</p>
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
@@ -68,17 +74,9 @@
         <form method="post" action="">
           {% csrf_token %}
           <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="PENDING">
-          <button class="grey-button">
-            Back to triage queue
-          </button>
-        </form>
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
           <input type="hidden" name="new_status" value="ACCEPTED">
-          <button class="green-button">
-            Create draft
+          <button class="red-button">
+            Restore
           </button>
         </form>
       </div>
