@@ -53,15 +53,13 @@
     {% endif %}
 
     {% block layout %}
-    <article>
-          {% block content %}{% endblock content %}
-    </article>
+      <article>
+        {% block content %}{% endblock content %}
+      </article>
     {% endblock layout %}
 
     {% if is_paginated %}
-      <nav id="pagination">
-        {% block pagination %} {% endblock %}
-      </nav>
+      {% include "components/pagination.html" %}
     {% endif %}
 
     <footer>
