@@ -12,15 +12,12 @@
         {% severity_badge object.base_severity %}
       </div>
       <h2>{{ object.package_name }}</h2>
-      {% if object.title %}
-        <h3> {{ object.title }} </h3>
-      {% endif %}
-      <div class="description collapsed">
-        <span class="description-truncated">{{ object.description|truncatewords:10 }}</span>
-        <span class="show-more" onclick="this.parentElement.classList.toggle('collapsed')">Show more</span>
-        <span class="description-long">{{ object.description }}</span>
-        <span class="show-less" onclick="this.parentElement.classList.toggle('collapsed')">Show less</span>
-      </div>
+      <details class="description">
+        <summary>
+            {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
+        </summary>
+        <p class="description-long as-details">{{ object.description }}</p>
+      </details>
       {% nixpkgs_package_list object.packages %}
       <div class="change-issue-state">
         {% suggestion_state_button suggestion_id=object.id state="REJECTED" label="Dismiss" style="dismiss" %}
