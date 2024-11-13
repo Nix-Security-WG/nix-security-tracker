@@ -525,13 +525,14 @@ class SuggestionListView(ListView):
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         suggestion_id = request.POST.get("suggestion_id")
         new_status = request.POST.get("new_status")
+        current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
         elif new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
-        return redirect("/suggestions")
+        return redirect(f"{request.path}?page={current_page}")
 
 
 class DismissedListView(ListView):
@@ -578,11 +579,12 @@ class DismissedListView(ListView):
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         suggestion_id = request.POST.get("suggestion_id")
         new_status = request.POST.get("new_status")
+        current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
         if new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
-        return redirect("/dismissed")
+        return redirect(f"{request.path}?page={current_page}")
 
 
 class DraftListView(ListView):
@@ -628,8 +630,9 @@ class DraftListView(ListView):
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         suggestion_id = request.POST.get("suggestion_id")
         new_status = request.POST.get("new_status")
+        current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
         suggestion.save()
-        return redirect("/selected")
+        return redirect(f"{request.path}?page={current_page}")

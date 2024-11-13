@@ -12,25 +12,37 @@
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
+
       <div class="row1">
         <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
           {{ object.cve.cve_id }}
         </a>
         {% severity_badge object.base_severity %}
+
       </div>
       <h2>{{ object.package_name }}</h2>
-      <!-- XXX: just another idea how to do it -->
+
       <details class="description">
         <summary>
             {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
         </summary>
         <p class="description-long as-details">{{ object.description }}</p>
       </details>
+
       {% nixpkgs_package_list object.packages %}
-      <div class="change-issue-state">
-        {% suggestion_state_button suggestion_id=object.id state="REJECTED" label="Dismiss" style="red-button" %}
-        {% suggestion_state_button suggestion_id=object.id state="ACCEPTED" label="C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃" style="green-button" %}
-      </div>
+
+      <form class="change-issue-state" method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="suggestion_id" value="{{ object.id }}">
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+
+        <button type="submit" name="new_status" value="ACCEPTED" class="green-button">
+          C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
+        </button>
+        <button type="submit" name="new_status" value="REJECTED" class="red-button">
+          Dismiss
+        </button>
+      </form>
     </article>
   {% endfor %}
 </div>

@@ -436,16 +436,12 @@ article .nixpkgs-packages {
 .suggestion .change-issue-state {
   display: flex;
   justify-content: space-between;
+  flex-direction: row-reverse;
   margin-top: 0.8em;
   font-weight: 500;
 }
 
-.suggestion .dismissed {
-  justify-content: right;
-  gap: 1em;
-}
-
-.suggestion .change-issue-state form button {
+.suggestion .change-issue-state button {
   padding: 0.5em;
   border: none;
   border-radius: 0.3em;
