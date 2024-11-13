@@ -24,50 +24,73 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
 
 <details><summary>Set up GitHub authentication</summary>
 
-1. Create a new or select an existing GitHub organisation to associate with the application
+1.  Create a new or select an existing GitHub organisation to associate with the application
 
-   - In the **Settings** tab under **Personal access tokens**, ensure that personal access tokens are allowed.
-   - In the **Teams** tab, ensure there are at least two teams, corresponding to [`nixpkgs-committers`](https://github.com/orgs/nixos/teams/nixpkgs-committers) and [`security`](https://github.com/orgs/nixos/teams/security)
+    - In the **Settings** tab under **Personal access tokens**, ensure that personal access tokens are allowed.
+    - In the **Teams** tab, ensure there are at least two teams, corresponding to [`nixpkgs-committers`](https://github.com/orgs/nixos/teams/nixpkgs-committers) and [`security`](https://github.com/orgs/nixos/teams/security)
 
-     These teams will be used for mapping user permissions.
-     The actual names are arbitrary and can be configured in the service settings.
+      These teams will be used for mapping user permissions.
+      The actual names are arbitrary and can be configured in the service settings.
 
-   - Put the organisation name and team names into `.settings.py` so it gets picked up :
+    - Put the organisation name and team names into `.settings.py` so it gets picked up :
 
-     ```python
-     GH_ORGANIZATION = "my-org"
-     GH_COMMITTERS_TEAM = "team1"
-     GH_SECURITY_TEAM = "team2"
-     ```
+      ```python
+      GH_ORGANIZATION = "my-org"
+      GH_COMMITTERS_TEAM = "team1"
+      GH_SECURITY_TEAM = "team2"
+      ```
 
-     <!--
-     TODO: this only works for the local dev environment. staging and prod still need work:
-     https://github.com/Nix-Security-WG/nix-security-tracker/issues/239
-     https://github.com/Nix-Security-WG/nix-security-tracker/issues/240
-     https://github.com/Nix-Security-WG/nix-security-tracker/issues/285
-     -->
+      <!--
+      TODO: this only works for the local dev environment. staging and prod still need work:
+      https://github.com/Nix-Security-WG/nix-security-tracker/issues/239
+      https://github.com/Nix-Security-WG/nix-security-tracker/issues/240
+      https://github.com/Nix-Security-WG/nix-security-tracker/issues/285
+      -->
 
-2. For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+2.  For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
-   This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
+    This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
 
-   - Generate new token
-     - In **Resource owner** select the GitHub organisation associated with the application
-     - In **Repository access** select **Public Repositories (read-only)**
-     - In **Permissions**, set **Members** permissions to **Read-only**
-     - No other permissions are required
-   - Store the value in `.credentials/GH_TOKEN`
+    - Generate new token
+      - In **Resource owner** select the GitHub organisation associated with the application
+      - In **Repository access** select **Public Repositories (read-only)**
+      - In **Permissions**, set **Members** permissions to **Read-only**
+      - No other permissions are required
+    - Store the value in `.credentials/GH_TOKEN`
 
-3. In the GitHub organisation settings, [create an OAuth application](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app):
+3.  In the GitHub organisation settings, [register a GitHub application](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app):
 
-   - In **Personal access tokens** approve the request under **Pending requests** if approval is required
-   - In **Developer settings** OAuth Apps, create a new application
+    - In **Personal access tokens** approve the request under **Pending requests** if approval is required
+    - In **Developer settings** GitHub Apps, create a new application
 
-     Store the **Client ID** in `.credentials/GH_CLIENT_ID`
+      - In **Repository Permissions** select **Administration (read-only)** and **(Metadata: read-only)**.
+      - In **Organization Permissions** select **Administration (read-only)** and **(Members: read-only)**.
 
-   - In the application settings **Generate a new client secret**
+      Store the **Client ID** in `.credentials/GH_CLIENT_ID`
 
-     Store the value in `.credentials/GH_SECRET`
+    - In the application settings / **General** / **Generate a new client secret**
+
+      Store the value in `.credentials/GH_SECRET`
+
+    - In the application settings / **General** / **Private keys** / **Generate a private key**
+
+      Store the value in `.credentials/GH_APP_PRIVATE_KEY`
+
+    - In the application settings / **Install App**
+
+      **Install** in the organisation account.
+
+      <details><summary>If the account that shows up is your Developer Account</summary>
+
+      You can delete and start over making sure that the context is the organisation account, or:
+
+      - In the application settings / **Advanced**
+
+        **Transfer ownership of this GitHub App** to the organisation account.
+
+        </details>
+
+    - The app should now be visible under organisation settings / **Third-party Access** / **GitHub Apps**
 
 </details>
 
