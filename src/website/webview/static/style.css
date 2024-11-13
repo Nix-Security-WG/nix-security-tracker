@@ -275,6 +275,13 @@ nav#pagination {
   padding: 0.2em;
 }
 
+h1,
+p {
+  max-width: 55rem;
+  margin: auto;
+  margin-bottom: 1rem;
+}
+
 article {
   padding: 1em;
 }
@@ -433,29 +440,50 @@ article .nixpkgs-packages {
   font-weight: 500;
 }
 
+.suggestion .dismissed {
+  justify-content: right;
+  gap: 1em;
+}
+
 .suggestion .change-issue-state form button {
   padding: 0.5em;
   border: none;
   border-radius: 0.3em;
+  min-width: 5em;
 }
 
-.dismiss {
+span.hint {
+  padding: 0 0.4em;
+  border: none;
+  border-radius: 0.3em;
+}
+
+.red-button {
   background: red;
   color: white;
   cursor: pointer;
 }
 
-.dismiss:hover {
+.red-button:hover {
   background: darkred;
 }
 
-.create-draft {
+.grey-button {
+  background: grey;
+  color: white;
+}
+
+.grey-button:hover {
+  background: darkgrey;
+}
+
+.green-button {
   background: green;
   color: white;
   cursor: pointer;
 }
 
-.create-draft:hover {
+.green-button:hover {
   background: darkgreen;
 }
 
@@ -467,6 +495,11 @@ article .nixpkgs-packages {
 @media (max-width: 800px) {
   article {
     padding: 0;
+  }
+
+  h1,
+  p {
+    margin: 0.5rem;
   }
 
   article .suggestion {

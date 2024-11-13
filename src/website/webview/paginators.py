@@ -1,7 +1,9 @@
+import json
 from collections.abc import Callable
 from typing import Any
 
 from django.core.paginator import Paginator
+from django.db.models import QuerySet
 from django.utils.functional import cached_property
 
 
@@ -20,3 +22,24 @@ class CustomCountPaginator(Paginator):
     @cached_property
     def count(self) -> int:  # type: ignore[override]
         return self.custom_count()
+
+
+class LargeTablePaginator(Paginator):
+    """
+    Return an estimate for large numbers
+    """
+
+    @property
+    def count(self) -> int:
+        if not isinstance(self.object_list, QuerySet):
+            return len(self.object_list)
+
+        plan = self.object_list.explain(format="json")
+        try:
+            estimate = json.loads(plan)[0]["Plan"]["Plan Rows"]
+            if estimate > 1000:
+                return estimate
+        except (KeyError, IndexError, TypeError):
+            pass
+
+        return self.object_list.count()

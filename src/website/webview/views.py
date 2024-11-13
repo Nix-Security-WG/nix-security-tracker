@@ -16,7 +16,7 @@ from django.contrib.postgres.search import (
     SearchQuery,
     SearchRank,
 )
-from django.core.paginator import Page, Paginator
+from django.core.paginator import Page
 from django.db.models import (
     Case,
     Count,
@@ -51,7 +51,7 @@ from shared.models.nix_evaluation import (
 )
 
 from webview.forms import NixpkgsIssueForm
-from webview.paginators import CustomCountPaginator
+from webview.paginators import CustomCountPaginator, LargeTablePaginator
 
 
 class HomeView(TemplateView):
@@ -482,24 +482,6 @@ class NixderivationPerChannelView(ListView):
 
 
 class SuggestionListView(ListView):
-    class LargeTablePaginator(Paginator):
-        """
-        Overrides the count method to get an estimate instead of actual count when not filtered
-        """
-
-        _count = None
-
-        @property
-        def count(self) -> int:
-            """
-            Changed to use an estimate if the estimate is greater than 10,000
-            Returns the total number of objects, across all pages.
-            """
-            if self._count is None:
-                self._count = CVEDerivationClusterProposal.objects.count()
-
-            return self._count
-
     template_name = "suggestion_list.html"
     model = CVEDerivationClusterProposal
     paginator_class = LargeTablePaginator
@@ -550,3 +532,104 @@ class SuggestionListView(ListView):
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
         return redirect("/suggestions")
+
+
+class DismissedListView(ListView):
+    template_name = "dismissed_list.html"
+    model = CVEDerivationClusterProposal
+    paginator_class = LargeTablePaginator
+    paginate_by = 10
+    context_object_name = "objects"
+
+    def get_context_data(self, **kwargs: Any) -> Any:
+        context = super().get_context_data(**kwargs)
+
+        for obj in context["object_list"]:
+            obj.packages = channel_structure(obj.derivations.all())
+        context["adjusted_elided_page_range"] = context[
+            "paginator"
+        ].get_elided_page_range(context["page_obj"].number)
+        return context
+
+    def get_queryset(self) -> Any:
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("cve")
+            # TODO: order by timestamp of rejection descending
+            .filter(status=CVEDerivationClusterProposal.Status.REJECTED)
+            .prefetch_related("derivations", "derivations__parent_evaluation")
+        )
+
+        # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
+        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
+        queryset = queryset.distinct("cve__cve_id")
+        queryset = queryset.annotate(
+            package_name=F("cve__container__affected__package_name"),
+            base_severity=Coalesce(
+                F("cve__container__metrics__base_severity"), Value(Severity.NONE)
+            ),
+            title=F("cve__container__title"),
+            description=F("cve__container__descriptions__value"),
+        )
+        return queryset
+
+    # TODO: deduplicate with the other views
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        suggestion_id = request.POST.get("suggestion_id")
+        new_status = request.POST.get("new_status")
+        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        if new_status == "ACCEPTED":
+            suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
+        suggestion.save()
+        return redirect("/dismissed")
+
+
+class DraftListView(ListView):
+    template_name = "draft_list.html"
+    model = CVEDerivationClusterProposal
+    paginator_class = LargeTablePaginator
+    paginate_by = 10
+    context_object_name = "objects"
+
+    def get_context_data(self, **kwargs: Any) -> Any:
+        context = super().get_context_data(**kwargs)
+
+        for obj in context["object_list"]:
+            obj.packages = channel_structure(obj.derivations.all())
+        context["adjusted_elided_page_range"] = context[
+            "paginator"
+        ].get_elided_page_range(context["page_obj"].number)
+        return context
+
+    def get_queryset(self) -> Any:
+        queryset = (
+            super()
+            .get_queryset()
+            .select_related("cve")
+            # TODO: order by timestamp of rejection descending
+            .filter(status=CVEDerivationClusterProposal.Status.ACCEPTED)
+            .prefetch_related("derivations", "derivations__parent_evaluation")
+        )
+
+        # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
+        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
+        queryset = queryset.distinct("cve__cve_id")
+        queryset = queryset.annotate(
+            package_name=F("cve__container__affected__package_name"),
+            base_severity=Coalesce(
+                F("cve__container__metrics__base_severity"), Value(Severity.NONE)
+            ),
+            title=F("cve__container__title"),
+            description=F("cve__container__descriptions__value"),
+        )
+        return queryset
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        suggestion_id = request.POST.get("suggestion_id")
+        new_status = request.POST.get("new_status")
+        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        if new_status == "REJECTED":
+            suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
+        suggestion.save()
+        return redirect("/selected")

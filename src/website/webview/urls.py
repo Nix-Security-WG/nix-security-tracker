@@ -3,6 +3,8 @@ from django.views.generic.base import RedirectView
 from shared.auth.github_webhook import handle_github_hook
 
 from webview.views import (
+    DismissedListView,
+    DraftListView,
     HomeView,
     NixderivationPerChannelView,
     NixpkgsIssueListView,
@@ -35,5 +37,12 @@ urlpatterns = [
         RedirectView.as_view(url="nixos-unstable", permanent=True),
         name="affected_list",
     ),
+    # TODO: clean up the file names
+    # TODO: this should probably be something like
+    #       suggestions/queue
+    #       suggestions/dismissed
+    #       suggestions/selected
     path("suggestions/", SuggestionListView.as_view(), name="suggestions_view"),
+    path("dismissed/", DismissedListView.as_view(), name="dismissed_view"),
+    path("selected/", DraftListView.as_view(), name="drafts_view"),
 ]
