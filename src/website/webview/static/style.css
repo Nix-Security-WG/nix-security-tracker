@@ -365,45 +365,18 @@ details.description > summary {
 }
 
 details.description > summary:after {
-  content: "Show more...";
+  content: "Show\a0 more...";
   color: var(--dark-grey);
   cursor: pointer;
   font-weight: normal;
 }
 
 details.description[open] > summary:after {
-  content: "Show less...";
-}
-
-.description .show-more,
-.show-less {
-  color: var(--grey);
-  cursor: pointer;
+  content: "Show\a0 less...";
 }
 
 .description-long.as-details {
   margin-top: 0.5em;
-}
-
-.description .show-more:hover,
-.show-less:hover {
-  color: #555555;
-}
-
-.description:not(.collapsed) .description-truncated {
-  display: none;
-}
-
-.description:not(.collapsed) .show-more {
-  display: none;
-}
-
-.description.collapsed .show-less {
-  display: none;
-}
-
-.description.collapsed .description-long {
-  display: none;
 }
 
 article .nixpkgs-packages {

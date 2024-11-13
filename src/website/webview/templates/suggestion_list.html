@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load viewutils %}
 
 {% block content %}
 <h1>Automatically generated suggestions</h1>
@@ -15,78 +16,19 @@
         <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
           {{ object.cve.cve_id }}
         </a>
-        <div class="severity {{ object.base_severity }}">
-          {% if object.base_severity == "LOW" %}
-            Low
-          {% elif object.base_severity == "MEDIUM" %}
-            Medium
-          {% elif object.base_severity == "HIGH" %}
-            High
-          {% elif object.base_severity == "CRITICAL" %}
-            Critical
-          {% elif object.base_severity == "NONE" %}
-            No severity data
-          {% else %}
-            Unknown Severity
-          {% endif %}
-        </div>
+        {% severity_badge object.base_severity %}
       </div>
       <h2>{{ object.package_name }}</h2>
-      {% if object.title %}
-        <h3> {{ object.title }} </h3>
-      {% endif %}
-      <div class="description collapsed">
-        <span class="description-truncated">{{ object.description|truncatewords:10 }}</span>
-        <span class="show-more" onclick="this.parentElement.classList.toggle('collapsed')">Show more</span>
-        <span class="description-long">{{ object.description }}</span>
-        <span class="show-less" onclick="this.parentElement.classList.toggle('collapsed')">Show less</span>
-      </div>
-      <div class="nixpkgs-packages">
-        {% for attribute, nixos_channels in object.packages.items %}
-          <article class="nixpkgs-package">
-            <h3><span class="pkgs">pkgs.</span>{{ attribute }}</h3>
-            <ul class="channel-list">
-              {% for major_channel, val in nixos_channels %}
-                <li>
-                  <details {% if val.uniform_versions %}open{% endif %}>
-                    <summary>
-                      <span class="branch-major">
-                        <span class="branch-name">{{ major_channel }}</span>
-                        <span class="version">{% if val.major_version %}{{ val.major_version }}{% else %}???{% endif %}</span>
-                      </span>
-                    </summary>
-                    <ul class="channel-list">
-                    {% for branch_name, version in val.sub_branches %}
-                      <li class="branch-minor">
-                        <span class="branch-name">{{ branch_name }}</span>
-                        <span class="version">{{ version }}</span>
-                      </li>
-                    {% endfor %}
-                    </ul>
-                  </details>
-                </li>
-              {% endfor %}
-            </ul>
-          </article>
-        {% endfor %}
-      </div>
+      <details class="description">
+        <summary>
+            {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
+        </summary>
+        <p class="description-long as-details">{{ object.description }}</p>
+      </details>
+      {% nixpkgs_package_list object.packages %}
       <div class="change-issue-state">
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="REJECTED">
-          <button class="red-button">
-            Dismiss
-          </button>
-        </form>
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="ACCEPTED">
-          <button class="green-button">
-            Select
-          </button>
-        </form>
+        {% suggestion_state_button suggestion_id=object.id state="REJECTED" label="Dismiss" style="red-button" %}
+        {% suggestion_state_button suggestion_id=object.id state="ACCEPTED" label="Select" style="green-button" %}
       </div>
     </article>
   {% endfor %}

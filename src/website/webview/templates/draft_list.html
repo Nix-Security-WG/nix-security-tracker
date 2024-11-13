@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load viewutils %}
 
 {% block content %}
 <h1>Selected suggestions</h1>
@@ -69,22 +70,8 @@
         {% endfor %}
       </div>
       <div class="change-issue-state">
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="REJECTED">
-          <button class="red-button">
-            Dismiss
-          </button>
-        </form>
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="ACCEPTED">
-          <button type="button" class="green-button">
-            C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
-          </button>
-        </form>
+        {% suggestion_state_button suggestion_id=object.id state="REJECTED" label="Dismiss" style="red-button" %}
+        {% suggestion_state_button suggestion_id=object.id state="ACCEPTED" label="C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃" style="green-button" %}
       </div>
     </article>
   {% endfor %}
