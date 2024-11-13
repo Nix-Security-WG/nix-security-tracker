@@ -23,22 +23,8 @@
       </div>
       {% nixpkgs_package_list object.packages %}
       <div class="change-issue-state">
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="REJECTED">
-          <button class="dismiss">
-            Dismiss
-          </button>
-        </form>
-        <form method="post" action="">
-          {% csrf_token %}
-          <input type="hidden" name="suggestion_id" value="{{ object.id }}">
-          <input type="hidden" name="new_status" value="ACCEPTED">
-          <button class="create-draft">
-            Create draft
-          </button>
-        </form>
+        {% suggestion_state_button suggestion_id=object.id state="REJECTED" label="Dismiss" style="dismiss" %}
+        {% suggestion_state_button suggestion_id=object.id state="ACCEPTED" label="Select" style="create-draft" %}
       </div>
     </article>
   {% endfor %}

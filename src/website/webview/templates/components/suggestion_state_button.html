@@ -1,0 +1,8 @@
+<form method="post" action="">
+  {% csrf_token %}
+  <input type="hidden" name="suggestion_id" value="{{ suggestion_id }}">
+  <input type="hidden" name="new_status" value="{{ state }}">
+  <button class="{{ style }}">
+    {{ label }}
+  </button>
+</form>

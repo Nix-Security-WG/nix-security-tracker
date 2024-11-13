@@ -22,6 +22,13 @@ class PackageListContext(TypedDict):
     packages: PackageDict
 
 
+class SuggestionStateButtonContext(TypedDict):
+    suggestion_id: str
+    state: str
+    label: str
+    style: str
+
+
 @register.filter
 def getitem(dictionary: dict, key: str) -> Any | None:
     return dictionary.get(key)
@@ -70,3 +77,15 @@ def nixpkgs_package_list(packages: PackageDict) -> PackageListContext:
         {% package_list package_dict %}
     """
     return {"packages": packages}
+
+
+@register.inclusion_tag("components/suggestion_state_button.html")
+def suggestion_state_button(
+    suggestion_id: str, state: str, label: str, style: str
+) -> SuggestionStateButtonContext:
+    return {
+        "suggestion_id": suggestion_id,
+        "state": state,
+        "label": label,
+        "style": style,
+    }
