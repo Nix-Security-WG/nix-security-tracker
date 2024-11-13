@@ -352,31 +352,24 @@ article .suggestion h3 {
   font-weight: 600;
 }
 
-.description .show-more,
-.show-less {
-  color: var(--grey);
+details.description > summary {
+  display: block;
+  font-weight: 600;
+}
+
+details.description > summary:after {
+  content: "Show\a0 more...";
+  color: var(--dark-grey);
   cursor: pointer;
+  font-weight: normal;
 }
 
-.description .show-more:hover,
-.show-less:hover {
-  color: #555555;
+details.description[open] > summary:after {
+  content: "Show\a0 less...";
 }
 
-.description:not(.collapsed) .description-truncated {
-  display: none;
-}
-
-.description:not(.collapsed) .show-more {
-  display: none;
-}
-
-.description.collapsed .show-less {
-  display: none;
-}
-
-.description.collapsed .description-long {
-  display: none;
+.description-long.as-details {
+  margin-top: 0.5em;
 }
 
 article .nixpkgs-packages {
