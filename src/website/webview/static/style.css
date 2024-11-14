@@ -387,9 +387,49 @@ article .nixpkgs-packages {
   font-family: "IBM Plex Mono";
 }
 
+.nixpkgs-package-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.nixpkgs-package-container input {
+  margin: 0;
+  appearance: none;
+  width: 2em;
+  height: 2em;
+  cursor: pointer;
+}
+
+.nixpkgs-package-container input::after {
+  position: relative;
+  top: -0.2em;
+  content: "↺";
+  font-weight: 700;
+  font-size: 200%;
+  color: var(--grey);
+}
+
+.nixpkgs-package-container input:checked::after {
+  position: relative;
+  top: 0.2em;
+  content: "🗑";
+  font-size: 120%;
+  color: var(--dark-grey);
+}
+
+.nixpkgs-package-container input:not(:checked) ~ article h3 {
+  color: var(--grey);
+}
+
+.nixpkgs-package-container input:not(:checked) ~ article h3 ~ * {
+  display: none;
+}
+
 .nixpkgs-package {
+  flex-grow: 1;
   border: 1px solid var(--grey);
   border-radius: 5px;
+  padding: 0.3em 0.5em;
 }
 
 .nixpkgs-package h3 {
@@ -494,11 +534,11 @@ span.hint {
 }
 
 /* Desktop */
-@media (min-width: 801px) {
+@media (min-width: 50em) {
 }
 
 /* Smartphone */
-@media (max-width: 800px) {
+@media (max-width: 50em) {
   article {
     padding: 0;
   }
@@ -516,15 +556,8 @@ span.hint {
     margin-bottom: 0.3em;
   }
 
-  article .suggestion h3 {
-    margin-top: 0.2em;
-    margin-bottom: 0.2em;
-  }
-
   .nixpkgs-package {
     flex-direction: column;
-    padding-left: 0.3em;
-    padding-right: 0.3em;
   }
 
   .nixpkgs-package h3 .pkgs {
