@@ -426,7 +426,7 @@ class SyncBatchAttributeIngester:
                 metadatas.append(metadata)
 
             derivations[evaluation.drv_path] = self.ingest_derivation_shell(
-                evaluation, parent_evaluation, None
+                evaluation, parent_evaluation, metadata
             )
         logger.debug(
             "Ingestion of derivation shells (%d) and their maintainers or licenses took %f s",
