@@ -3,9 +3,9 @@
     <article class="nixpkgs-package">
       <h3><span class="pkgs">pkgs.</span>{{ attribute }}</h3>
       <div class="package-meta">
-        <div class="package-description">
+        <p class="package-description">
           {{ pdata.description }}
-        </div>
+        </p>
         <ul class="channel-list">
           {% for major_channel, val in pdata.versions %}
             <li>
