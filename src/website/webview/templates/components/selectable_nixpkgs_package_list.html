@@ -1,0 +1,10 @@
+{% load viewutils %}
+
+<div class="nixpkgs-packages">
+  {% for attribute, pdata in packages.items %}
+    <div class="nixpkgs-package-container">
+      <input type="checkbox" name="derivation_ids" value="{{ pdata.derivation_ids|join:","}}" checked/>
+      {% nixpkgs_package attribute pdata %}
+    </div>
+  {% endfor %}
+</div>

@@ -1,6 +1,7 @@
 import re
 import typing
 from collections.abc import Callable
+from itertools import chain
 from typing import Any, cast
 
 from django.core.validators import RegexValidator
@@ -575,7 +576,7 @@ class DismissedListView(ListView):
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        current_page, new_status, suggestion = update_suggestion(request)
+        current_page, new_status, suggestion = update_suggestion(request, filter=False)
         if new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
@@ -633,10 +634,22 @@ class DraftListView(ListView):
 
 def update_suggestion(
     request: HttpRequest,
+    filter: bool = True,
 ) -> tuple[str, str | None, CVEDerivationClusterProposal]:
     suggestion_id = request.POST.get("suggestion_id")
     new_status = request.POST.get("new_status")
     current_page = request.POST.get("page", "1")
     suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+
+    if filter:
+        selected_derivations = [
+            str.split(",") for str in request.POST.getlist("derivation_ids")
+        ]
+        selected_derivations = list(chain(*selected_derivations))
+        # We only allow for removal of derivations here, not for additions
+        derivation_ids_to_keep = suggestion.derivations.filter(
+            id__in=selected_derivations
+        ).values_list("id", flat=True)
+        suggestion.derivations.set(derivation_ids_to_keep)
 
     return (current_page, new_status, suggestion)

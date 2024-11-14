@@ -12,36 +12,37 @@
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
-
-      <div class="row1">
-        <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
-          {{ object.cve.cve_id }}
-        </a>
-        {% severity_badge object.base_severity %}
-      </div>
-
-      <h2>{{ object.package_name }}</h2>
-
-      <details class="description">
-        <summary>
-            {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
-        </summary>
-        <p class="description-long as-details">{{ object.description }}</p>
-      </details>
-
-      {% nixpkgs_package_list object.packages %}
-
-      <form class="change-issue-state" method="post" action="">
+      <form method="post" action="">
         {% csrf_token %}
         <input type="hidden" name="suggestion_id" value="{{ object.id }}">
         <input type="hidden" name="page" value="{{ page_obj.number }}">
 
-        <button type="submit" name="new_status" value="ACCEPTED" class="green-button">
-          Select
-        </button>
-        <button type="submit" name="new_status" value="REJECTED" class="red-button">
-          Dismiss
-        </button>
+        <div class="row1">
+          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
+            {{ object.cve.cve_id }}
+          </a>
+          {% severity_badge object.base_severity %}
+        </div>
+
+        <h2>{{ object.package_name }}</h2>
+
+        <details class="description">
+          <summary>
+              {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
+          </summary>
+          <p class="description-long as-details">{{ object.description }}</p>
+        </details>
+
+        {% selectable_nixpkgs_package_list object.packages %}
+
+        <div class="change-issue-state">
+          <button type="submit" name="new_status" value="ACCEPTED" class="green-button">
+            Select
+          </button>
+          <button type="submit" name="new_status" value="REJECTED" class="red-button">
+            Dismiss
+          </button>
+        </div>
       </form>
     </article>
   {% endfor %}

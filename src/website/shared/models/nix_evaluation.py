@@ -343,9 +343,11 @@ def channel_structure(derivations: list[NixDerivation]) -> dict:
         if attribute not in packages:
             packages[attribute] = {
                 "versions": {},
+                "derivation_ids": [],
             }
             if derivation.metadata and derivation.metadata.description:
                 packages[attribute]["description"] = derivation.metadata.description
+        packages[attribute]["derivation_ids"].append(derivation.pk)
         branch_name = derivation.parent_evaluation.channel.channel_branch
         major_channel = get_major_channel(branch_name)
         # FIXME This quietly drops unfamiliar branch names
