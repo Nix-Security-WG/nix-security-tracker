@@ -1,29 +1,34 @@
 <div class="nixpkgs-packages">
-  {% for attribute, nixos_channels in packages.items %}
+  {% for attribute, pdata in packages.items %}
     <article class="nixpkgs-package">
       <h3><span class="pkgs">pkgs.</span>{{ attribute }}</h3>
-      <ul class="channel-list">
-        {% for major_channel, val in nixos_channels %}
-          <li>
-            <details {% if val.uniform_versions %}open{% endif %}>
-              <summary>
-                <span class="branch-major">
-                  <span class="branch-name">{{ major_channel }}</span>
-                  <span class="version">{% if val.major_version %}{{ val.major_version }}{% else %}???{% endif %}</span>
-                </span>
-              </summary>
-              <ul class="channel-list">
-              {% for branch_name, version in val.sub_branches %}
-                <li class="branch-minor">
-                  <span class="branch-name">{{ branch_name }}</span>
-                  <span class="version">{{ version }}</span>
-                </li>
-              {% endfor %}
-              </ul>
-            </details>
-          </li>
-        {% endfor %}
-      </ul>
+      <div class="package-meta">
+        <div class="package-description">
+          {{ pdata.description }}
+        </div>
+        <ul class="channel-list">
+          {% for major_channel, val in pdata.versions %}
+            <li>
+              <details {% if val.uniform_versions %}open{% endif %}>
+                <summary>
+                  <span class="branch-major">
+                    <span class="branch-name">{{ major_channel }}</span>
+                    <span class="version">{% if val.major_version %}{{ val.major_version }}{% else %}???{% endif %}</span>
+                  </span>
+                </summary>
+                <ul class="channel-list">
+                {% for branch_name, version in val.sub_branches %}
+                  <li class="branch-minor">
+                    <span class="branch-name">{{ branch_name }}</span>
+                    <span class="version">{{ version }}</span>
+                  </li>
+                {% endfor %}
+                </ul>
+              </details>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
     </article>
   {% endfor %}
 </div>

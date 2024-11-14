@@ -405,7 +405,17 @@ article .nixpkgs-packages {
   margin-left: auto;
 }
 
+.nixpkgs-package .package-meta {
+  display: flex;
+  flex-direction: row;
+}
+
+.nixpkgs-package .package-description {
+  flex-grow: 1;
+}
+
 .nixpkgs-package .channel-list {
+  flex-grow: 0;
   list-style-type: none;
   padding-left: 0;
   margin: 0;
