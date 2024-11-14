@@ -523,14 +523,13 @@ class SuggestionListView(ListView):
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        suggestion_id = request.POST.get("suggestion_id")
-        new_status = request.POST.get("new_status")
-        current_page = request.POST.get("page", "1")
-        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        current_page, new_status, suggestion = update_suggestion(request)
+
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
         elif new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
+
         suggestion.save()
         return redirect(f"{request.path}?page={current_page}")
 
@@ -575,12 +574,8 @@ class DismissedListView(ListView):
         )
         return queryset
 
-    # TODO: deduplicate with the other views
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        suggestion_id = request.POST.get("suggestion_id")
-        new_status = request.POST.get("new_status")
-        current_page = request.POST.get("page", "1")
-        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        current_page, new_status, suggestion = update_suggestion(request)
         if new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
         suggestion.save()
@@ -628,11 +623,20 @@ class DraftListView(ListView):
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        suggestion_id = request.POST.get("suggestion_id")
-        new_status = request.POST.get("new_status")
-        current_page = request.POST.get("page", "1")
-        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        current_page, new_status, suggestion = update_suggestion(request)
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
+
         suggestion.save()
         return redirect(f"{request.path}?page={current_page}")
+
+
+def update_suggestion(
+    request: HttpRequest,
+) -> tuple[str, str | None, CVEDerivationClusterProposal]:
+    suggestion_id = request.POST.get("suggestion_id")
+    new_status = request.POST.get("new_status")
+    current_page = request.POST.get("page", "1")
+    suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+
+    return (current_page, new_status, suggestion)
