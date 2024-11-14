@@ -90,7 +90,11 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
 
         </details>
 
-    - The app should now be visible under organisation settings / **Third-party Access** / **GitHub Apps**
+    - In organisation settings / **Third-party Access** / **GitHub Apps** / **Installed GitHub Apps** / **<GH_APP_NAME>** / **Configure** page
+
+      Check the URL, which has the pattern `https://github.com/organizations/<ORG_NAME>/settings/installations/<INSTALLATION_ID>`.
+
+      Store the value **<INSTALLATION_ID>** in `.credentials/GH_APP_INSTALLATION_ID`.
 
 </details>
 
