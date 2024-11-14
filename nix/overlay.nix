@@ -52,6 +52,8 @@ in
       channels
       aiofiles
       sentry-sdk
+      django-pghistory
+      django-pgtrigger
     ];
 
     postInstall = ''

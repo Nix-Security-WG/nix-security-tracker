@@ -9,14 +9,14 @@
 
 buildPythonPackage rec {
   pname = "django-pgtrigger";
-  version = "4.11.0";
+  version = "4.13.1";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "Opus10";
     repo = "django-pgtrigger";
     rev = version;
-    hash = "sha256-L1PGTPleqQxRqKLwBS2xecKBjqgh6GqTNJdNRqyYgZg=";
+    hash = "sha256-UnStoUslriZ30ax7OSb8fRaJHzJEO3iG/er5dBHXbno=";
   };
 
   nativeBuildInputs = [ poetry-core ];
