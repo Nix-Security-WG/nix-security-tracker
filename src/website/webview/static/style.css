@@ -419,6 +419,7 @@ article .nixpkgs-packages {
 
 .nixpkgs-package-container input:not(:checked) ~ article h3 {
   color: var(--grey);
+  text-decoration: line-through;
 }
 
 .nixpkgs-package-container input:not(:checked) ~ article h3 ~ * {
