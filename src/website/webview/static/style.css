@@ -365,14 +365,14 @@ details.description > summary {
 }
 
 details.description > summary:after {
-  content: "Show\a0 more...";
+  content: "Show\a0 more…";
   color: var(--dark-grey);
   cursor: pointer;
   font-weight: normal;
 }
 
 details.description[open] > summary:after {
-  content: "Show\a0 less...";
+  content: "Show\a0 less…";
 }
 
 .description-long.as-details {
