@@ -40,9 +40,12 @@
             C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
           </button>
           {% if object.packages %}
+            <div class="button-with-note">
             <button type="submit" class="grey-button">
-              Update packages
+              Purge deleted packages
             </button>
+            <span class="note">(cannot be undone)<span>
+            </div>
           {% endif %}
           <button type="submit" name="new_status" value="REJECTED" class="red-button">
             Dismiss

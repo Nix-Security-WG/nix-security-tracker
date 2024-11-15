@@ -495,7 +495,16 @@ article .nixpkgs-packages {
   padding: 0.5em;
   border: none;
   border-radius: 0.3em;
+  height: max-content;
   min-width: 5em;
+}
+
+.button-with-note .note {
+  display: block;
+  text-align: center;
+  font-size: 0.7em;
+  color: var(--dark-grey);
+  margin-bottom: -0.75em;
 }
 
 span.hint {
