@@ -44,5 +44,5 @@ urlpatterns = [
     #       suggestions/selected
     path("suggestions/", SuggestionListView.as_view(), name="suggestions_view"),
     path("dismissed/", DismissedListView.as_view(), name="dismissed_view"),
-    path("selected/", DraftListView.as_view(), name="drafts_view"),
+    path("selected/", DraftListView.as_view(), name="selected_view"),
 ]
