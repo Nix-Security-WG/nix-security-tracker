@@ -584,7 +584,7 @@ class DismissedListView(ListView):
 
 
 class DraftListView(ListView):
-    template_name = "draft_list.html"
+    template_name = "selected_list.html"
     model = CVEDerivationClusterProposal
     paginator_class = LargeTablePaginator
     paginate_by = 10
