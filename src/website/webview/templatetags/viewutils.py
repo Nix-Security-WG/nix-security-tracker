@@ -22,13 +22,6 @@ class PackageListContext(TypedDict):
     packages: PackageDict
 
 
-class SuggestionStateButtonContext(TypedDict):
-    suggestion_id: str
-    state: str
-    label: str
-    style: str
-
-
 @register.filter
 def getitem(dictionary: dict, key: str) -> Any | None:
     return dictionary.get(key)
