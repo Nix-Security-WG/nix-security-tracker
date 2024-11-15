@@ -24,11 +24,15 @@
           {% severity_badge object.base_severity %}
         </div>
 
-        <h2>{{ object.package_name }}</h2>
-
         <details class="description">
           <summary>
-              {% if object.title %}{{ object.title }}{% else %}{{ object.description|truncatewords:10 }}{% endif %}
+            <h2>
+              {% if object.title %}
+                {{ object.title }}
+              {% else %}
+                {{ object.description|truncatewords:10 }}
+              {% endif %}
+            </h2>
           </summary>
           <p class="description-long as-details">{{ object.description }}</p>
         </details>

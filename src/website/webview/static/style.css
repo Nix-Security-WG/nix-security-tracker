@@ -350,6 +350,7 @@ article .severity {
 }
 
 article .suggestion h2 {
+  font-size: 130%;
   margin-top: unset;
   margin-bottom: 0.8em;
 }

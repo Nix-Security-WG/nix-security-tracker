@@ -507,14 +507,11 @@ class SuggestionListView(ListView):
             .prefetch_related("derivations", "derivations__parent_evaluation")
         )
 
-        # FIXME(kerstin) Some stuff only for demo and development purposes, to have more interesting data on the page
-        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
         # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
         # queryset = queryset.distinct("cve__cve_id")
 
         queryset = queryset.filter(status=CVEDerivationClusterProposal.Status.PENDING)
         queryset = queryset.annotate(
-            package_name=F("cve__container__affected__package_name"),
             base_severity=Coalesce(
                 F("cve__container__metrics__base_severity"), Value(Severity.NONE)
             ),
@@ -563,10 +560,8 @@ class DismissedListView(ListView):
         )
 
         # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
-        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
         queryset = queryset.distinct("cve__cve_id")
         queryset = queryset.annotate(
-            package_name=F("cve__container__affected__package_name"),
             base_severity=Coalesce(
                 F("cve__container__metrics__base_severity"), Value(Severity.NONE)
             ),
@@ -611,10 +606,8 @@ class DraftListView(ListView):
         )
 
         # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
-        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
         queryset = queryset.distinct("cve__cve_id")
         queryset = queryset.annotate(
-            package_name=F("cve__container__affected__package_name"),
             base_severity=Coalesce(
                 F("cve__container__metrics__base_severity"), Value(Severity.NONE)
             ),
