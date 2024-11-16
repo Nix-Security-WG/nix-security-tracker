@@ -1,5 +1,6 @@
 from enum import STRICT, IntFlag, auto
 
+import pghistory
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -11,6 +12,7 @@ def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
 
+@pghistory.track(fields=["status"])
 class CVEDerivationClusterProposal(TimeStampMixin):
     """
     A proposal to link a CVE to a set of derivations.
@@ -46,6 +48,11 @@ class ProvenanceFlags(IntFlag, boundary=STRICT):
     KERNEL_CONSTRAINT_INRANGE = auto()
 
 
+# CVEDerivationClusterProposal `derivations` changes have to be tracked via its `through` model.
+@pghistory.track(
+    pghistory.InsertEvent("derivations.add"),
+    pghistory.DeleteEvent("derivations.remove"),
+)
 class DerivationClusterProposalLink(models.Model):
     """
     A link between a NixDerivation and a CVEDerivationClusterProposal.
