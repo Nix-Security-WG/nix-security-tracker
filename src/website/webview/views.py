@@ -5,6 +5,7 @@ from itertools import chain
 from typing import Any, cast
 
 from django.core.validators import RegexValidator
+from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
 
 if typing.TYPE_CHECKING:
@@ -494,6 +495,11 @@ class SuggestionListView(ListView):
         context = super().get_context_data(**kwargs)
 
         context["status_filter"] = self.status_filter
+
+        for obj in context["object_list"]:
+            obj.activity_log = SuggestionActivityLog(
+                suggestion=obj
+            ).get_structured_log()
 
         context["adjusted_elided_page_range"] = context[
             "paginator"

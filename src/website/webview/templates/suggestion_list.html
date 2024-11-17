@@ -42,6 +42,7 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
             {{ object.payload.cve_id }}
           </a>
           {% severity_badge object.payload.base_severity %}
+          {% suggestion_activity_log object %}
         </div>
 
         <details class="description">
