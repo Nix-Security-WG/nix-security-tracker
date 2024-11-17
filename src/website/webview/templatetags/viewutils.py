@@ -1,9 +1,14 @@
+import datetime
+from collections import OrderedDict
 from typing import Any, TypedDict
 
 from django import template
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 from shared.models.cve import AffectedProduct, Severity
+from shared.models.linkage import (
+    CVEDerivationClusterProposal,
+)
 
 register = template.Library()
 
@@ -35,6 +40,10 @@ class AffectedContext(TypedDict):
     affected: list[AffectedProduct]
 
 
+class SuggestionActivityLog(TypedDict):
+    suggestion: CVEDerivationClusterProposal
+
+
 @register.filter
 def getitem(dictionary: dict, key: str) -> Any | None:
     return dictionary.get(key)
@@ -45,6 +54,22 @@ def getdrvname(drv: dict) -> str:
     hash = drv["drv_path"].split("-")[0].split("/")[-1]
     name = drv["drv_name"]
     return f"{name} {hash[:8]}"
+
+
+@register.filter
+def iso(date: datetime.datetime) -> str:
+    return date.replace(microsecond=0).isoformat()
+
+
+@register.filter
+def last_key(od: OrderedDict) -> Any:
+    return next(reversed(od))
+
+
+@register.filter
+def last_user(od: OrderedDict) -> str:
+    _, entry = next(reversed(od.items()))
+    return entry[0]["user"]
 
 
 @register.simple_tag
@@ -117,3 +142,10 @@ def nixpkgs_package_list(packages: PackageList) -> PackageListContext:
 @register.inclusion_tag("components/affected_products.html")
 def affected_products(affected: list[AffectedProduct]) -> AffectedContext:
     return {"affected": affected}
+
+
+@register.inclusion_tag("components/suggestion_activity_log.html")
+def suggestion_activity_log(
+    suggestion: CVEDerivationClusterProposal,
+) -> SuggestionActivityLog:
+    return {"suggestion": suggestion}

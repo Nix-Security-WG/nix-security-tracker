@@ -234,6 +234,10 @@
   --draft: green;
   --affected: #ffabab;
   --unaffected: #bfb;
+  --activity-log-background: gainsboro;
+  --activity-log-automatic-suggestion: royalblue;
+  --dismissed-suggestion-status: darkgreen;
+  --selected-suggestion-status: limegreen;
 }
 
 body {
@@ -588,6 +592,91 @@ span.hint {
 
 button:hover {
   filter: brightness(85%);
+}
+
+.activity-log.timestamp,
+.activity-log-timestamp,
+.activity-log-entry-timestamp {
+  font-style: italic;
+}
+
+.activity-log {
+  background-color: var(--activity-log-background);
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
+.activity-log > .main-summary {
+  list-style: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3em;
+}
+
+.activity-log > .main-summary > .title-when-opened {
+  display: none;
+}
+.activity-log[open] > .main-summary > .title-when-closed {
+  display: none;
+}
+.activity-log[open] > .main-summary > .title-when-opened {
+  display: block;
+}
+
+.activity-log > .main-summary::marker {
+  display: none;
+}
+
+.activity-log > .main-summary::after {
+  content: "◀";
+}
+
+.activity-log[open] .main-summary::after {
+  content: "▼";
+}
+
+.activity-log-listing {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 1em;
+  padding-top: 0.2em;
+  padding-bottom: 0.5em;
+}
+
+.activity-log-listing > .activity-log-entry {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3em;
+}
+
+.activity-log-entry > .automatic-suggestion-text {
+  font-weight: bold;
+  color: var(--activity-log-automatic-suggestion);
+}
+
+.package-summary {
+  display: inline;
+}
+
+.package-summary-title {
+  list-style-type: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.package-summary-listing {
+  padding-left: 1.5em;
+}
+
+.suggestion-status-selected {
+  font-weight: bold;
+  color: var(--selected-suggestion-status);
+}
+
+.suggestion-status-dismissed {
+  font-weight: bold;
+  color: var(--dismissed-suggestion-status);
 }
 
 /* Desktop */
