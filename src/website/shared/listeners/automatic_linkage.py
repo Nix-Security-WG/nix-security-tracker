@@ -55,24 +55,29 @@ def build_new_links(container: Container) -> None:
         return
 
     drvs = produce_linkage_candidates(container)
-    proposal = CVEDerivationClusterProposal.objects.create(cve=container.cve)
 
-    drvs_throughs = [
-        CVEDerivationClusterProposal.derivations.through(
-            proposal_id=proposal.pk, derivation_id=drv.pk, provenance_flags=flags
+    # only produce suggestions that have possible matches
+    if drvs:
+        proposal = CVEDerivationClusterProposal.objects.create(cve=container.cve)
+
+        drvs_throughs = [
+            CVEDerivationClusterProposal.derivations.through(
+                proposal_id=proposal.pk, derivation_id=drv.pk, provenance_flags=flags
+            )
+            for drv, flags in drvs.items()
+        ]
+
+        # We create all the set in one shot.
+        CVEDerivationClusterProposal.derivations.through.objects.bulk_create(
+            drvs_throughs
         )
-        for drv, flags in drvs.items()
-    ]
 
-    # We create all the set in one shot.
-    CVEDerivationClusterProposal.derivations.through.objects.bulk_create(drvs_throughs)
-
-    if drvs_throughs:
-        logger.info(
-            "Matching suggestion for '%s': %d derivations found.",
-            container.cve,
-            len(drvs_throughs),
-        )
+        if drvs_throughs:
+            logger.info(
+                "Matching suggestion for '%s': %d derivations found.",
+                container.cve,
+                len(drvs_throughs),
+            )
 
 
 @pgpubsub.post_insert_listener(ContainerChannel)
