@@ -37,6 +37,8 @@
           <p class="description-long as-details">{{ object.description }}</p>
         </details>
 
+        {% affected_products object.affected %}
+
         {% selectable_nixpkgs_package_list object.packages %}
 
         <div class="change-issue-state">

@@ -3,7 +3,7 @@ from typing import Any, TypedDict
 from django import template
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
-from shared.models.cve import Severity
+from shared.models.cve import AffectedProduct, Severity
 
 register = template.Library()
 
@@ -29,6 +29,10 @@ class PackageList(TypedDict):
 
 class PackageListContext(TypedDict):
     packages: PackageList
+
+
+class AffectedContext(TypedDict):
+    affected: list[AffectedProduct]
 
 
 @register.filter
@@ -100,3 +104,8 @@ def nixpkgs_package_list(packages: PackageList) -> PackageListContext:
         {% package_list package_dict %}
     """
     return {"packages": packages}
+
+
+@register.inclusion_tag("components/affected_products.html")
+def affected_products(affected: list[AffectedProduct]) -> AffectedContext:
+    return {"affected": affected}
