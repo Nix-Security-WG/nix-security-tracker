@@ -489,8 +489,16 @@ class SuggestionListView(ListView):
     paginate_by = 10
     context_object_name = "objects"
 
+    # Determines how the list is filtered for and some control elements that
+    # only shown depending on the context.
+    status_filter: CVEDerivationClusterProposal.Status = (
+        CVEDerivationClusterProposal.Status.PENDING
+    )
+
     def get_context_data(self, **kwargs: Any) -> Any:
         context = super().get_context_data(**kwargs)
+
+        context["status_filter"] = self.status_filter
 
         for obj in context["object_list"]:
             obj.packages = channel_structure(obj.derivations.all())
@@ -504,15 +512,17 @@ class SuggestionListView(ListView):
             super()
             .get_queryset()
             .select_related("cve")
+            .filter(status=self.status_filter)
             .prefetch_related("derivations", "derivations__parent_evaluation")
         )
 
         # FIXME(kerstin) Some stuff only for demo and development purposes, to have more interesting data on the page
         queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
-        # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
-        # queryset = queryset.distinct("cve__cve_id")
 
-        queryset = queryset.filter(status=CVEDerivationClusterProposal.Status.PENDING)
+        if self.status_filter != CVEDerivationClusterProposal.Status.PENDING:
+            # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
+            queryset = queryset.distinct("cve__cve_id")
+
         queryset = queryset.annotate(
             package_name=F("cve__container__affected__package_name"),
             base_severity=Coalesce(
@@ -524,7 +534,12 @@ class SuggestionListView(ListView):
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        current_page, new_status, suggestion = update_suggestion(request)
+        filter_for_suggestions = (
+            self.status_filter != CVEDerivationClusterProposal.Status.REJECTED
+        )
+        current_page, new_status, suggestion = update_suggestion(
+            request, filter=filter_for_suggestions
+        )
 
         if new_status == "REJECTED":
             suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
@@ -535,107 +550,19 @@ class SuggestionListView(ListView):
         return redirect(f"{request.path}?page={current_page}")
 
 
-class DismissedListView(ListView):
-    template_name = "dismissed_list.html"
-    model = CVEDerivationClusterProposal
-    paginator_class = LargeTablePaginator
-    paginate_by = 10
-    context_object_name = "objects"
-
-    def get_context_data(self, **kwargs: Any) -> Any:
-        context = super().get_context_data(**kwargs)
-
-        for obj in context["object_list"]:
-            obj.packages = channel_structure(obj.derivations.all())
-        context["adjusted_elided_page_range"] = context[
-            "paginator"
-        ].get_elided_page_range(context["page_obj"].number)
-        return context
-
-    def get_queryset(self) -> Any:
-        queryset = (
-            super()
-            .get_queryset()
-            .select_related("cve")
-            # TODO: order by timestamp of rejection descending
-            .filter(status=CVEDerivationClusterProposal.Status.REJECTED)
-            .prefetch_related("derivations", "derivations__parent_evaluation")
-        )
-
-        # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
-        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
-        queryset = queryset.distinct("cve__cve_id")
-        queryset = queryset.annotate(
-            package_name=F("cve__container__affected__package_name"),
-            base_severity=Coalesce(
-                F("cve__container__metrics__base_severity"), Value(Severity.NONE)
-            ),
-            title=F("cve__container__title"),
-            description=F("cve__container__descriptions__value"),
-        )
-        return queryset
-
-    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        current_page, new_status, suggestion = update_suggestion(request, filter=False)
-        if new_status == "ACCEPTED":
-            suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
-        suggestion.save()
-        return redirect(f"{request.path}?page={current_page}")
-
-
-class DraftListView(ListView):
-    template_name = "selected_list.html"
-    model = CVEDerivationClusterProposal
-    paginator_class = LargeTablePaginator
-    paginate_by = 10
-    context_object_name = "objects"
-
-    def get_context_data(self, **kwargs: Any) -> Any:
-        context = super().get_context_data(**kwargs)
-
-        for obj in context["object_list"]:
-            obj.packages = channel_structure(obj.derivations.all())
-        context["adjusted_elided_page_range"] = context[
-            "paginator"
-        ].get_elided_page_range(context["page_obj"].number)
-        return context
-
-    def get_queryset(self) -> Any:
-        queryset = (
-            super()
-            .get_queryset()
-            .select_related("cve")
-            # TODO: order by timestamp of rejection descending
-            .filter(status=CVEDerivationClusterProposal.Status.ACCEPTED)
-            .prefetch_related("derivations", "derivations__parent_evaluation")
-        )
-
-        # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
-        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
-        queryset = queryset.distinct("cve__cve_id")
-        queryset = queryset.annotate(
-            package_name=F("cve__container__affected__package_name"),
-            base_severity=Coalesce(
-                F("cve__container__metrics__base_severity"), Value(Severity.NONE)
-            ),
-            title=F("cve__container__title"),
-            description=F("cve__container__descriptions__value"),
-        )
-        return queryset
-
-    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        current_page, new_status, suggestion = update_suggestion(request)
-        if new_status == "REJECTED":
-            suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
-
-        suggestion.save()
-        return redirect(f"{request.path}?page={current_page}")
-
-
 def update_suggestion(
     request: HttpRequest,
     filter: bool = True,
 ) -> tuple[str, str | None, CVEDerivationClusterProposal]:
+    """
+    Takes a form request and updates fields of the CVEDerivationClusterProposal.
+
+    Args:
+        filter (bool): Wether to change the selected derivations.
+
+    Returns:
+        The current page, the newly set status and the CVEDerivationClusterProposal itself.
+    """
     suggestion_id = request.POST.get("suggestion_id")
     new_status = request.POST.get("new_status")
     current_page = request.POST.get("page", "1")
