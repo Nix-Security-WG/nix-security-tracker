@@ -602,8 +602,18 @@ class DraftListView(ListView):
     def get_context_data(self, **kwargs: Any) -> Any:
         context = super().get_context_data(**kwargs)
 
+        affected_pk = list()
+        for obj in context["object_list"]:
+            affected_pk.extend(obj.cve.container.values_list("affected", flat=True))
+        affected = AffectedProduct.objects.in_bulk(affected_pk)
+
         for obj in context["object_list"]:
             obj.packages = channel_structure(obj.derivations.all())
+            affected_pk = obj.cve.container.values_list("affected", flat=True)
+            obj.affected = list()
+            for pk in affected_pk:
+                if pk is not None:
+                    obj.affected.append(affected[pk])
         context["adjusted_elided_page_range"] = context[
             "paginator"
         ].get_elided_page_range(context["page_obj"].number)
@@ -616,7 +626,11 @@ class DraftListView(ListView):
             .select_related("cve")
             # TODO: order by timestamp of rejection descending
             .filter(status=CVEDerivationClusterProposal.Status.ACCEPTED)
-            .prefetch_related("derivations", "derivations__parent_evaluation")
+            .prefetch_related(
+                "derivations",
+                "derivations__parent_evaluation",
+                "cve__container__affected",
+            )
         )
 
         # FIXME(raito): fix the proposal duplicates to make all dupes disappear.

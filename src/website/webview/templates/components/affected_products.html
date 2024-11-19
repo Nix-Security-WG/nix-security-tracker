@@ -1,5 +1,6 @@
+{{ affected|length }}
 <ul>
   {% for ap in affected %}
-    <li>{{ ap.product }}</li>
+    <li>{{ ap.package_name }}</li>
   {% endfor %}
 </ul>
