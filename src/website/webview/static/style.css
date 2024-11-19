@@ -228,6 +228,10 @@
 :root {
   --grey: #d5d2d1;
   --dark-grey: #b5b2b1;
+  --automatic-suggestion: lightblue;
+  --dismissed-suggestion: #acb3c8;
+  --selected-suggestion: #7bca7b;
+  --draft: green;
 }
 
 body {
@@ -312,32 +316,33 @@ article .suggestion {
   flex-grow: 1;
 }
 
-article .cve-id {
-  color: var(--grey);
-  font-size: 0.8rem;
-}
-
 article .row1 {
   display: flex;
   flex-direction: row;
+  font-size: 0.8rem;
+}
+
+article .cve-id {
+  color: var(--grey);
+  padding: 0.2rem;
 }
 
 article .severity {
   border-radius: 5px;
-  margin-left: auto;
   padding: 0.2rem;
+  margin-left: auto;
 }
 
 .severity.LOW {
-  background: green;
-}
-
-.severity.MEDIUM {
   background: yellow;
 }
 
-.severity.HIGH {
+.severity.MEDIUM {
   background: orange;
+}
+
+.severity.HIGH {
+  background: orangered;
 }
 
 .severity.CRITICAL {
@@ -346,7 +351,6 @@ article .severity {
 
 .severity.NONE {
   color: var(--grey);
-  font-size: 0.8rem;
 }
 
 article .suggestion h2 {
@@ -550,14 +554,10 @@ span.hint {
   border-radius: 0.3em;
 }
 
-.red-button {
-  background: red;
+.dismissed-color {
+  background: var(--dismissed-suggestion);
   color: white;
   cursor: pointer;
-}
-
-.red-button:hover {
-  background: darkred;
 }
 
 .grey-button {
@@ -569,14 +569,20 @@ span.hint {
   background: darkgrey;
 }
 
-.green-button {
-  background: green;
+.selected-color {
+  background: var(--selected-suggestion);
   color: white;
   cursor: pointer;
 }
 
-.green-button:hover {
-  background: darkgreen;
+.draft-color {
+  background: var(--draft);
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(85%);
 }
 
 /* Desktop */

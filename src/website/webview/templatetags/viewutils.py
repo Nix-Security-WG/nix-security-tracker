@@ -64,9 +64,17 @@ def severity_badge(severity: Severity) -> SafeString:
     # TODO Once https://github.com/Nix-Security-WG/nix-security-tracker/issues/284
     # is fixed, display actual severity information with a combined metric (e.g.
     # "9.1" and a textual representiation like "Critical")
-    display_text = "No severity data"
+    display_texts = {
+        "NONE": "No severity data",
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High",
+        "CRITICAL": "Critical",
+    }
 
-    return format_html('<div class="severity {}">{}</div>', severity, display_text)
+    return format_html(
+        '<div class="severity {}">{}</div>', severity, display_texts[severity]
+    )
 
 
 @register.inclusion_tag("components/nixpkgs_package.html")
