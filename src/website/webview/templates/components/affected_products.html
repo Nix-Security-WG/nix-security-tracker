@@ -1,6 +1,9 @@
 {{ affected|length }}
-<ul>
-  {% for ap in affected %}
-    <li>{{ ap.package_name }}</li>
+<table>
+  {% for ap, val in affected.items %}
+    <tr>
+      <td title="{% if val.cpes %}{{ val.cpes|join:"<br>"|safe }}{% else %}No CPE info{% endif %}">{{ ap }}<td>
+      <td>{{ val.version_constraints|join:", " }}</td>
+    </tr>
   {% endfor %}
-</ul>
+</table>

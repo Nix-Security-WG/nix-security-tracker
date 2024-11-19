@@ -23,6 +23,7 @@ from django.db.models import (
     Count,
     F,
     Max,
+    Prefetch,
     Q,
     Value,
     When,
@@ -596,7 +597,7 @@ class DraftListView(ListView):
     template_name = "selected_list.html"
     model = CVEDerivationClusterProposal
     paginator_class = LargeTablePaginator
-    paginate_by = 10
+    paginate_by = 1
     context_object_name = "objects"
 
     def get_context_data(self, **kwargs: Any) -> Any:
@@ -605,7 +606,10 @@ class DraftListView(ListView):
         affected_pk = list()
         for obj in context["object_list"]:
             affected_pk.extend(obj.cve.container.values_list("affected", flat=True))
-        affected = AffectedProduct.objects.in_bulk(affected_pk)
+        affected = AffectedProduct.objects.prefetch_related(
+            Prefetch("versions", to_attr="all_versions"),
+            Prefetch("cpes", to_attr="all_cpes"),
+        ).in_bulk(affected_pk)
 
         for obj in context["object_list"]:
             obj.packages = channel_structure(obj.derivations.all())
@@ -614,6 +618,16 @@ class DraftListView(ListView):
             for pk in affected_pk:
                 if pk is not None:
                     obj.affected.append(affected[pk])
+            obj.affected_packages = dict()
+            for a in obj.affected:
+                if a.package_name:
+                    if a.package_name not in obj.affected_packages:
+                        obj.affected_packages[a.package_name] = {
+                            "version_constraints": [
+                                vc.version for vc in a.all_versions
+                            ],
+                            "cpes": [cpe.name for cpe in a.all_cpes],
+                        }
         context["adjusted_elided_page_range"] = context[
             "paginator"
         ].get_elided_page_range(context["page_obj"].number)
