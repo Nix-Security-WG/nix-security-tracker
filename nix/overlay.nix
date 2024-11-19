@@ -33,7 +33,7 @@ in
       cat <<EOF >> tracker/settings.py
 
       APP_VERSION = "${version}"
-      APP_REVISION = "${(builtins.fetchGit ../.).rev}"
+      APP_REVISION = "${(builtins.fetchGit { url = ../.; shallow = true; }).rev}"
       EOF
     '';
 
