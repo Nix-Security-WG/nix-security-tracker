@@ -1,9 +1,19 @@
-{{ affected|length }}
-<table>
-  {% for ap, val in affected.items %}
-    <tr>
-      <td title="{% if val.cpes %}{{ val.cpes|join:"<br>"|safe }}{% else %}No CPE info{% endif %}">{{ ap }}<td>
-      <td>{{ val.version_constraints|join:", " }}</td>
-    </tr>
+<div class="affected-products">
+  {% for package_name, val in affected.items %}
+    <article
+      class="affected-product"
+      title="{% if val.cpes %}{{ val.cpes|join:"<br>"|safe }}{% else %}No CPE info{% endif %}"
+    >
+      <div class="package-name">
+        {{ package_name }}
+      </div>
+      <div class="version-constraints">
+        {% for vc in val.version_constraints %}
+          <div class="version-constraint {{ vc.status }}">
+            {{ vc.vc_str }}
+          </div>
+        {% endfor %}
+      </div>
+    </article>
   {% endfor %}
-</table>
+</div>

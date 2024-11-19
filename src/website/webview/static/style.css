@@ -360,6 +360,10 @@ article .suggestion h3 {
   font-weight: 600;
 }
 
+details.description {
+  padding-bottom: 1em;
+}
+
 details.description > summary {
   display: block;
   font-weight: 600;
@@ -378,6 +382,37 @@ details.description[open] > summary:after {
 
 .description-long.as-details {
   margin-top: 0.5em;
+  margin-bottom: 0;
+}
+
+.suggestion .affected-products article.affected-product {
+  display: flex;
+  flex-direction: row;
+  padding: 0.1em 0;
+}
+
+.suggestion .affected-products article.affected-product .package-name {
+  flex-grow: 1;
+}
+
+.suggestion .affected-products article.affected-product .version-constraints {
+  font-family: "IBM Plex Mono";
+}
+
+.suggestion
+  .affected-products
+  article.affected-product
+  .version-constraints
+  .unaffected {
+  background: #bfb;
+}
+
+.suggestion
+  .affected-products
+  article.affected-product
+  .version-constraints
+  .affected {
+  background: #ffabab;
 }
 
 article .nixpkgs-packages {

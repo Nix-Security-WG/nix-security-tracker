@@ -296,6 +296,23 @@ class Version(models.Model):
     less_than = models.CharField(max_length=1024, null=True)
     less_equal = models.CharField(max_length=1024, null=True)
 
+    def version_constraint_str(self) -> str | None:
+        """
+        Represent a version (constraint) in a string, that is going to be displayed to the user.
+        E.g. =<0.4.6
+        """
+        if self.less_equal:
+            return f"=<{self.less_equal}"
+        elif self.less_than:
+            if self.less_than == "*":
+                return "*"
+            else:
+                return f"<{self.less_than}"
+        elif self.version:
+            return f"=={self.version}"
+        else:
+            return None
+
 
 class Cpe(models.Model):
     name = models.CharField(

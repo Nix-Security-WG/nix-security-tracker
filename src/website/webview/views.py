@@ -597,7 +597,7 @@ class DraftListView(ListView):
     template_name = "selected_list.html"
     model = CVEDerivationClusterProposal
     paginator_class = LargeTablePaginator
-    paginate_by = 1
+    paginate_by = 10
     context_object_name = "objects"
 
     def get_context_data(self, **kwargs: Any) -> Any:
@@ -622,10 +622,10 @@ class DraftListView(ListView):
             for a in obj.affected:
                 if a.package_name:
                     if a.package_name not in obj.affected_packages:
+                        for vc in a.all_versions:
+                            vc.vc_str = vc.version_constraint_str()
                         obj.affected_packages[a.package_name] = {
-                            "version_constraints": [
-                                vc.version for vc in a.all_versions
-                            ],
+                            "version_constraints": a.all_versions,
                             "cpes": [cpe.name for cpe in a.all_cpes],
                         }
         context["adjusted_elided_page_range"] = context[
