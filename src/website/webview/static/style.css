@@ -326,6 +326,7 @@ article .severity {
   border-radius: 5px;
   margin-left: auto;
   padding: 0.2rem;
+  font-size: 0.8rem;
 }
 
 .severity.LOW {
@@ -346,7 +347,6 @@ article .severity {
 
 .severity.NONE {
   color: var(--grey);
-  font-size: 0.8rem;
 }
 
 article .suggestion h2 {
