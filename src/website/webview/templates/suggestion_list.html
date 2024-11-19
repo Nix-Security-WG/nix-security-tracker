@@ -4,10 +4,10 @@
 {% block content %}
 <h1>Automatically generated suggestions</h1>
 <p>
-<span class="hint green-button">Select</span> to queue a suggestion for refinement. <a href="/selected">View all selected suggestions</a></s>
+<span class="hint selected-color">Select</span> to queue a suggestion for refinement. <a href="/selected">View all selected suggestions</a></s>
 </p>
 <p>
-<span class="hint red-button">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+<span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
 </p>
 <div id="suggestion-list">
   {% for object in object_list %}
@@ -36,10 +36,10 @@
         {% selectable_nixpkgs_package_list object.packages %}
 
         <div class="change-issue-state">
-          <button type="submit" name="new_status" value="ACCEPTED" class="green-button">
+          <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
             Select
           </button>
-          <button type="submit" name="new_status" value="REJECTED" class="red-button">
+          <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
             Dismiss
           </button>
         </div>
