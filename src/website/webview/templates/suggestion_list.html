@@ -2,6 +2,8 @@
 {% load viewutils %}
 
 {% block content %}
+
+{% if status_filter == "pending" %}
 <h1>Automatically generated suggestions</h1>
 <p>
 <span class="hint selected-color">Select</span> to queue a suggestion for refinement. <a href="/selected">View all selected suggestions</a></s>
@@ -9,6 +11,24 @@
 <p>
 <span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
 </p>
+{% elif status_filter == "rejected" %}
+<h1>Dismissed suggestions</h1>
+<p>
+These automatic suggestions were dimissed after initial triaging. <a href="/suggestions">View all untriaged suggestions</a>
+</p>
+<p>
+<span class="hint red-button">Restore</span> to select a suggestion for a revision. <a href="/selected">View all selected suggestions</a>
+</p>
+{% elif status_filter == "accepted" %}
+<h1>Selected suggestions</h1>
+<p>
+<span class="hint green-button">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing. <s><a href="/drafts">View all drafts</a></s>
+</p>
+<p>
+<span class="hint red-button">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+</p>
+{% endif %}
+
 <div id="suggestion-list">
   {% for object in object_list %}
     <article class="suggestion">
@@ -33,15 +53,40 @@
           <p class="description-long as-details">{{ object.description }}</p>
         </details>
 
-        {% selectable_nixpkgs_package_list object.packages %}
+        {% if status_filter == "rejected" %}
+          {% nixpkgs_package_list object.packages %}
+        {% else %}
+          {% selectable_nixpkgs_package_list object.packages %}
+        {% endif %}
 
         <div class="change-issue-state">
-          <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
-            Select
-          </button>
-          <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
-            Dismiss
-          </button>
+          {% if status_filter == "pending" %}
+            <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
+              Select
+            </button>
+            <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
+              Dismiss
+            </button>
+          {% elif status_filter == "rejected" %}
+            <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
+              Restore
+            </button>
+          {% elif status_filter == "accepted" %}
+            <button type="submit" name="create-draft-not-implemented" class="draft-color">
+              C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
+            </button>
+            {% if object.packages %}
+              <div class="button-with-note">
+              <button type="submit" class="grey-button">
+                Purge deleted packages
+              </button>
+              <span class="note">(cannot be undone)<span>
+              </div>
+            {% endif %}
+            <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
+              Dismiss
+            </button>
+          {% endif %}
         </div>
       </form>
     </article>
