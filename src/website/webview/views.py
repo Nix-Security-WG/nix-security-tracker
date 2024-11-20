@@ -617,3 +617,59 @@ def update_suggestion(
         suggestion.derivations.set(derivation_ids_to_keep)
 
     return (current_page, new_status, suggestion)
+
+def channel_structure(derivations: list[NixDerivation]) -> dict:
+    """
+    For a list of derivations, massage the data so that in can rendered easily in the suggestions view
+    """
+    packages = dict()
+    for derivation in derivations:
+        attribute = derivation.attribute.removesuffix(f".{derivation.system}")
+        # FIXME This is wrong. Replace with something like builtins.parseDrvName
+        version = derivation.name.split("-")[-1]
+        if attribute not in packages:
+            packages[attribute] = {
+                "versions": {},
+                "derivation_ids": [],
+            }
+            if derivation.metadata and derivation.metadata.description:
+                packages[attribute]["description"] = derivation.metadata.description
+        packages[attribute]["derivation_ids"].append(derivation.pk)
+        branch_name = derivation.parent_evaluation.channel.channel_branch
+        major_channel = get_major_channel(branch_name)
+        # FIXME This quietly drops unfamiliar branch names
+        if major_channel:
+            if major_channel not in packages[attribute]["versions"]:
+                packages[attribute]["versions"][major_channel] = {
+                    "major_version": None,
+                    "uniform_versions": None,
+                    "sub_branches": dict(),
+                }
+            if not branch_name == major_channel:
+                packages[attribute]["versions"][major_channel]["sub_branches"][
+                    branch_name
+                ] = version
+            else:
+                packages[attribute]["versions"][major_channel]["major_version"] = (
+                    version
+                )
+    for package_name in packages:
+        for mc in packages[package_name]["versions"].keys():
+            uniform_versions = True
+            major_version = packages[package_name]["versions"][mc]["major_version"]
+            for _branch_name, version in packages[package_name]["versions"][mc][
+                "sub_branches"
+            ].items():
+                uniform_versions = uniform_versions and major_version == version
+            packages[package_name]["versions"][mc]["uniform_versions"]
+            # We just sort branch names by length to get a good-enough order
+            packages[package_name]["versions"][mc]["sub_branches"] = sorted(
+                packages[package_name]["versions"][mc]["sub_branches"].items(),
+                reverse=True,
+                key=lambda item: len(item[0]),
+            )
+        # Sorting major channel names happens to work out well for bringing them into historical order
+        packages[package_name]["versions"] = sorted(
+            packages[package_name]["versions"].items()
+        )
+    return packages
