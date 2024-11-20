@@ -1,10 +1,10 @@
 import argparse
 import datetime
 import logging
+from collections import Counter
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 from shared import models
 from shared.listeners.automatic_linkage import build_new_links
 
@@ -40,9 +40,14 @@ class Command(BaseCommand):
             raise CommandError(f"Not a valid delta format: {_delta}")
 
         logger.info("Proposing new CVE links starting '%s'", since_date.isoformat())
-        with transaction.atomic():
-            # Collect all containers since that delta range.
-            containers = models.Container.objects.filter(date_public__gte=since_date)
+        success = Counter()
+        # Collect all containers since that delta range.
+        containers = models.Container.objects.filter(date_public__gte=since_date)
 
-            for container in containers.iterator():
-                build_new_links(container)
+        for container in containers.iterator():
+            success[container.cve.cve_id] += 1 if build_new_links(container) else 0
+            print(".", end="", flush=True)
+
+        for cve_id, successes in success.items():
+            if successes == 0:
+                logger.warning("No derivation found for '%s', linkage failure.", cve_id)
