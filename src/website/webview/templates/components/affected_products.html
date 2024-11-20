@@ -9,7 +9,10 @@
       </div>
       <div class="version-constraints">
         {% for status, vc_str in ap.version_constraints %}
-          <div class="version-constraint {{ status }}">
+          <div
+            class="version-constraint {{ status }}"
+            title="{% if status == 'affected'%}Affected{% elif status == 'unaffected' %}Unaffected{% else %}Unknown{% endif %}"
+          >
             {{ vc_str }}
           </div>
         {% endfor %}
