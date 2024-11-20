@@ -36,6 +36,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
 from shared.models import (
+    Version,
     AffectedProduct,
     Container,
     CveRecord,
@@ -47,9 +48,6 @@ from shared.models import (
 )
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
-)
-from shared.models.nix_evaluation import (
-    channel_structure,
 )
 
 from webview.forms import NixpkgsIssueForm
@@ -501,22 +499,23 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
-        all_affected_pk = list()
+        prefetched_affected_pk = list()
         for obj in context["object_list"]:
-            obj.packages = channel_structure(obj.derivations.all())
             # We cache the list of AffectedProduct ids per suggestion for later
             obj.affected_pk = obj.cve.container.values_list("affected", flat=True)
-            all_affected_pk.extend(obj.affected_pk)
-        affected = AffectedProduct.objects.prefetch_related(
+            prefetched_affected_pk.extend(obj.affected_pk)
+        prefetched_affected = AffectedProduct.objects.prefetch_related(
             Prefetch("versions", to_attr="all_versions"),
             Prefetch("cpes", to_attr="all_cpes"),
-        ).in_bulk(id_list=all_affected_pk)
+        ).in_bulk(id_list=prefetched_affected_pk)
 
         for obj in context["object_list"]:
             obj.affected_packages = dict()
+            all_versions = list()
             for pk in obj.affected_pk:
                 if pk is not None:
-                    a = affected[pk]
+                    a = prefetched_affected[pk]
+                    all_versions.extend(a.all_versions)
                     if a.package_name:
                         if a.package_name not in obj.affected_packages:
                             obj.affected_packages[a.package_name] = {
@@ -534,6 +533,7 @@ class SuggestionListView(ListView):
                         obj.affected_packages[a.package_name]["cpes"].update(
                             [cpe.name for cpe in a.all_cpes]
                         )
+            obj.packages = channel_structure(all_versions, obj.derivations.all())
 
         context["adjusted_elided_page_range"] = context[
             "paginator"
@@ -618,7 +618,7 @@ def update_suggestion(
 
     return (current_page, new_status, suggestion)
 
-def channel_structure(derivations: list[NixDerivation]) -> dict:
+def channel_structure(version_constraints: list[Version], derivations: list[NixDerivation]) -> dict:
     """
     For a list of derivations, massage the data so that in can rendered easily in the suggestions view
     """
