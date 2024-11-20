@@ -5,6 +5,7 @@ from itertools import chain
 from typing import Any, cast
 
 from django.core.validators import RegexValidator
+from shared.models.cached import CachedSuggestions
 
 if typing.TYPE_CHECKING:
     # prevent typecheck from failing on some historic type
@@ -27,7 +28,6 @@ from django.db.models import (
     Value,
     When,
 )
-from django.db.models.functions import Coalesce
 from django.db.models.manager import BaseManager
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
@@ -42,7 +42,6 @@ from shared.models import (
     NixChannel,
     NixDerivation,
     NixpkgsIssue,
-    Severity,
 )
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
@@ -52,7 +51,7 @@ from shared.models.nix_evaluation import (
 )
 
 from webview.forms import NixpkgsIssueForm
-from webview.paginators import CustomCountPaginator, LargeTablePaginator
+from webview.paginators import CustomCountPaginator
 
 
 class HomeView(TemplateView):
@@ -484,8 +483,7 @@ class NixderivationPerChannelView(ListView):
 
 class SuggestionListView(ListView):
     template_name = "suggestion_list.html"
-    model = CVEDerivationClusterProposal
-    paginator_class = LargeTablePaginator
+    model = CachedSuggestions
     paginate_by = 10
     context_object_name = "objects"
 
@@ -500,8 +498,25 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
+        # TODO: we should not have a cheat code but a proper deserializer here.
+        class CheatCode:
+            def __init__(self, d: dict[str, Any]) -> None:
+                self.pk = d.get("id", None)
+                for k, v in d.items():
+                    if isinstance(k, list | tuple):
+                        setattr(
+                            self,
+                            k,
+                            [CheatCode(x) if isinstance(x, dict) else x for x in v],
+                        )
+                    else:
+                        setattr(self, k, CheatCode(v) if isinstance(v, dict) else v)
+
         for obj in context["object_list"]:
-            obj.packages = channel_structure(obj.derivations.all())
+            derivations: list[NixDerivation] = cast(
+                list[NixDerivation], list(map(CheatCode, obj.payload["derivations"]))
+            )
+            obj.packages = channel_structure(derivations)
         context["adjusted_elided_page_range"] = context[
             "paginator"
         ].get_elided_page_range(context["page_obj"].number)
@@ -511,26 +526,10 @@ class SuggestionListView(ListView):
         queryset = (
             super()
             .get_queryset()
-            .select_related("cve")
-            .filter(status=self.status_filter)
-            .prefetch_related("derivations", "derivations__parent_evaluation")
+            .select_related("proposal")
+            .filter(proposal__status=self.status_filter)
         )
 
-        # FIXME(kerstin) Some stuff only for demo and development purposes, to have more interesting data on the page
-        queryset = queryset.filter(cve__container__affected__package_name__isnull=False)
-
-        if self.status_filter != CVEDerivationClusterProposal.Status.PENDING:
-            # FIXME(raito): fix the proposal duplicates to make all dupes disappear.
-            queryset = queryset.distinct("cve__cve_id")
-
-        queryset = queryset.annotate(
-            package_name=F("cve__container__affected__package_name"),
-            base_severity=Coalesce(
-                F("cve__container__metrics__base_severity"), Value(Severity.NONE)
-            ),
-            title=F("cve__container__title"),
-            description=F("cve__container__descriptions__value"),
-        )
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
