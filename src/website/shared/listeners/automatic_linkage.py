@@ -40,21 +40,21 @@ def produce_linkage_candidates(
     return candidates
 
 
-def build_new_links(container: Container) -> None:
+def build_new_links(container: Container) -> bool:
     if container.cve.triaged:
         logger.info(
             "Container received for '%s', but already triaged, skipping linkage.",
             container.cve,
         )
-        return
+        return False
 
     if CVEDerivationClusterProposal.objects.filter(cve=container.cve).exists():
-        logger.warning(
-            "Proposals already exist for '%s', skipping linkage.", container.cve
-        )
-        return
+        return False
 
     drvs = produce_linkage_candidates(container)
+    if not drvs:
+        return False
+
     proposal = CVEDerivationClusterProposal.objects.create(cve=container.cve)
 
     drvs_throughs = [
@@ -73,6 +73,8 @@ def build_new_links(container: Container) -> None:
             container.cve,
             len(drvs_throughs),
         )
+
+    return True
 
 
 @pgpubsub.post_insert_listener(ContainerChannel)
