@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from pgtrigger import UpdateSearchVector
 
+
 def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
@@ -330,5 +331,3 @@ def get_major_channel(branch_name: str) -> str | None:
         if mc in branch_name:
             return f"nixos-{mc}"
     return None
-
-

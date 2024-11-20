@@ -36,7 +36,6 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
 from shared.models import (
-    Version,
     AffectedProduct,
     Container,
     CveRecord,
@@ -45,10 +44,12 @@ from shared.models import (
     NixDerivation,
     NixpkgsIssue,
     Severity,
+    Version,
 )
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
+from shared.models.nix_evaluation import get_major_channel
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator, LargeTablePaginator
@@ -618,7 +619,41 @@ def update_suggestion(
 
     return (current_page, new_status, suggestion)
 
-def channel_structure(version_constraints: list[Version], derivations: list[NixDerivation]) -> dict:
+
+def is_version_affected(version_statuses: list[Version.Status]) -> Version.Status:
+    """
+    Basically just sums list of version constraints statuses.
+    When in doubt, we:
+    - Choose Affected over Unknown
+    - Choose Unknown over Unaffected
+    - Choose Affected over Unaffected
+    """
+    result = Version.Status.UNKNOWN
+    for status in version_statuses:
+        if status == result:
+            pass
+        elif (
+            status == Version.Status.AFFECTED and result == Version.Status.UNKNOWN
+        ) or (status == Version.Status.UNKNOWN and result == Version.Status.AFFECTED):
+            result = Version.Status.AFFECTED
+        elif (
+            status == Version.Status.UNKNOWN and result == Version.Status.UNAFFECTED
+        ) or (status == Version.Status.UNAFFECTED and result == Version.Status.UNKNOWN):
+            result = Version.Status.UNKNOWN
+        elif (
+            status == Version.Status.AFFECTED and result == Version.Status.UNAFFECTED
+        ) or (
+            status == Version.Status.UNAFFECTED and result == Version.Status.AFFECTED
+        ):
+            result = Version.Status.AFFECTED
+        else:
+            assert False, f"Unreachable code: {status} {result}"
+    return result
+
+
+def channel_structure(
+    version_constraints: list[Version], derivations: list[NixDerivation]
+) -> dict:
     """
     For a list of derivations, massage the data so that in can rendered easily in the suggestions view
     """
@@ -642,13 +677,19 @@ def channel_structure(version_constraints: list[Version], derivations: list[NixD
             if major_channel not in packages[attribute]["versions"]:
                 packages[attribute]["versions"][major_channel] = {
                     "major_version": None,
+                    "status": None,
                     "uniform_versions": None,
                     "sub_branches": dict(),
                 }
             if not branch_name == major_channel:
                 packages[attribute]["versions"][major_channel]["sub_branches"][
                     branch_name
-                ] = version
+                ] = {
+                    "version": version,
+                    "status": is_version_affected(
+                        [v.is_affected(version) for v in version_constraints]
+                    ),
+                }
             else:
                 packages[attribute]["versions"][major_channel]["major_version"] = (
                     version
@@ -657,10 +698,15 @@ def channel_structure(version_constraints: list[Version], derivations: list[NixD
         for mc in packages[package_name]["versions"].keys():
             uniform_versions = True
             major_version = packages[package_name]["versions"][mc]["major_version"]
-            for _branch_name, version in packages[package_name]["versions"][mc][
+            packages[package_name]["versions"][mc]["status"] = is_version_affected(
+                [v.is_affected(major_version) for v in version_constraints]
+            )
+            for _branch_name, vdata in packages[package_name]["versions"][mc][
                 "sub_branches"
             ].items():
-                uniform_versions = uniform_versions and major_version == version
+                uniform_versions = (
+                    uniform_versions and str(major_version) == vdata["version"]
+                )
             packages[package_name]["versions"][mc]["uniform_versions"]
             # We just sort branch names by length to get a good-enough order
             packages[package_name]["versions"][mc]["sub_branches"] = sorted(

@@ -232,6 +232,8 @@
   --dismissed-suggestion: #acb3c8;
   --selected-suggestion: #7bca7b;
   --draft: green;
+  --affected: #ffabab;
+  --unaffected: #bfb;
 }
 
 body {
@@ -408,7 +410,7 @@ details.description[open] > summary:after {
   article.affected-product
   .version-constraints
   .unaffected {
-  background: #bfb;
+  background: var(--unaffected);
 }
 
 .suggestion
@@ -416,7 +418,7 @@ details.description[open] > summary:after {
   article.affected-product
   .version-constraints
   .affected {
-  background: #ffabab;
+  background: var(--affected);
 }
 
 article .nixpkgs-packages {
@@ -522,6 +524,14 @@ article .nixpkgs-packages {
   width: 5em;
   display: inline-block;
   text-align: end;
+}
+
+.nixpkgs-package .version.affected {
+  background: var(--affected);
+}
+
+.nixpkgs-package .version.unaffected {
+  background: var(--unaffected);
 }
 
 .suggestion .change-issue-state {
