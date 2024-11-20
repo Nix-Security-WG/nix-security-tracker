@@ -55,7 +55,17 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         return
     relevant_piece = relevant_piece[0]
 
-    all_derivations = [to_dict(m) for m in suggestion.derivations.select_related('metadata', 'parent_evaluation').prefetch_related('dependencies', 'outputs').all().iterator()]
+    # This is not a suggestion we want to show.
+    if suggestion.derivations.count() > 1_000:
+        return
+
+    all_derivations = [
+        to_dict(m)
+        for m in suggestion.derivations.select_related("metadata", "parent_evaluation")
+        .prefetch_related("outputs", "dependencies")
+        .all()
+        .iterator()
+    ]
 
     only_relevant_data = {
         "package_name": relevant_piece["affected__package_name"],
