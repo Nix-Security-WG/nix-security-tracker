@@ -501,31 +501,39 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
-        affected_pk = list()
+        all_affected_pk = list()
         for obj in context["object_list"]:
             obj.packages = channel_structure(obj.derivations.all())
-            affected_pk.extend(obj.cve.container.values_list("affected", flat=True))
+            # We cache the list of AffectedProduct ids per suggestion for later
+            obj.affected_pk = obj.cve.container.values_list("affected", flat=True)
+            all_affected_pk.extend(obj.affected_pk)
         affected = AffectedProduct.objects.prefetch_related(
             Prefetch("versions", to_attr="all_versions"),
             Prefetch("cpes", to_attr="all_cpes"),
-        ).in_bulk(affected_pk)
+        ).in_bulk(id_list=all_affected_pk)
 
         for obj in context["object_list"]:
-            affected_pk = obj.cve.container.values_list("affected", flat=True)
-            obj.affected = list()
-            for pk in affected_pk:
-                if pk is not None:
-                    obj.affected.append(affected[pk])
             obj.affected_packages = dict()
-            for a in obj.affected:
-                if a.package_name:
-                    if a.package_name not in obj.affected_packages:
-                        for vc in a.all_versions:
-                            vc.vc_str = vc.version_constraint_str()
-                        obj.affected_packages[a.package_name] = {
-                            "version_constraints": a.all_versions,
-                            "cpes": [cpe.name for cpe in a.all_cpes],
-                        }
+            for pk in obj.affected_pk:
+                if pk is not None:
+                    a = affected[pk]
+                    if a.package_name:
+                        if a.package_name not in obj.affected_packages:
+                            obj.affected_packages[a.package_name] = {
+                                "version_constraints": set(),
+                                "cpes": set(),
+                            }
+                        obj.affected_packages[a.package_name][
+                            "version_constraints"
+                        ].update(
+                            [
+                                (vc.status, vc.version_constraint_str())
+                                for vc in a.all_versions
+                            ]
+                        )
+                        obj.affected_packages[a.package_name]["cpes"].update(
+                            [cpe.name for cpe in a.all_cpes]
+                        )
 
         context["adjusted_elided_page_range"] = context[
             "paginator"
