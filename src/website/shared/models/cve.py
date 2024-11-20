@@ -34,6 +34,8 @@ class CveRecord(models.Model):
         PUBLISHED = "PUBLISHED", _("PUBLISHED")
         REJECTED = "REJECTED", _("REJECTED")
 
+    container: models.QuerySet["Container"]
+
     state = models.CharField(
         max_length=text_length(RecordState),
         choices=RecordState.choices,

@@ -4,6 +4,7 @@ from pgpubsub.channel import TriggerChannel
 
 from shared.models import NixDerivation
 from shared.models.cve import Container
+from shared.models.linkage import CVEDerivationClusterProposal
 from shared.models.nix_evaluation import NixChannel, NixEvaluation
 
 
@@ -37,3 +38,11 @@ class ContainerChannel(TriggerChannel):
     model = Container
     # Process new structured data for a CVE only once.
     lock_notifications = True
+
+
+@dataclass
+class CVEDerivationClusterProposalChannel(TriggerChannel):
+    model = CVEDerivationClusterProposal
+    # We don't need to lock notifications.
+    # If we are caching twice the same proposal, we will just replace it.
+    lock_notifications = False
