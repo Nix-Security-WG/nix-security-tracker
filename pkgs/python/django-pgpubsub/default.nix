@@ -9,14 +9,14 @@
 
 buildPythonPackage rec {
   pname = "django-pgpubsub";
-  version = "1.1.2";
+  version = "1.3.1";
   pyproject = true;
 
   src = fetchFromGitHub {
-    owner = "Opus10";
+    owner = "PaulGilmartin";
     repo = "django-pgpubsub";
     rev = version;
-    hash = "sha256-TXyojZ7EHOlAdC0/QqTspCAsI4G55fnfsZfH5JUp5D0=";
+    hash = "sha256-Gl6NfBaoj3WKLHwJElbb27CYVQ83s3f86NUOZE7lHCk=";
   };
 
   postPatch = ''
@@ -36,8 +36,8 @@ buildPythonPackage rec {
 
   meta = with lib; {
     description = "Lightweight background tasks using Django Channels and PostgreSQL NOTIFY/LISTEN";
-    homepage = "https://github.com/Opus10/django-pgpubsub";
-    changelog = "https://github.com/Opus10/django-pgpubsub/blob/${src.rev}/CHANGELOG.md";
+    homepage = "https://github.com/PaulGilmartin/django-pgpubsub";
+    changelog = "https://github.com/PaulGilmartin/django-pgpubsub/blob/${src.rev}/CHANGELOG.md";
     license = licenses.bsd3;
     maintainers = with maintainers; [ raitobezarius ];
   };

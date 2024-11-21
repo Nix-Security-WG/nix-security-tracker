@@ -34,14 +34,14 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
     <article class="suggestion">
       <form method="post" action="">
         {% csrf_token %}
-        <input type="hidden" name="suggestion_id" value="{{ object.id }}">
+        <input type="hidden" name="suggestion_id" value="{{ object.proposal.pk }}">
         <input type="hidden" name="page" value="{{ page_obj.number }}">
 
         <div class="row1">
-          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.cve.cve_id | urlencode }}">
-            {{ object.cve.cve_id }}
+          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.proposal.cve.cve_id | urlencode }}">
+            {{ object.proposal.cve.cve_id }}
           </a>
-          {% severity_badge object.base_severity %}
+          {% severity_badge object.payload.base_severity %}
         </div>
 
         <details class="description">
@@ -50,11 +50,11 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
               {% if object.title %}
                 {{ object.title }}
               {% else %}
-                {{ object.description|truncatewords:10 }}
+                {{ object.payload.description|truncatewords:10 }}
               {% endif %}
             </h2>
           </summary>
-          <p class="description-long as-details">{{ object.description }}</p>
+          <p class="description-long as-details">{{ object.payload.description }}</p>
         </details>
 
         {% affected_products object.affected_packages %}
