@@ -506,8 +506,8 @@ class SuggestionListView(ListView):
             obj.affected_pk = obj.cve.container.values_list("affected", flat=True)
             prefetched_affected_pk.extend(obj.affected_pk)
         prefetched_affected = AffectedProduct.objects.prefetch_related(
-            Prefetch("versions", to_attr="all_versions"),
-            Prefetch("cpes", to_attr="all_cpes"),
+            Prefetch("versions"),
+            Prefetch("cpes"),
         ).in_bulk(id_list=prefetched_affected_pk)
 
         for obj in context["object_list"]:
@@ -516,7 +516,7 @@ class SuggestionListView(ListView):
             for pk in obj.affected_pk:
                 if pk is not None:
                     a = prefetched_affected[pk]
-                    all_versions.extend(a.all_versions)
+                    all_versions.extend(a.versions.all())
                     if a.package_name:
                         if a.package_name not in obj.affected_packages:
                             obj.affected_packages[a.package_name] = {
@@ -528,11 +528,11 @@ class SuggestionListView(ListView):
                         ].update(
                             [
                                 (vc.status, vc.version_constraint_str())
-                                for vc in a.all_versions
+                                for vc in a.versions.all()
                             ]
                         )
                         obj.affected_packages[a.package_name]["cpes"].update(
-                            [cpe.name for cpe in a.all_cpes]
+                            [cpe.name for cpe in a.cpes.all()]
                         )
             obj.packages = channel_structure(all_versions, obj.derivations.all())
 
