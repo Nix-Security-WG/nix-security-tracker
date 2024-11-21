@@ -620,7 +620,7 @@ def update_suggestion(
     return (current_page, new_status, suggestion)
 
 
-def is_version_affected(version_statuses: list[Version.Status]) -> Version.Status:
+def is_version_affected(version_statuses: list[str]) -> Version.Status:
     """
     Basically just sums list of version constraints statuses.
     When in doubt, we:
