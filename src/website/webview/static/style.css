@@ -403,6 +403,7 @@ details.description[open] > summary:after {
 
 .suggestion .affected-products article.affected-product .version-constraints {
   font-family: "IBM Plex Mono";
+  margin-right: 0.5em;
 }
 
 .suggestion
