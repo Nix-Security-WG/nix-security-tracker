@@ -355,15 +355,9 @@ article .severity {
   color: var(--grey);
 }
 
-article .suggestion h2 {
+details.description summary {
   font-size: 130%;
   margin-top: unset;
-  margin-bottom: 0.8em;
-}
-
-article .suggestion h3 {
-  font-size: 1rem;
-  font-weight: 600;
 }
 
 details.description {
@@ -613,10 +607,6 @@ button:hover {
 
   article .suggestion {
     padding: 0.5rem;
-  }
-
-  article .suggestion h2 {
-    margin-bottom: 0.3em;
   }
 
   .nixpkgs-package {

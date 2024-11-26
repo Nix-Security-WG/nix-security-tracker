@@ -46,13 +46,11 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
 
         <details class="description">
           <summary>
-            <h2>
-              {% if object.payload.title %}
-                {{ object.payload.title }}
-              {% else %}
-                {{ object.payload.description|truncatewords:10 }}
-              {% endif %}
-            </h2>
+            {% if object.payload.title %}
+              {{ object.payload.title }}
+            {% else %}
+              {{ object.payload.description|truncatewords:10 }}
+            {% endif %}
           </summary>
           <p class="description-long as-details">{{ object.payload.description }}</p>
         </details>
