@@ -321,8 +321,10 @@ class Version(models.Model):
     def is_affected(self, version: str) -> str:
         """
         Determines wether a given version string is affected by this version constraint
-        FIXME(kerstin): We probably want to do something smarter than just comparing strings
+        FIXME(kerstin): We currently compare versions by comparing strings, which is really wrong.
         """
+        if not version:
+            return Version.Status.UNKNOWN
         if self.less_equal:
             if self.less_equal == "*" or version <= self.less_equal:
                 return self.status

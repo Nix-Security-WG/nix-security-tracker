@@ -34,12 +34,12 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
     <article class="suggestion">
       <form method="post" action="">
         {% csrf_token %}
-        <input type="hidden" name="suggestion_id" value="{{ object.proposal.pk }}">
+        <input type="hidden" name="suggestion_id" value="{{ object.payload.pk }}">
         <input type="hidden" name="page" value="{{ page_obj.number }}">
 
         <div class="row1">
-          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.proposal.cve.cve_id | urlencode }}">
-            {{ object.proposal.cve.cve_id }}
+          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.payload.cve_id | urlencode }}">
+            {{ object.payload.cve_id }}
           </a>
           {% severity_badge object.payload.base_severity %}
         </div>
@@ -47,8 +47,8 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
         <details class="description">
           <summary>
             <h2>
-              {% if object.title %}
-                {{ object.title }}
+              {% if object.payload.title %}
+                {{ object.payload.title }}
               {% else %}
                 {{ object.payload.description|truncatewords:10 }}
               {% endif %}
@@ -57,12 +57,12 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
           <p class="description-long as-details">{{ object.payload.description }}</p>
         </details>
 
-        {% affected_products object.affected_packages %}
+        {% affected_products object.payload.affected_products %}
 
         {% if status_filter == "rejected" %}
-          {% nixpkgs_package_list object.packages %}
+          {% nixpkgs_package_list object.payload.packages %}
         {% else %}
-          {% selectable_nixpkgs_package_list object.packages %}
+          {% selectable_nixpkgs_package_list object.payload.packages %}
         {% endif %}
 
         <div class="change-issue-state">
@@ -81,7 +81,7 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
             <button type="submit" name="create-draft-not-implemented" class="draft-color">
               C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
             </button>
-            {% if object.packages %}
+            {% if object.payload.packages %}
               <div class="button-with-note">
               <button type="submit" class="grey-button">
                 Purge deleted packages

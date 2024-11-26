@@ -24,7 +24,6 @@ from django.db.models import (
     Count,
     F,
     Max,
-    Prefetch,
     Q,
     Value,
     When,
@@ -43,12 +42,10 @@ from shared.models import (
     NixChannel,
     NixDerivation,
     NixpkgsIssue,
-    Version,
 )
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
-from shared.models.nix_evaluation import get_major_channel
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
@@ -498,61 +495,6 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
-        # TODO: we should not have a cheat code but a proper deserializer here.
-        class CheatCode:
-            def __init__(self, d: dict[str, Any]) -> None:
-                self.pk = d.get("id", None)
-                for k, v in d.items():
-                    if isinstance(k, list | tuple):
-                        setattr(
-                            self,
-                            k,
-                            [CheatCode(x) if isinstance(x, dict) else x for x in v],
-                        )
-                    else:
-                        setattr(self, k, CheatCode(v) if isinstance(v, dict) else v)
-
-        prefetched_affected_pk = list()
-        for obj in context["object_list"]:
-            # We cache the list of AffectedProduct ids per suggestion for later
-            obj.affected_pk = obj.proposal.cve.container.values_list(
-                "affected", flat=True
-            )
-            prefetched_affected_pk.extend(obj.affected_pk)
-        prefetched_affected = AffectedProduct.objects.prefetch_related(
-            Prefetch("versions"),
-            Prefetch("cpes"),
-        ).in_bulk(id_list=prefetched_affected_pk)
-
-        for obj in context["object_list"]:
-            obj.affected_packages = dict()
-            all_versions = list()
-            for pk in obj.affected_pk:
-                if pk is not None:
-                    a = prefetched_affected[pk]
-                    all_versions.extend(a.versions.all())
-                    if a.package_name:
-                        if a.package_name not in obj.affected_packages:
-                            obj.affected_packages[a.package_name] = {
-                                "version_constraints": set(),
-                                "cpes": set(),
-                            }
-                        obj.affected_packages[a.package_name][
-                            "version_constraints"
-                        ].update(
-                            [
-                                (vc.status, vc.version_constraint_str())
-                                for vc in a.versions.all()
-                            ]
-                        )
-                        obj.affected_packages[a.package_name]["cpes"].update(
-                            [cpe.name for cpe in a.cpes.all()]
-                        )
-            derivations: list[NixDerivation] = cast(
-                list[NixDerivation], list(map(CheatCode, obj.payload["derivations"]))
-            )
-            obj.packages = channel_structure(all_versions, derivations)
-
         context["adjusted_elided_page_range"] = context[
             "paginator"
         ].get_elided_page_range(context["page_obj"].number)
@@ -564,7 +506,6 @@ class SuggestionListView(ListView):
             .get_queryset()
             # TODO: order by timestamp of last update/creation descending
             .filter(proposal__status=self.status_filter)
-            .select_related("proposal")
         )
         return queryset
 
@@ -615,104 +556,3 @@ def update_suggestion(
         suggestion.derivations.set(derivation_ids_to_keep)
 
     return (current_page, new_status, suggestion)
-
-
-def is_version_affected(version_statuses: list[str]) -> Version.Status:
-    """
-    Basically just sums list of version constraints statuses.
-    When in doubt, we:
-    - Choose Affected over Unknown
-    - Choose Unknown over Unaffected
-    - Choose Affected over Unaffected
-    """
-    result = Version.Status.UNKNOWN
-    for status in version_statuses:
-        if status == result:
-            pass
-        elif (
-            status == Version.Status.AFFECTED and result == Version.Status.UNKNOWN
-        ) or (status == Version.Status.UNKNOWN and result == Version.Status.AFFECTED):
-            result = Version.Status.AFFECTED
-        elif (
-            status == Version.Status.UNKNOWN and result == Version.Status.UNAFFECTED
-        ) or (status == Version.Status.UNAFFECTED and result == Version.Status.UNKNOWN):
-            result = Version.Status.UNKNOWN
-        elif (
-            status == Version.Status.AFFECTED and result == Version.Status.UNAFFECTED
-        ) or (
-            status == Version.Status.UNAFFECTED and result == Version.Status.AFFECTED
-        ):
-            result = Version.Status.AFFECTED
-        else:
-            assert False, f"Unreachable code: {status} {result}"
-    return result
-
-
-def channel_structure(
-    version_constraints: list[Version], derivations: list[NixDerivation]
-) -> dict:
-    """
-    For a list of derivations, massage the data so that in can rendered easily in the suggestions view
-    """
-    packages = dict()
-    for derivation in derivations:
-        attribute = derivation.attribute.removesuffix(f".{derivation.system}")
-        # FIXME This is wrong. Replace with something like builtins.parseDrvName
-        version = derivation.name.split("-")[-1]
-        if attribute not in packages:
-            packages[attribute] = {
-                "versions": {},
-                "derivation_ids": [],
-            }
-            if derivation.metadata and derivation.metadata.description:
-                packages[attribute]["description"] = derivation.metadata.description
-        packages[attribute]["derivation_ids"].append(derivation.pk)
-        branch_name = derivation.parent_evaluation.channel.channel_branch
-        major_channel = get_major_channel(branch_name)
-        # FIXME This quietly drops unfamiliar branch names
-        if major_channel:
-            if major_channel not in packages[attribute]["versions"]:
-                packages[attribute]["versions"][major_channel] = {
-                    "major_version": None,
-                    "status": None,
-                    "uniform_versions": None,
-                    "sub_branches": dict(),
-                }
-            if not branch_name == major_channel:
-                packages[attribute]["versions"][major_channel]["sub_branches"][
-                    branch_name
-                ] = {
-                    "version": version,
-                    "status": is_version_affected(
-                        [v.is_affected(version) for v in version_constraints]
-                    ),
-                }
-            else:
-                packages[attribute]["versions"][major_channel]["major_version"] = (
-                    version
-                )
-    for package_name in packages:
-        for mc in packages[package_name]["versions"].keys():
-            uniform_versions = True
-            major_version = packages[package_name]["versions"][mc]["major_version"]
-            packages[package_name]["versions"][mc]["status"] = is_version_affected(
-                [v.is_affected(major_version) for v in version_constraints]
-            )
-            for _branch_name, vdata in packages[package_name]["versions"][mc][
-                "sub_branches"
-            ].items():
-                uniform_versions = (
-                    uniform_versions and str(major_version) == vdata["version"]
-                )
-            packages[package_name]["versions"][mc]["uniform_versions"]
-            # We just sort branch names by length to get a good-enough order
-            packages[package_name]["versions"][mc]["sub_branches"] = sorted(
-                packages[package_name]["versions"][mc]["sub_branches"].items(),
-                reverse=True,
-                key=lambda item: len(item[0]),
-            )
-        # Sorting major channel names happens to work out well for bringing them into historical order
-        packages[package_name]["versions"] = sorted(
-            packages[package_name]["versions"].items()
-        )
-    return packages
