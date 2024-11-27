@@ -20,6 +20,7 @@ from django.contrib.postgres.search import (
     SearchRank,
 )
 from django.core.paginator import Page
+from django.db import transaction
 from django.db.models import (
     Case,
     Count,
@@ -37,6 +38,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
+from shared.listeners.cache_suggestions import cache_new_suggestions
 from shared.models import (
     AffectedProduct,
     Container,
@@ -530,7 +532,9 @@ class SuggestionListView(ListView):
         elif new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
 
-        suggestion.save()
+        with transaction.atomic():
+            suggestion.save()
+            cache_new_suggestions(suggestion)
 
         # We provide graceful fallback for important workflows, when users have JavaScript disabled
         if "no-js" in request.POST:
@@ -562,6 +566,8 @@ class SuggestionListView(ListView):
                     },
                 )
                 return HttpResponse(snippet)
+
+
 
 
 def update_suggestion(

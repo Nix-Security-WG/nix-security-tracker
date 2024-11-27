@@ -114,7 +114,7 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
     # TODO: add format checking to avoid disasters in the frontend.
 
     _, created = CachedSuggestions.objects.update_or_create(
-        payload=dict(only_relevant_data), defaults={"proposal_id": suggestion.pk}
+        proposal_id=suggestion.pk, defaults={"payload": dict(only_relevant_data)}
     )
 
     if created:
