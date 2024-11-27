@@ -105,7 +105,7 @@ def make_metric(data: dict[str, Any]) -> models.Metric:
     if raw_cvss:
         ctx["scope"] = raw_cvss.get("scope")
         ctx["vector_string"] = raw_cvss.get("vectorString")
-        ctx["base_score"] = int(raw_cvss.get("baseScore"))
+        ctx["base_score"] = float(raw_cvss.get("baseScore"))
 
         vector_fields = (
             "attack_complexity",
