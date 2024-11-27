@@ -8,7 +8,7 @@ import pgpubsub
 from shared.channels import CVEDerivationClusterProposalChannel
 from shared.models import NixDerivation
 from shared.models.cached import CachedSuggestions
-from shared.models.cve import AffectedProduct, Severity, Version
+from shared.models.cve import AffectedProduct, Metric, Version
 from shared.models.linkage import CVEDerivationClusterProposal
 from shared.models.nix_evaluation import get_major_channel
 
@@ -47,7 +47,6 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
             "title",
             # Only used for relevance checking
             "affected__package_name",
-            "metrics__base_severity",
             "descriptions__value",
         )
         .all()
@@ -99,16 +98,17 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         .all()
     )
 
+    prefetched_metrics = Metric.objects.filter(container__cve=suggestion.cve)
+
     only_relevant_data = {
         "pk": suggestion.pk,
         "cve_id": suggestion.cve.cve_id,
         "package_name": relevant_piece["affected__package_name"],
-        "base_severity": relevant_piece.get("metrics__base_severity", Severity.NONE)
-        or Severity.NONE,
         "title": relevant_piece["title"],
         "description": relevant_piece["descriptions__value"],
         "affected_products": affected_products,
         "packages": channel_structure(all_versions, list(derivations)),
+        "metrics": [to_dict(m) for m in prefetched_metrics],
     }
 
     # TODO: add format checking to avoid disasters in the frontend.

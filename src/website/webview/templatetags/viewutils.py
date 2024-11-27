@@ -4,9 +4,7 @@ from typing import Any, TypedDict
 
 from django import template
 from django.template.context import Context
-from django.utils.html import format_html
-from django.utils.safestring import SafeString
-from shared.models.cve import AffectedProduct, Severity
+from shared.models.cve import AffectedProduct
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
@@ -57,6 +55,17 @@ def getdrvname(drv: dict) -> str:
     return f"{name} {hash[:8]}"
 
 
+@register.inclusion_tag("components/severity_badge.html")
+def severity_badge(metrics: list[dict]) -> dict:
+    """
+    For now we return the first metric that has a sane looking raw JSON field.
+    """
+    for m in metrics:
+        if "raw_cvss_json" in m and "baseSeverity" in m.get("raw_cvss_json", {}):
+            return {"metric": m["raw_cvss_json"]}
+    return {}
+
+
 @register.filter
 def iso(date: datetime.datetime) -> str:
     return date.replace(microsecond=0).isoformat()
@@ -89,36 +98,6 @@ def suggestion(
         "status_filter": context["status_filter"],
         "page_obj": context["page_obj"],
     }
-
-
-@register.simple_tag
-def severity_badge(severity: Severity) -> SafeString:
-    """Renders a severity badge with the given severity level.
-
-    Args:
-        severity: The severity level to display
-
-    Returns:
-        HTML markup for the severity badge
-
-    Example:
-        {% severity_badge "HIGH" %}
-    """
-
-    # TODO Once https://github.com/Nix-Security-WG/nix-security-tracker/issues/284
-    # is fixed, display actual severity information with a combined metric (e.g.
-    # "9.1" and a textual representiation like "Critical")
-    display_texts = {
-        "NONE": "No severity data",
-        "LOW": "Low",
-        "MEDIUM": "Medium",
-        "HIGH": "High",
-        "CRITICAL": "Critical",
-    }
-
-    return format_html(
-        '<div class="severity {}">{}</div>', severity, display_texts[severity]
-    )
 
 
 @register.inclusion_tag("components/nixpkgs_package.html")

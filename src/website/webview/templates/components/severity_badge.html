@@ -1,0 +1,20 @@
+{% if metric.vectorString %}
+  <details class="severity" title="{{ metric.vectorString }}">
+    <summary>
+      <span class="tag {{ metric.baseSeverity }}">
+        {{ metric.baseScore|floatformat:1 }}&nbsp;<span class="condensed">{{ metric.baseSeverity }}</span>
+      </span>
+    </summary>
+    <ul>
+      <li>CVSS version: <span class="tag">{{ metric.version }}</span></li>
+      <li>Attack vector (AV): <span class="tag condensed {{ metric.attackVector }}">{{ metric.attackVector }}</span></li>
+      <li>Attack complexity (AC): <span class="tag condensed {{ metric.attackComplexity }}">{{ metric.attackComplexity }}</span></li>
+      <li>Privileges required (PR): <span class="tag condensed {{ metric.privilegesRequired }}">{{ metric.privilegesRequired }}</span></li>
+      <li>User interaction (UI): <span class="tag condensed {{ metric.userInteraction }}">{{ metric.userInteraction }}</span></li>
+      <li>Scope (S): <span class="tag condensed {{ metric.scope }}">{{ metric.scope }}</span></li>
+      <li>Confidentiality impact (C): <span class="tag condensed {{ metric.confidentialityImpact }}">{{ metric.confidentialityImpact }}</span></li>
+      <li>Integrity impact (I): <span class="tag condensed {{ metric.integrityImpact }}">{{ metric.integrityImpact }}</span></li>
+      <li>Availability impact (A): <span class="tag condensed {{ metric.availabilityImpact }}">{{ metric.availabilityImpact }}</span></li>
+    </ul>
+  </details>
+{% endif %}
