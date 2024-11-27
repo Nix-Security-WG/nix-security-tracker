@@ -479,7 +479,7 @@ article .nixpkgs-packages {
 }
 
 .nixpkgs-package summary {
-  width: 19.5em; /* .version + .branch-name + 1.5em for the unfold triangle */
+  min-width: 19.5em; /* .version + .branch-name + 1.5em for the unfold triangle */
   margin-left: auto;
 }
 
@@ -502,7 +502,7 @@ article .nixpkgs-packages {
 .nixpkgs-package .branch-minor {
   display: flex;
   justify-content: flex-end;
-  color: var(--grey);
+  color: var(--dark-grey);
 }
 
 .nixpkgs-package .branch-major {
@@ -511,12 +511,12 @@ article .nixpkgs-packages {
 }
 
 .nixpkgs-package .branch-name {
-  width: 13em;
+  min-width: 13em; /* nixpkgs-23.11-darwin should be the longest name */
   display: inline-block;
 }
 
 .nixpkgs-package .version {
-  width: 5em;
+  min-width: 5em;
   display: inline-block;
   text-align: end;
 }
