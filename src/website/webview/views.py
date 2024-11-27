@@ -46,9 +46,6 @@ from shared.models import (
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
-from shared.models.nix_evaluation import (
-    channel_structure,
-)
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
@@ -498,25 +495,6 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
-        # TODO: we should not have a cheat code but a proper deserializer here.
-        class CheatCode:
-            def __init__(self, d: dict[str, Any]) -> None:
-                self.pk = d.get("id", None)
-                for k, v in d.items():
-                    if isinstance(k, list | tuple):
-                        setattr(
-                            self,
-                            k,
-                            [CheatCode(x) if isinstance(x, dict) else x for x in v],
-                        )
-                    else:
-                        setattr(self, k, CheatCode(v) if isinstance(v, dict) else v)
-
-        for obj in context["object_list"]:
-            derivations: list[NixDerivation] = cast(
-                list[NixDerivation], list(map(CheatCode, obj.payload["derivations"]))
-            )
-            obj.packages = channel_structure(derivations)
         context["adjusted_elided_page_range"] = context[
             "paginator"
         ].get_elided_page_range(context["page_obj"].number)
@@ -526,10 +504,9 @@ class SuggestionListView(ListView):
         queryset = (
             super()
             .get_queryset()
-            .select_related("proposal")
+            # TODO: order by timestamp of last update/creation descending
             .filter(proposal__status=self.status_filter)
         )
-
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:

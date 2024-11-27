@@ -13,7 +13,7 @@
             <summary>
               <span class="branch-major">
                 <span class="branch-name">{{ major_channel }}</span>
-                <span class="version">
+                <span class="version {{ val.status }}">
                   {% if val.major_version %}
                     {{ val.major_version }}
                   {% else %}
@@ -23,10 +23,10 @@
               </span>
             </summary>
             <ul class="channel-list">
-            {% for branch_name, version in val.sub_branches %}
+            {% for branch_name, vdata in val.sub_branches %}
               <li class="branch-minor">
                 <span class="branch-name">{{ branch_name }}</span>
-                <span class="version">{{ version }}</span>
+                <span class="version {{ vdata.status }}">{{ vdata.version }}</span>
               </li>
             {% endfor %}
             </ul>

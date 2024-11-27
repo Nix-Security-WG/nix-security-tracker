@@ -284,6 +284,7 @@ class Platform(models.Model):
     name = models.CharField(max_length=1024)
 
 
+# TODO Maybe change this to VersionConstraint one day?
 class Version(models.Model):
     class Status(models.TextChoices):
         AFFECTED = "affected", _("affected")
@@ -297,6 +298,43 @@ class Version(models.Model):
     version = models.CharField(max_length=1024, null=True)
     less_than = models.CharField(max_length=1024, null=True)
     less_equal = models.CharField(max_length=1024, null=True)
+
+    # TODO(kerstin) This could use regression testing
+    def version_constraint_str(self) -> str | None:
+        """
+        Represent a version constraint in a string, that is going to be displayed to the user.
+        E.g. =<0.4.6
+        """
+        if self.less_equal:
+            return f"=<{self.less_equal}"
+        elif self.less_than:
+            if self.less_than == "*":
+                return "*"
+            else:
+                return f"<{self.less_than}"
+        elif self.version:
+            return f"=={self.version}"
+        else:
+            return None
+
+    # TODO(kerstin) This could use regression testing
+    def is_affected(self, version: str) -> str:
+        """
+        Determines wether a given version string is affected by this version constraint
+        FIXME(kerstin): We currently compare versions by comparing strings, which is really wrong.
+        """
+        if not version:
+            return Version.Status.UNKNOWN
+        if self.less_equal:
+            if self.less_equal == "*" or version <= self.less_equal:
+                return self.status
+        elif self.less_than:
+            if self.less_than == "*" or version < self.less_than:
+                return self.status
+        elif self.version:
+            if self.version == "*" or version == self.version:
+                return self.status
+        return Version.Status.UNKNOWN
 
 
 class Cpe(models.Model):

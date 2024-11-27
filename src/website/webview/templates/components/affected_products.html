@@ -1,0 +1,22 @@
+<div class="affected-products">
+  {% for package_name, ap in affected.items %}
+    <article
+      class="affected-product"
+      title="{% if ap.cpes %}{{ ap.cpes|join:'&#13;' }}{% else %}No CPE info{% endif %}"
+    >
+      <div class="package-name">
+        {{ package_name }}
+      </div>
+      <div class="version-constraints">
+        {% for status, vc_str in ap.version_constraints %}
+          <div
+            class="version-constraint {{ status }}"
+            title="{% if status == 'affected'%}Affected{% elif status == 'unaffected' %}Unaffected{% else %}Unknown{% endif %}"
+          >
+            {{ vc_str }}
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+  {% endfor %}
+</div>

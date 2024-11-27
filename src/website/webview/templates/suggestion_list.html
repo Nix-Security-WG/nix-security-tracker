@@ -17,15 +17,15 @@
 These automatic suggestions were dimissed after initial triaging. <a href="/suggestions">View all untriaged suggestions</a>
 </p>
 <p>
-<span class="hint red-button">Restore</span> to select a suggestion for a revision. <a href="/selected">View all selected suggestions</a>
+<span class="hint selected-color">Restore</span> to select a suggestion for a revision. <a href="/selected">View all selected suggestions</a>
 </p>
 {% elif status_filter == "accepted" %}
 <h1>Selected suggestions</h1>
 <p>
-<span class="hint green-button">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing. <s><a href="/drafts">View all drafts</a></s>
+<span class="hint draft-color">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing. <s><a href="/drafts">View all drafts</a></s>
 </p>
 <p>
-<span class="hint red-button">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+<span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
 </p>
 {% endif %}
 
@@ -34,29 +34,33 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
     <article class="suggestion">
       <form method="post" action="">
         {% csrf_token %}
-        <input type="hidden" name="suggestion_id" value="{{ object.proposal.pk }}">
+        <input type="hidden" name="suggestion_id" value="{{ object.payload.pk }}">
         <input type="hidden" name="page" value="{{ page_obj.number }}">
 
         <div class="row1">
-          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.proposal.cve.cve_id | urlencode }}">
-            {{ object.proposal.cve.cve_id }}
+          <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ object.payload.cve_id | urlencode }}">
+            {{ object.payload.cve_id }}
           </a>
           {% severity_badge object.payload.base_severity %}
         </div>
 
-        <h2>{{ object.payload.package_name }}</h2>
-
         <details class="description">
           <summary>
-              {% if object.title %}{{ object.title }}{% else %}{{ object.payload.description|truncatewords:10 }}{% endif %}
+            {% if object.payload.title %}
+              {{ object.payload.title }}
+            {% else %}
+              {{ object.payload.description|truncatewords:10 }}
+            {% endif %}
           </summary>
           <p class="description-long as-details">{{ object.payload.description }}</p>
         </details>
 
+        {% affected_products object.payload.affected_products %}
+
         {% if status_filter == "rejected" %}
-          {% nixpkgs_package_list object.packages %}
+          {% nixpkgs_package_list object.payload.packages %}
         {% else %}
-          {% selectable_nixpkgs_package_list object.packages %}
+          {% selectable_nixpkgs_package_list object.payload.packages %}
         {% endif %}
 
         <div class="change-issue-state">
@@ -75,7 +79,7 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
             <button type="submit" name="create-draft-not-implemented" class="draft-color">
               C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
             </button>
-            {% if object.packages %}
+            {% if object.payload.packages %}
               <div class="button-with-note">
               <button type="submit" class="grey-button">
                 Purge deleted packages

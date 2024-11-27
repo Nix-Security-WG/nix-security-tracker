@@ -232,6 +232,8 @@
   --dismissed-suggestion: #acb3c8;
   --selected-suggestion: #7bca7b;
   --draft: green;
+  --affected: #ffabab;
+  --unaffected: #bfb;
 }
 
 body {
@@ -353,14 +355,13 @@ article .severity {
   color: var(--grey);
 }
 
-article .suggestion h2 {
+details.description summary {
+  font-size: 130%;
   margin-top: unset;
-  margin-bottom: 0.8em;
 }
 
-article .suggestion h3 {
-  font-size: 1rem;
-  font-weight: 600;
+details.description {
+  padding-bottom: 1em;
 }
 
 details.description > summary {
@@ -381,6 +382,38 @@ details.description[open] > summary:after {
 
 .description-long.as-details {
   margin-top: 0.5em;
+  margin-bottom: 0;
+}
+
+.suggestion .affected-products article.affected-product {
+  display: flex;
+  flex-direction: row;
+  padding: 0.1em 0;
+}
+
+.suggestion .affected-products article.affected-product .package-name {
+  flex-grow: 1;
+}
+
+.suggestion .affected-products article.affected-product .version-constraints {
+  font-family: "IBM Plex Mono";
+  margin-right: 0.5em;
+}
+
+.suggestion
+  .affected-products
+  article.affected-product
+  .version-constraints
+  .unaffected {
+  background: var(--unaffected);
+}
+
+.suggestion
+  .affected-products
+  article.affected-product
+  .version-constraints
+  .affected {
+  background: var(--affected);
 }
 
 article .nixpkgs-packages {
@@ -488,6 +521,14 @@ article .nixpkgs-packages {
   text-align: end;
 }
 
+.nixpkgs-package .version.affected {
+  background: var(--affected);
+}
+
+.nixpkgs-package .version.unaffected {
+  background: var(--unaffected);
+}
+
 .suggestion .change-issue-state {
   display: flex;
   justify-content: space-between;
@@ -566,10 +607,6 @@ button:hover {
 
   article .suggestion {
     padding: 0.5rem;
-  }
-
-  article .suggestion h2 {
-    margin-bottom: 0.3em;
   }
 
   .nixpkgs-package {
