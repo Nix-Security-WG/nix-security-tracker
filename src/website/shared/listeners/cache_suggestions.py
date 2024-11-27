@@ -1,4 +1,5 @@
 import logging
+import re
 from itertools import chain
 from typing import Any
 
@@ -178,8 +179,7 @@ def channel_structure(
     packages = dict()
     for derivation in derivations:
         attribute = derivation.attribute.removesuffix(f".{derivation.system}")
-        # FIXME This is wrong. Replace with something like builtins.parseDrvName
-        version = derivation.name.split("-")[-1]
+        _, version = parse_drv_name(derivation.name)
         if attribute not in packages:
             packages[attribute] = {
                 "versions": {},
@@ -237,3 +237,19 @@ def channel_structure(
             packages[package_name]["versions"].items()
         )
     return packages
+
+
+def parse_drv_name(name: str) -> tuple[str, str]:
+    """
+    Splits the input string `name` into a package name and version.
+
+    https://nix.dev/manual/nix/latest/language/builtins.html#builtins-parseDrvName
+
+    The package name is everything up to but not including the first dash
+    not followed by a letter, and the version is everything after that dash.
+    """
+    match = re.match(r"^(.+?)-([^-]*\d.*)$", name)
+    if match:
+        return match.group(1), match.group(2)
+    else:
+        return name, ""
