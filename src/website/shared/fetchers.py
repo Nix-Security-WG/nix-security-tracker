@@ -15,11 +15,9 @@ def make_organization(
     if uuid is None:
         return None
 
-    org, _ = models.Organization.objects.get_or_create(uuid=uuid)
-
-    if org.short_name is None:
-        org.short_name = short_name
-        org.save()
+    org, _ = models.Organization.objects.get_or_create(
+        uuid=uuid, defaults={"short_name": short_name}
+    )
 
     return org
 
