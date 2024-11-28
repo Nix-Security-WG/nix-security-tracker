@@ -4,6 +4,7 @@ import pghistory
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+import shared.models.cached
 from shared.models.cve import CveRecord
 from shared.models.nix_evaluation import NixDerivation, TimeStampMixin
 
@@ -22,6 +23,8 @@ class CVEDerivationClusterProposal(TimeStampMixin):
         PENDING = "pending", _("pending")
         REJECTED = "rejected", _("rejected")
         ACCEPTED = "accepted", _("accepted")
+
+    cached: "shared.models.cached.CachedSuggestions"
 
     cve = models.ForeignKey(
         CveRecord, related_name="derivation_links_proposals", on_delete=models.CASCADE
