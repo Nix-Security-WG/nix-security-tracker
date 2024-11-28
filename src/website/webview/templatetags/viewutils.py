@@ -62,14 +62,20 @@ def iso(date: datetime.datetime) -> str:
 
 
 @register.filter
-def last_key(od: OrderedDict) -> Any:
-    return next(reversed(od))
+def last_key(od: OrderedDict) -> Any | None:
+    try:
+        return next(reversed(od))
+    except StopIteration:
+        return None
 
 
 @register.filter
-def last_user(od: OrderedDict) -> str:
-    _, entry = next(reversed(od.items()))
-    return entry[0]["user"]
+def last_user(od: OrderedDict) -> str | None:
+    try:
+        _, entry = next(reversed(od.items()))
+        return entry[0]["user"]
+    except StopIteration:
+        return None
 
 
 @register.simple_tag
