@@ -20,7 +20,6 @@ from django.contrib.postgres.search import (
     SearchRank,
 )
 from django.core.paginator import Page
-from django.db import transaction
 from django.db.models import (
     Case,
     Count,
@@ -38,7 +37,6 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
-from shared.listeners.cache_suggestions import cache_new_suggestions
 from shared.models import (
     AffectedProduct,
     Container,
@@ -532,9 +530,7 @@ class SuggestionListView(ListView):
         elif new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
 
-        with transaction.atomic():
-            suggestion.save()
-            cache_new_suggestions(suggestion)
+        suggestion.save()
 
         # We provide graceful fallback for important workflows, when users have JavaScript disabled
         if "no-js" in request.POST:
@@ -568,8 +564,6 @@ class SuggestionListView(ListView):
                 return HttpResponse(snippet)
 
 
-
-
 def update_suggestion(
     request: HttpRequest,
     filter: bool = True,
@@ -580,7 +574,7 @@ def update_suggestion(
     Takes a form request and updates fields of the CVEDerivationClusterProposal.
 
     Args:
-        filter (bool): Wether to change the selected derivations.
+        filter (bool): Whether to change the selected derivations.
 
     Returns:
         The current page, the newly set status and the CVEDerivationClusterProposal itself.
@@ -591,19 +585,36 @@ def update_suggestion(
     title = request.POST.get("title")
     current_page = request.POST.get("page", "1")
     suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-    cached_suggestion = get_object_or_404(
-        CachedSuggestions, proposal_id=suggestion_id
-    ).payload
+    cached_variant = get_object_or_404(CachedSuggestions, proposal_id=suggestion_id)
 
     if filter:
         selected_derivations = [
             str.split(",") for str in request.POST.getlist("derivation_ids")
         ]
-        selected_derivations = list(chain(*selected_derivations))
+        selected_derivations = set(map(int, chain(*selected_derivations)))
         # We only allow for removal of derivations here, not for additions
-        derivation_ids_to_keep = suggestion.derivations.filter(
-            id__in=selected_derivations
-        ).values_list("id", flat=True)
+        derivation_ids_to_keep = set(
+            suggestion.derivations.filter(id__in=selected_derivations).values_list(
+                "id", flat=True
+            )
+        )
         suggestion.derivations.set(derivation_ids_to_keep)
 
-    return (title, current_page, new_status, suggestion, cached_suggestion)
+        # TODO: this is quite slow and bad.
+        # we are getting the JSON here and then sending it back.
+        # a more optimal way to do it is to perform the raw SQL query directly on pgsql
+        # something along the lines of:
+        # UPDATE SET payload = payload -# {an list of indices to remove contained in this list} WHERE proposal_id = proposal_id
+        # the problem is that computing the list of indices is pretty hard.
+        # this seems to encourage to move the payload format to an dict of derivation id → derivation contents
+        # this way, we already know which IDs to remove.
+        # this is left as future work.
+        cached_payload = cached_variant.payload
+        new_derivation_set = [
+            d for d in cached_payload["derivations"] if d["id"] in selected_derivations
+        ]
+        cached_payload["derivations"] = new_derivation_set
+        cached_variant.payload = cached_payload
+        cached_variant.save()
+
+    return (title, current_page, new_status, suggestion, cached_variant.payload)
