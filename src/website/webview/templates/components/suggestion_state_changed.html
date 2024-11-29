@@ -1,0 +1,15 @@
+<article class="suggestion state-changed" hx-target="this">
+  <div class="state-identifier {{ status }}"></div>
+  <h2>
+    {{ title }}
+  </h2>
+  <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
+  <form hx-post="" hx-swap="outerHTML" hx-indicator="previous .state-change-indicator">
+    <input type="hidden" name="undo">
+    {% csrf_token %}
+    <input type="hidden" name="suggestion_id" value="{{ suggestion_id }}">
+    <button type="submit" name="new_status" value="{{ old_status }}" title="Undo">
+      ↺
+    </button>
+  </form>
+</article>

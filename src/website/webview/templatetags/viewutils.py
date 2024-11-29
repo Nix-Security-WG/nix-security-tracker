@@ -3,6 +3,7 @@ from collections import OrderedDict
 from typing import Any, TypedDict
 
 from django import template
+from django.template.context import Context
 from django.utils.html import format_html
 from django.utils.safestring import SafeString
 from shared.models.cve import AffectedProduct, Severity
@@ -76,6 +77,18 @@ def last_user(od: OrderedDict) -> str | None:
         return entry[0]["user"]
     except StopIteration:
         return None
+
+
+@register.inclusion_tag("components/suggestion.html", takes_context=True)
+def suggestion(
+    context: Context, suggestion: CVEDerivationClusterProposal, cached_suggestion: dict
+) -> dict:
+    return {
+        "suggestion": suggestion,
+        "cached_suggestion": cached_suggestion,
+        "status_filter": context["status_filter"],
+        "page_obj": context["page_obj"],
+    }
 
 
 @register.simple_tag
