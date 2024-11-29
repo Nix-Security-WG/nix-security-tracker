@@ -235,7 +235,7 @@ in
           wantedBy = [ "multi-user.target" ];
 
           script = ''
-            wst-manage listen --processes ${toString cfg.maxJobProcessors}
+            wst-manage listen --recover --processes ${toString cfg.maxJobProcessors}
           '';
         };
 
