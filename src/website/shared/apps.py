@@ -1,3 +1,4 @@
+import os
 import sys
 
 from django.apps import AppConfig
@@ -12,7 +13,7 @@ class SharedConfig(AppConfig):
 
         # This hook is called on any `manage` subcommand.
         # Only connect to GitHub when the server is started.
-        if "runserver" in sys.argv:
+        if os.environ.get("RUN_MAIN", None) is None and "runserver" in sys.argv:
             from shared.auth.github_state import GithubState
 
             self.github_state = GithubState()
