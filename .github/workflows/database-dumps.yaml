@@ -27,3 +27,6 @@ jobs:
         run: cat ./staging/staging_host_keys >> ~/.ssh/known_hosts
       - name: Dump database to S3
         run: nix-shell default.nix -A ci --run "dump-database"
+        env:
+          AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
