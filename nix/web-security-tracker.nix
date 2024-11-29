@@ -235,6 +235,8 @@ in
           wantedBy = [ "multi-user.target" ];
 
           script = ''
+            # Before starting, crash all the in-progress evaluations.
+            wst-manage crash_all_evaluations
             wst-manage listen --processes ${toString cfg.maxJobProcessors}
           '';
         };
