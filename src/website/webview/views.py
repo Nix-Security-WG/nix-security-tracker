@@ -32,7 +32,9 @@ from django.db.models import (
 from django.db.models.manager import BaseManager
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
 from shared.models import (
@@ -486,7 +488,7 @@ class SuggestionListView(ListView):
     context_object_name = "objects"
 
     # Determines how the list is filtered for and some control elements that
-    # only shown depending on the context.
+    # only are shown depending on the context.
     status_filter: CVEDerivationClusterProposal.Status = (
         CVEDerivationClusterProposal.Status.PENDING
     )
@@ -497,7 +499,7 @@ class SuggestionListView(ListView):
         context["status_filter"] = self.status_filter
 
         for obj in context["object_list"]:
-            obj.activity_log = SuggestionActivityLog(
+            obj.proposal.activity_log = SuggestionActivityLog(
                 suggestion=obj
             ).get_structured_log()
 
@@ -519,8 +521,8 @@ class SuggestionListView(ListView):
         filter_for_suggestions = (
             self.status_filter != CVEDerivationClusterProposal.Status.REJECTED
         )
-        current_page, new_status, suggestion = update_suggestion(
-            request, filter=filter_for_suggestions
+        title, current_page, new_status, suggestion, cached_suggestion = (
+            update_suggestion(request, filter=filter_for_suggestions)
         )
 
         if new_status == "REJECTED":
@@ -529,13 +531,45 @@ class SuggestionListView(ListView):
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
 
         suggestion.save()
-        return redirect(f"{request.path}?page={current_page}")
+
+        # We provide graceful fallback for important workflows, when users have JavaScript disabled
+        if "no-js" in request.POST:
+            return redirect(f"{request.path}?page={current_page}")
+        else:
+            # Clicking on the undo button will return the original suggestion
+            # tile again, so that the page looks like before the action.
+            if "undo" in request.POST:
+                snippet = render_to_string(
+                    "components/suggestion.html",
+                    {
+                        "suggestion": cached_suggestion,
+                        "status_filter": self.status_filter,
+                        # This only matters in a non-JS environment
+                        "page_obj": None,
+                        "csrf_token": get_token(request),
+                    },
+                )
+                return HttpResponse(snippet)
+            else:
+                snippet = render_to_string(
+                    "components/suggestion_state_changed.html",
+                    {
+                        "suggestion_id": suggestion.pk,
+                        "title": title,
+                        "status": suggestion.status,
+                        "old_status": self.status_filter,
+                        "csrf_token": get_token(request),
+                    },
+                )
+                return HttpResponse(snippet)
 
 
 def update_suggestion(
     request: HttpRequest,
     filter: bool = True,
-) -> tuple[str, str | None, CVEDerivationClusterProposal]:
+) -> tuple[
+    str | None, str, str | None, CVEDerivationClusterProposal, CachedSuggestions
+]:
     """
     Takes a form request and updates fields of the CVEDerivationClusterProposal.
 
@@ -547,8 +581,13 @@ def update_suggestion(
     """
     suggestion_id = request.POST.get("suggestion_id")
     new_status = request.POST.get("new_status")
+    # Looping through the title saves us one query
+    title = request.POST.get("title")
     current_page = request.POST.get("page", "1")
     suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+    cached_suggestion = get_object_or_404(
+        CachedSuggestions, proposal_id=suggestion_id
+    ).payload
 
     if filter:
         selected_derivations = [
@@ -561,4 +600,4 @@ def update_suggestion(
         ).values_list("id", flat=True)
         suggestion.derivations.set(derivation_ids_to_keep)
 
-    return (current_page, new_status, suggestion)
+    return (title, current_page, new_status, suggestion, cached_suggestion)

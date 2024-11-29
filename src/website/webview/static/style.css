@@ -328,6 +328,12 @@ article .row1 {
   font-size: 0.8rem;
 }
 
+article .state-change-indicator {
+  opacity: 0;
+  height: 0.8rem;
+  align-self: center;
+}
+
 article .cve-id {
   color: var(--grey);
   padding: 0.2rem;
@@ -366,6 +372,61 @@ details.description summary {
 
 details.description {
   padding-bottom: 1em;
+}
+
+article .suggestion.state-changed {
+  display: flex;
+  flex-direction: row;
+  padding-top: 0;
+  padding-bottom: 0;
+  color: var(--dark-grey);
+}
+
+article .suggestion.state-changed .state-identifier {
+  align-self: center;
+  border-radius: 50%;
+  height: 1rem;
+  aspect-ratio: 1/1;
+  margin-right: 0.5em;
+}
+
+article .suggestion.state-changed .state-identifier.rejected {
+  background: var(--dismissed-suggestion);
+}
+
+article .suggestion.state-changed .state-identifier.accepted {
+  background: var(--selected-suggestion);
+}
+
+article .suggestion.state-changed h2 {
+  flex-grow: 1;
+  align-self: center;
+  font-size: 1rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+article .suggestion.state-changed h2 .accepted {
+  color: var(--selected-suggestion);
+}
+
+article .suggestion.state-changed h2 .rejected {
+  color: var(--dismissed-suggestion);
+}
+
+article .suggestion.state-changed form {
+}
+
+article .suggestion.state-changed button {
+  border: none;
+  background: none;
+  font-size: 130%;
+  color: var(--dark-grey);
+  padding: 0;
 }
 
 details.description > summary {
@@ -476,6 +537,8 @@ article .nixpkgs-packages {
 
 .nixpkgs-package h3 {
   margin: unset;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .nixpkgs-package h3 .pkgs {
