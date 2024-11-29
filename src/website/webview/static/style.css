@@ -494,6 +494,8 @@ article .nixpkgs-packages {
 
 .nixpkgs-package .package-description {
   flex-grow: 1;
+  font-family: "IBM Plex Sans";
+  color: var(--dark-grey);
 }
 
 .nixpkgs-package .channel-list {
