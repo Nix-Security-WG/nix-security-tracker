@@ -3,14 +3,15 @@
 
 set -eo pipefail
 
+# We are using Garage.
+export ENDPOINT_URL="https://s3.dc1.lahfa.xyz"
+export AWS_DEFAULT_REGION="garage"
+
 # Show credentials (they are half-hidden)
 aws configure list
 
 # Inspired from https://github.com/gabfl/pg_dump-to-s3/blob/main/pg_dump-to-s3.sh
 # and adapted for our needs.
-
-# We are using Garage.
-export AWS_DEFAULT_REGION="garage"
 
 S3_PATH="staging-sectracker-db"
 DELETE_AFTER="1 day"
@@ -27,14 +28,14 @@ for db in "${DBS[@]}"; do
 
   echo "-> backing up $db..."
 
-  ssh root@sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump -Z5 -O -Fc $db" | pv | aws --endpoint-url https://s3.dc1.lahfa.xyz s3 cp - s3://$S3_PATH/$FILENAME
+  ssh root@sectracker.nixpkgs.lahfa.xyz "sudo -u postgres pg_dump -Z5 -O -Fc $db" | pv | aws --endpoint-url "$ENDPOINT_URL" s3 cp - s3://$S3_PATH/$FILENAME
 
   echo "$db has been backed up."
 done
 
 echo "Garbage collecting previous dumps..."
 
-aws s3 ls s3://$S3_PATH/ | while read -r line; do
+aws --endpoint-url "$ENDPOINT_URL" s3 ls s3://$S3_PATH/ | while read -r line; do
     # Get file creation date
     createDate=`echo $line|awk {'print $1" "$2'}`
     createDate=`date -d"$createDate" +%s`
@@ -46,7 +47,7 @@ aws s3 ls s3://$S3_PATH/ | while read -r line; do
         if [[ $FILENAME != "" ]]
           then
             echo "Deleting $FILENAME"
-            aws s3 rm s3://$S3_PATH/$FILENAME
+            aws --endpoint-url "$ENDPOINT_URL" s3 rm s3://$S3_PATH/$FILENAME
         fi
     fi
 done;
