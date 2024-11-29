@@ -158,6 +158,8 @@ rec {
       shellHook = ''
         ${pre-commit-check.shellHook}
 
+        ln -sf ${sources.htmx}/dist/htmx.js src/website/webview/static/htmx.min.js
+
         mkdir -p .credentials
         export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
         touch .settings.py

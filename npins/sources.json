@@ -12,6 +12,20 @@
       "url": "https://github.com/hercules-ci/gitignore/archive/637db329424fd7e46cf4185293b9cc8c88c95394.tar.gz",
       "hash": "02wxkdpbhlm3yk5mhkhsp3kwakc16xpmsf2baw57nz1dg459qv8w"
     },
+    "htmx": {
+      "type": "GitRelease",
+      "repository": {
+        "type": "Git",
+        "url": "https://github.com/bigskysoftware/htmx.git"
+      },
+      "pre_releases": false,
+      "version_upper_bound": null,
+      "release_prefix": null,
+      "version": "v2.0.3",
+      "revision": "d6e17abb13729d8ace72f312a4b82130d8355233",
+      "url": null,
+      "hash": "1dni9xpijx6risc0pfidqy3i9a898lnf357rypddd1rvkjan40a7"
+    },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
