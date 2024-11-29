@@ -199,8 +199,13 @@ in
           ];
           requires = [ "postgresql.service" ];
           wantedBy = [ "multi-user.target" ];
-          serviceConfig.Restart = cfg.restart;
-          serviceConfig.TimeoutStartSec = lib.mkDefault "10m";
+          serviceConfig = {
+            Restart = cfg.restart;
+            TimeoutStartSec = lib.mkDefault "10m";
+            Environment = [
+              "SYNC_GITHUB_STATE_AT_STARTUP=true"
+            ];
+          };
           preStart = ''
             # Auto-migrate on first run or if the package has changed
             versionFile="/var/lib/web-security-tracker/package-version"
