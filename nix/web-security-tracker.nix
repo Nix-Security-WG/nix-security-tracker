@@ -248,6 +248,9 @@ in
           wantedBy = [ "multi-user.target" ];
 
           script = ''
+            # Before starting, crash all the in-progress evaluations.
+            # This will prevent them from being stalled forever, since workers would not pick up evaluations marked as in-progress.
+            wst-manage crash_all_evaluations
             wst-manage listen --processes ${toString cfg.maxJobProcessors}
           '';
         };
