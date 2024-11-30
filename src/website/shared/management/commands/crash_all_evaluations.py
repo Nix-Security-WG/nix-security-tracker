@@ -12,7 +12,6 @@ class Command(BaseCommand):
         pass
 
     def handle(self, *args: Any, **kwargs: Any) -> str | None:
-        # Look for all evaluations with a created_at time bigger than 24 hours.
         crashed = NixEvaluation.objects.filter(
             state=NixEvaluation.EvaluationState.IN_PROGRESS
         ).update(state=NixEvaluation.EvaluationState.CRASHED)

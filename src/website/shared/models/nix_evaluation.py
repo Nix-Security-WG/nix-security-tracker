@@ -237,7 +237,7 @@ class NixEvaluation(TimeStampMixin):
             "IN_PROGRESS",
             _("In progress"),
         )
-        # Crash means resource exhaustion or unexpected crash of the worker
+        # Crash means resource exhaustion, unexpected crash, or forced shutdown of the worker
         CRASHED = (
             "CRASHED",
             _("Crashed"),
