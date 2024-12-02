@@ -574,7 +574,7 @@ def update_suggestion(
     Takes a form request and updates fields of the CVEDerivationClusterProposal.
 
     Args:
-        filter (bool): Wether to change the selected derivations.
+        filter (bool): Whether to change the selected derivations.
 
     Returns:
         The current page, the newly set status and the CVEDerivationClusterProposal itself.
@@ -585,19 +585,36 @@ def update_suggestion(
     title = request.POST.get("title")
     current_page = request.POST.get("page", "1")
     suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-    cached_suggestion = get_object_or_404(
-        CachedSuggestions, proposal_id=suggestion_id
-    ).payload
+    cached_suggestion = get_object_or_404(CachedSuggestions, proposal_id=suggestion_id)
 
     if filter:
         selected_derivations = [
             str.split(",") for str in request.POST.getlist("derivation_ids")
         ]
-        selected_derivations = list(chain(*selected_derivations))
+        selected_derivations = set(map(int, chain(*selected_derivations)))
         # We only allow for removal of derivations here, not for additions
-        derivation_ids_to_keep = suggestion.derivations.filter(
-            id__in=selected_derivations
-        ).values_list("id", flat=True)
+        derivation_ids_to_keep = set(
+            suggestion.derivations.filter(id__in=selected_derivations).values_list(
+                "id", flat=True
+            )
+        )
         suggestion.derivations.set(derivation_ids_to_keep)
 
-    return (title, current_page, new_status, suggestion, cached_suggestion)
+        # TODO: this is quite slow and bad.
+        # we are getting the JSON here and then sending it back.
+        # a more optimal way to do it is to perform the raw SQL query directly on pgsql
+        # something along the lines of:
+        # UPDATE SET payload = payload -# {an list of indices to remove contained in this list} WHERE proposal_id = proposal_id
+        # the problem is that computing the list of indices is pretty hard.
+        # this seems to encourage to move the payload format to an dict of derivation id → derivation contents
+        # this way, we already know which IDs to remove.
+        # this is left as future work.
+        new_packages = {
+            pname: v
+            for pname, v in cached_suggestion.payload["packages"].items()
+            if any(did in selected_derivations for did in v["derivation_ids"])
+        }
+        cached_suggestion.payload["packages"] = new_packages
+        cached_suggestion.save()
+
+    return (title, current_page, new_status, suggestion, cached_suggestion.payload)
