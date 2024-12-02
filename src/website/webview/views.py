@@ -585,7 +585,7 @@ def update_suggestion(
     title = request.POST.get("title")
     current_page = request.POST.get("page", "1")
     suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-    cached_variant = get_object_or_404(CachedSuggestions, proposal_id=suggestion_id)
+    cached_suggestion = get_object_or_404(CachedSuggestions, proposal_id=suggestion_id)
 
     if filter:
         selected_derivations = [
@@ -609,12 +609,12 @@ def update_suggestion(
         # this seems to encourage to move the payload format to an dict of derivation id → derivation contents
         # this way, we already know which IDs to remove.
         # this is left as future work.
-        cached_payload = cached_variant.payload
-        new_derivation_set = [
-            d for d in cached_payload["derivations"] if d["id"] in selected_derivations
-        ]
-        cached_payload["derivations"] = new_derivation_set
-        cached_variant.payload = cached_payload
-        cached_variant.save()
+        new_packages = {
+            pname: v
+            for pname, v in cached_suggestion.payload["packages"].items()
+            if any(did in selected_derivations for did in v["derivation_ids"])
+        }
+        cached_suggestion.payload["packages"] = new_packages
+        cached_suggestion.save()
 
-    return (title, current_page, new_status, suggestion, cached_variant.payload)
+    return (title, current_page, new_status, suggestion, cached_suggestion.payload)
