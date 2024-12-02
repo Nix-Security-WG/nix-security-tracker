@@ -16,6 +16,7 @@ let
     mkDefault
     concatStringsSep
     recursiveUpdate
+    optionalString
     ;
   inherit (pkgs) writeScriptBin writeShellApplication stdenv;
   cfg = config.services.web-security-tracker;
@@ -104,6 +105,18 @@ in
     secrets = mkOption {
       type = types.attrsOf types.path;
       default = { };
+    };
+    cve.startDate = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      defaultText = "the application default: January 1st of the prior year";
+      description = ''
+        The ingestion start date for CVE, most operators will care about CVEs of their last year until now.
+        Hence, this is the default.
+
+        If you need to obtain older CVEs for any reason, change this value.
+      '';
+      example = "2024-11-01";
     };
     maxJobProcessors = mkOption {
       description = ''
@@ -235,7 +248,10 @@ in
           wantedBy = [ "multi-user.target" ];
 
           script = ''
-            wst-manage listen --processes ${toString cfg.maxJobProcessors}
+            # Before starting, crash all the in-progress evaluations.
+            # This will prevent them from being stalled forever, since workers would not pick up evaluations marked as in-progress.
+            wst-manage crash_all_evaluations
+            wst-manage listen --recover --processes ${toString cfg.maxJobProcessors}
           '';
         };
 
@@ -270,7 +286,9 @@ in
           serviceConfig.Type = "oneshot";
 
           script = ''
-            wst-manage ingest_delta_cve "$(date --date='yesterday' --iso)"
+            wst-manage ingest_delta_cve "$(date --date='yesterday' --iso)" ${
+              optionalString (cfg.cve.startDate != null) "--default-start-ingestion ${cfg.cve.startDate}"
+            }
           '';
 
           # Start at 03h so that the data will have been published
