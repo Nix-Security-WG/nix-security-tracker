@@ -2,7 +2,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 from shared.models.linkage import CVEDerivationClusterProposal
-from shared.models.nix_evaluation import TimeStampMixin
+from shared.models.timestamps import TimeStampMixin
 
 
 class CachedSuggestions(TimeStampMixin):

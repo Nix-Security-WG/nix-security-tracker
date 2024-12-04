@@ -5,17 +5,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from pgtrigger import UpdateSearchVector
 
+from shared.models.timestamps import TimeStampMixin
+
 
 def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
-
-
-class TimeStampMixin(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:  # type: ignore[override]
-        abstract = True
 
 
 class NixMaintainer(models.Model):
