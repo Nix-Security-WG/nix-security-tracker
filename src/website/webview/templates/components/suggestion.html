@@ -15,6 +15,7 @@
       {% if cached_suggestion.metrics %}
         {% severity_badge cached_suggestion.metrics %}
       {% endif %}
+      <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
       {% suggestion_activity_log suggestion %}
     </div>
 
@@ -42,7 +43,6 @@
         <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
           Select
         </button>
-        <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
         <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
           Dismiss
         </button>
@@ -50,12 +50,10 @@
         <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
           Restore
         </button>
-        <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
       {% elif status_filter == "accepted" %}
         <button type="submit" name="create-draft-not-implemented" class="draft-color">
           C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
         </button>
-        <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
         {% if cached_suggestion.packages %}
           <div class="button-with-note">
           <button type="submit" class="grey-button">

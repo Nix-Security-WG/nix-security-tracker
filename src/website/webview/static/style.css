@@ -461,7 +461,8 @@ article .row1 {
 article .state-change-indicator {
   opacity: 0;
   height: 0.8rem;
-  align-self: center;
+  margin-left: auto;
+  margin-top: 0.5em;
 }
 
 article .cve-id {
@@ -817,7 +818,6 @@ button:hover {
 
 .activity-log {
   padding: 0.2em;
-  margin-left: auto;
 }
 
 .activity-log > .main-summary {
