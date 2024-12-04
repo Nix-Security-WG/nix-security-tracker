@@ -472,10 +472,19 @@ article .cve-id {
 article .severity {
   border-radius: 5px;
   padding: 0.2rem;
+  margin-left: 0.5em;
 }
 
 article .severity summary {
   list-style: none;
+}
+
+article .severity > summary::before {
+  content: "▶";
+}
+
+article .severity[open] summary::before {
+  content: "▼";
 }
 
 article .severity .tag {
