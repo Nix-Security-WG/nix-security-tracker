@@ -512,8 +512,8 @@ class SuggestionListView(ListView):
         queryset = (
             super()
             .get_queryset()
-            # TODO: order by timestamp of last update/creation descending
             .filter(proposal__status=self.status_filter)
+            .order_by("-proposal__updated_at", "-proposal__created_at")
         )
         return queryset
 
