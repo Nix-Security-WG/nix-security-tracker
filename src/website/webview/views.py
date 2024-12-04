@@ -530,7 +530,7 @@ class SuggestionListView(ListView):
         elif new_status == "ACCEPTED":
             suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
 
-        suggestion.save()
+        suggestion.save(update_fields=["status"])
 
         # We provide graceful fallback for important workflows, when users have JavaScript disabled
         if "no-js" in request.POST:
