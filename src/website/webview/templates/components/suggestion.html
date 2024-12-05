@@ -5,7 +5,6 @@
     <input type="hidden" name="no-js">
     {% csrf_token %}
     <input type="hidden" name="suggestion_id" value="{{ cached_suggestion.pk }}">
-    <input type="hidden" name="title" value="{{ cached_suggestion.title }}">
     <input type="hidden" name="page" value="{{ page_obj.number }}">
 
     <div class="row1">
@@ -16,7 +15,7 @@
         {% severity_badge cached_suggestion.metrics %}
       {% endif %}
       <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
-      {% suggestion_activity_log suggestion %}
+      {% suggestion_activity_log suggestion activity_log %}
     </div>
 
     <details class="description">
@@ -40,14 +39,14 @@
 
     <div class="change-issue-state">
       {% if status_filter == "pending" %}
-        <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
+        <button type="submit" name="new_status" value="accepted" class="selected-color">
           Select
         </button>
-        <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
+        <button type="submit" name="new_status" value="rejected" class="dismissed-color">
           Dismiss
         </button>
       {% elif status_filter == "rejected" %}
-        <button type="submit" name="new_status" value="ACCEPTED" class="selected-color">
+        <button type="submit" name="new_status" value="accepted" class="selected-color">
           Restore
         </button>
       {% elif status_filter == "accepted" %}
@@ -62,7 +61,7 @@
           <span class="note">(cannot be undone)<span>
           </div>
         {% endif %}
-        <button type="submit" name="new_status" value="REJECTED" class="dismissed-color">
+        <button type="submit" name="new_status" value="rejected" class="dismissed-color">
           Dismiss
         </button>
       {% endif %}

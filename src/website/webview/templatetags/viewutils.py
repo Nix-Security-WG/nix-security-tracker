@@ -41,6 +41,7 @@ class AffectedContext(TypedDict):
 
 class SuggestionActivityLog(TypedDict):
     suggestion: CVEDerivationClusterProposal
+    activity_log: dict
 
 
 @register.filter
@@ -90,11 +91,15 @@ def last_user(od: OrderedDict) -> str | None:
 
 @register.inclusion_tag("components/suggestion.html", takes_context=True)
 def suggestion(
-    context: Context, suggestion: CVEDerivationClusterProposal, cached_suggestion: dict
+    context: Context,
+    suggestion: CVEDerivationClusterProposal,
+    cached_suggestion: dict,
+    activity_log: dict,
 ) -> dict:
     return {
         "suggestion": suggestion,
         "cached_suggestion": cached_suggestion,
+        "activity_log": activity_log,
         "status_filter": context["status_filter"],
         "page_obj": context["page_obj"],
     }
@@ -145,5 +150,6 @@ def affected_products(affected: list[AffectedProduct]) -> AffectedContext:
 @register.inclusion_tag("components/suggestion_activity_log.html")
 def suggestion_activity_log(
     suggestion: CVEDerivationClusterProposal,
+    activity_log: dict,
 ) -> SuggestionActivityLog:
-    return {"suggestion": suggestion}
+    return {"suggestion": suggestion, "activity_log": activity_log}
