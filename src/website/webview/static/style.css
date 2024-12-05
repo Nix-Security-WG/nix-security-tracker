@@ -765,14 +765,6 @@ article .nixpkgs-packages {
   min-width: 5em;
 }
 
-.button-with-note .note {
-  display: block;
-  text-align: center;
-  font-size: 0.7em;
-  color: var(--dark-grey);
-  margin-bottom: -0.75em;
-}
-
 span.hint {
   padding: 0 0.4em;
   border: none;
@@ -783,15 +775,6 @@ span.hint {
   background: var(--dismissed-suggestion);
   color: white;
   cursor: pointer;
-}
-
-.grey-button {
-  background: grey;
-  color: white;
-}
-
-.grey-button:hover {
-  background: darkgrey;
 }
 
 .selected-color {
