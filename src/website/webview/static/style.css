@@ -771,6 +771,30 @@ article .nixpkgs-packages {
   background: var(--unaffected);
 }
 
+.maintainers {
+  margin-top: 1em;
+}
+
+.maintainers ul {
+  margin: 0;
+  list-style: none;
+  padding-left: 1em;
+}
+
+.maintainer .github-id {
+  font-weight: 700;
+}
+
+.maintainer a {
+  text-decoration: none;
+  color: black;
+}
+
+.maintainer a:hover,
+a:focus {
+  text-decoration: underline;
+}
+
 .suggestion .change-issue-state {
   display: flex;
   justify-content: space-between;
