@@ -12,8 +12,10 @@
       <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ cached_suggestion.cve_id | urlencode }}">
         {{ cached_suggestion.cve_id }}
       </a>
+      {% if cached_suggestion.metrics %}
+        {% severity_badge cached_suggestion.metrics %}
+      {% endif %}
       <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
-      {% severity_badge cached_suggestion.base_severity %}
       {% suggestion_activity_log suggestion %}
     </div>
 

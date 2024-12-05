@@ -225,6 +225,133 @@
   src: url("/static/ibm-plex-mono-v19-latin-700italic.woff2") format("woff2");
 }
 
+/* ibm-plex-sans-condensed-100 - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 100;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-100.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-100italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 100;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-100italic.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-200 - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 200;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-200.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-200italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 200;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-200italic.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-300 - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 300;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-300.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-300italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 300;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-300italic.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-regular - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-regular.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 400;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-italic.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-500 - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-500.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-500italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 500;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-500italic.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-600 - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 600;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-600.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-600italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 600;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-600italic.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-700 - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-700.woff2")
+    format("woff2");
+}
+/* ibm-plex-sans-condensed-700italic - latin */
+@font-face {
+  font-display: swap;
+  font-family: "IBM Plex Sans Condensed";
+  font-style: italic;
+  font-weight: 700;
+  src: url("/static/ibm-plex-sans-condensed-v14-latin-700italic.woff2")
+    format("woff2");
+}
+
 :root {
   --grey: #d5d2d1;
   --dark-grey: #b5b2b1;
@@ -234,7 +361,6 @@
   --draft: green;
   --affected: #ffabab;
   --unaffected: #bfb;
-  --activity-log-background: gainsboro;
   --activity-log-automatic-suggestion: royalblue;
   --dismissed-suggestion-status: darkgreen;
   --selected-suggestion-status: limegreen;
@@ -245,6 +371,10 @@ body {
   margin: 0;
   font-family: "IBM Plex Sans";
   box-sizing: border-box;
+}
+
+.condensed {
+  font-family: "IBM Plex Sans Condensed";
 }
 
 nav {
@@ -331,7 +461,8 @@ article .row1 {
 article .state-change-indicator {
   opacity: 0;
   height: 0.8rem;
-  align-self: center;
+  margin-left: auto;
+  margin-top: 0.5em;
 }
 
 article .cve-id {
@@ -342,27 +473,47 @@ article .cve-id {
 article .severity {
   border-radius: 5px;
   padding: 0.2rem;
-  margin-left: auto;
+  margin-left: 0.5em;
 }
 
-.severity.LOW {
-  background: yellow;
+article .severity summary {
+  list-style: none;
 }
 
-.severity.MEDIUM {
-  background: orange;
+article .severity > summary::before {
+  content: "▶";
 }
 
-.severity.HIGH {
-  background: orangered;
+article .severity[open] summary::before {
+  content: "▼";
 }
 
-.severity.CRITICAL {
+article .severity .tag {
+  padding: 0 0.3em;
+  font-weight: 700;
+}
+
+/* These colors are taken from nvd.nist.gov */
+.tag.LOW {
+  background: #f2cc0c;
+}
+.tag.MEDIUM {
+  background: #ec971f;
+}
+.tag.HIGH {
+  background: #d9534f;
+}
+.tag.CRITICAL {
   background: red;
 }
+.tag.NONE {
+  background: #a9a9a9;
+}
 
-.severity.NONE {
-  color: var(--grey);
+article .severity ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
 }
 
 details.description summary {
@@ -666,8 +817,6 @@ button:hover {
 }
 
 .activity-log {
-  background-color: var(--activity-log-background);
-  margin-left: 1em;
   padding: 0.2em;
 }
 
