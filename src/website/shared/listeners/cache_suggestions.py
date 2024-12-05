@@ -6,7 +6,7 @@ from typing import Any
 import pgpubsub
 
 from shared.channels import CVEDerivationClusterProposalChannel
-from shared.models import NixDerivation
+from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import AffectedProduct, Metric, Version
 from shared.models.linkage import CVEDerivationClusterProposal
@@ -92,13 +92,17 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         )
         affected_products[package_name]["cpes"] = list(data["cpes"])
 
-    derivations = (
+    derivations = list(
         suggestion.derivations.select_related("metadata", "parent_evaluation")
         .prefetch_related("outputs", "dependencies")
         .all()
     )
 
     prefetched_metrics = Metric.objects.filter(container__cve=suggestion.cve)
+
+    prefetched_maintainers = NixMaintainer.objects.filter(
+        nixderivationmeta__in=[d.metadata for d in derivations]
+    ).distinct()
 
     only_relevant_data = {
         "pk": suggestion.pk,
@@ -107,8 +111,9 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         "title": relevant_piece["title"],
         "description": relevant_piece["descriptions__value"],
         "affected_products": affected_products,
-        "packages": channel_structure(all_versions, list(derivations)),
+        "packages": channel_structure(all_versions, derivations),
         "metrics": [to_dict(m) for m in prefetched_metrics],
+        "maintainers": [to_dict(m) for m in prefetched_maintainers],
     }
 
     # TODO: add format checking to avoid disasters in the frontend.
