@@ -31,7 +31,7 @@ These automatic suggestions were dimissed after initial triaging. <a href="/sugg
 
 <div id="suggestion-list">
   {% for object in object_list %}
-    {% suggestion object.proposal object.payload %}
+    {% suggestion object.proposal object.payload object.activity_log %}
   {% endfor %}
 </div>
 {% endblock content %}

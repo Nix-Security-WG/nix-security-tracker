@@ -1,7 +1,7 @@
 {% load humanize %}
 {% load viewutils %}
 
-{% if not suggestion.activity_log.updates|length_is:0 %}
+{% if not activity_log.updates|length_is:0 %}
 <details class="activity-log"
          id="suggestion-activity-log-{{suggestion.id}}"
          data-relative=true
@@ -9,9 +9,9 @@
   <summary class="main-summary">
     <span class="title-when-closed">
       <span class="activity-log-timestamp">
-        updated {{ suggestion.activity_log.updates|last_key|naturaltime }}
+        updated {{ activity_log.updates|last_key|naturaltime }}
       </span>
-      by&nbsp;<strong>@{{ suggestion.activity_log.updates|last_user }}</strong>
+      by&nbsp;<strong>@{{ activity_log.updates|last_user }}</strong>
     </span>
     <strong class="title-when-opened">Activity log</strong>
   </summary>
@@ -25,7 +25,7 @@
         {{ suggestion.created_at|naturaltime }}
       </span>
     </li>
-    {% for timestamp, log_entries in suggestion.activity_log.updates.items %}
+    {% for timestamp, log_entries in activity_log.updates.items %}
     {% for log_entry in log_entries %}
       <li class="activity-log-entry">
         <strong>@{{ log_entry.user }}</strong>
