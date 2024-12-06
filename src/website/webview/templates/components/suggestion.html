@@ -48,7 +48,7 @@
     {% if cached_suggestion.maintainers %}
       <details class="maintainers">
         <summary>
-          {{ cached_suggestion.maintainers | length }} package maintainer(s) would be pinged
+          Notify package maintainers: {{ cached_suggestion.maintainers | length }}
         </summary>
         <ul>
           {% for maintainer in cached_suggestion.maintainers %}
