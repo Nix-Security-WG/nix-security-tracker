@@ -61,6 +61,14 @@
         <button type="submit" name="create-draft-not-implemented" class="draft-color">
           C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
         </button>
+        {% if cached_suggestion.packages %}
+          <div class="remove-when-js-is-enabled button-with-note">
+          <button type="submit" class="grey-button">
+            Purge deleted packages
+          </button>
+          <span class="note">(cannot be undone)<span>
+          </div>
+        {% endif %}
         <button type="submit" name="new_status" value="rejected" class="dismissed-color">
           Dismiss
         </button>
