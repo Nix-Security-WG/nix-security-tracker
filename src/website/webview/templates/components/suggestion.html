@@ -1,7 +1,15 @@
 {% load viewutils %}
 
 <article class="suggestion" hx-target="this">
-  <form method="post" action="" hx-boost="true" hx-swap="outerHTML show:none" hx-indicator="find .state-change-indicator" hx-params="not no-js">
+  <form
+    method="post"
+    action=""
+    hx-boost="true"
+    hx-swap="outerHTML show:none"
+    hx-indicator="find .state-change-indicator"
+    hx-params="not no-js"
+    autocomplete="off"
+  >
     <input type="hidden" name="no-js">
     {% csrf_token %}
     <input type="hidden" name="suggestion_id" value="{{ cached_suggestion.pk }}">
@@ -54,7 +62,7 @@
           C̶̖͆r̶͍̚e̵͈̐ă̷̖t̷̄͜e̶͓̓ ̴̟̏d̵̳̅r̸̮̐a̵͍͑f̵̙̋t̴̹̃
         </button>
         {% if cached_suggestion.packages %}
-          <div class="button-with-note">
+          <div class="remove-when-js-is-enabled button-with-note">
           <button type="submit" class="grey-button">
             Purge deleted packages
           </button>

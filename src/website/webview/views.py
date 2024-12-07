@@ -564,15 +564,17 @@ class SuggestionListView(ListView):
             cached_suggestion.payload["packages"] = new_packages
             cached_suggestion.save()
 
-        if new_status == "rejected":
-            suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
-        elif new_status == "accepted":
-            suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
-        # there's no UI for returning a suggestion back to pending state,
-        # but this is an additional safeguard to prevent that from happening
-        #                                vvvvvvvvvvvvvvvvvv
-        elif new_status == "pending" and undo_status_change:
-            suggestion.status = CVEDerivationClusterProposal.Status.PENDING
+        # We only change the status if one of the status change buttons or undo button was clicked
+        if new_status:
+            if new_status == "rejected":
+                suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
+            elif new_status == "accepted":
+                suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
+            # there's no UI for returning a suggestion back to pending state,
+            # but this is an additional safeguard to prevent that from happening
+            #                                vvvvvvvvvvvvvvvvvv
+            elif new_status == "pending" and undo_status_change:
+                suggestion.status = CVEDerivationClusterProposal.Status.PENDING
 
         suggestion.save()
 
@@ -592,7 +594,8 @@ class SuggestionListView(ListView):
                         "csrf_token": get_token(request),
                     },
                 )
-            else:
+                return HttpResponse(snippet)
+            elif new_status:
                 snippet = render_to_string(
                     "components/suggestion_state_changed.html",
                     {
@@ -603,7 +606,10 @@ class SuggestionListView(ListView):
                         "csrf_token": get_token(request),
                     },
                 )
-            return HttpResponse(snippet)
+                return HttpResponse(snippet)
+            else:
+                # A package was checked/unchecked and we hx-swap="none" on these.
+                return HttpResponse(status=200)
         else:
             # Just reload the page
             return redirect(f"{request.path}?page={current_page}")

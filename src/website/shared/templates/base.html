@@ -69,5 +69,9 @@
       </p>
     </footer>
     <script src="/static/htmx.min.js"></script>
+    <script>
+      // We didn't find a better way to remove buttons that are only needed for non-JS workflows
+      document.querySelectorAll(".remove-when-js-is-enabled").forEach(e => e.remove());
+    </script>
   </body>
 </html>
