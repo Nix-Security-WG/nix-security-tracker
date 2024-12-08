@@ -1,5 +1,4 @@
 import datetime
-from collections import OrderedDict
 from typing import Any, TypedDict
 
 from django import template
@@ -73,18 +72,9 @@ def iso(date: datetime.datetime) -> str:
 
 
 @register.filter
-def last_key(od: OrderedDict) -> Any | None:
+def last_entry(log: list) -> Any | None:
     try:
-        return next(reversed(od))
-    except StopIteration:
-        return None
-
-
-@register.filter
-def last_user(od: OrderedDict) -> str | None:
-    try:
-        _, entry = next(reversed(od.items()))
-        return entry[0]["user"]
+        return next(reversed(log))
     except StopIteration:
         return None
 

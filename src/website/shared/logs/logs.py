@@ -1,10 +1,14 @@
-from collections import OrderedDict
-from typing import Any
+import datetime
+import typing
+from typing import Any, TypedDict
 
 from django.contrib.auth.models import User
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
     BigIntegerField,
     Case,
+    Count,
+    F,
     OuterRef,
     Q,
     Subquery,
@@ -18,153 +22,54 @@ from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
     DerivationClusterProposalLinkEvent,  # type: ignore
 )
-from shared.models.linkage import (
-    CVEDerivationClusterProposal,
-)
+
+if typing.TYPE_CHECKING:
+    from django.db.models.query import ValuesQuerySet
+
+
+class ActivityLogEntry(TypedDict):
+    action: str
+    package_count: int
+    package_name: list[str]
+    status_value: str
+    suggestion_id: str | None
+    timestamp: datetime.datetime
+    username: str
 
 
 class SuggestionActivityLog:
     """
-    Example of structured log output:
+    Example of queryset output:
     ```
-    {
-     'updates': OrderedDict([(datetime.datetime(2024, 11, 17, 4, 40, 6, 227407, tzinfo=datetime.timezone.utc),
-                              [{'action': 'update',
-                                'field': 'status',
-                                'target': 'accepted',
-                                'user': 'alejandrosame'}]),
-                             (datetime.datetime(2024, 11, 20, 14, 10, 23, 777950, tzinfo=datetime.timezone.utc),
-                              [{'action': 'derivations.remove',
-                                'field': 'derivations',
-                                'target': {'buildah-1.32.3': [<NixDerivation: buildah-1.32.3 j912x2s0>,
-                                                              <NixDerivation: buildah-1.32.3 vnvajc9s>,
-                                                              <NixDerivation: buildah-1.32.3 7pm5dhsi>,
-                                                              <NixDerivation: buildah-1.32.3 470a9nq3>],
-                                           'python3.11-podman-4.7.0': [<NixDerivation: python3.11-podman-4.7.0 m8xhanas>,
-                                                                       <NixDerivation: python3.11-podman-4.7.0 24k7kzmh>,
-                                                                       <NixDerivation: python3.11-podman-4.7.0 fc091355>,
-                                                                       <NixDerivation: python3.11-podman-4.7.0 7hrrv0jf>]},
-                                'user': 'alejandrosame'}]),
-                             (datetime.datetime(2024, 11, 20, 14, 18, 8, 90127, tzinfo=datetime.timezone.utc),
-                              [{'action': 'update',
-                                'field': 'status',
-                                'target': 'rejected',
-                                'user': 'alejandrosame'}]),
-                             (datetime.datetime(2024, 11, 20, 14, 18, 21, 215105, tzinfo=datetime.timezone.utc),
-                              [{'action': 'update',
-                                'field': 'status',
-                                'target': 'accepted',
-                                'user': 'alejandrosame'}])])}
+    [{'action': 'derivations.remove',
+      'package_count': 7,
+      'package_names': ['apparmor-kernel-patches-3.1.6',
+                        'kernelshark-2.2.1',
+                        'linux-gpib-kernel-4.3.6',
+                        'linux-kernel-latest-htmldocs-6.9.3',
+                        'zfs-kernel-2.1.15-6.1.92',
+                        'zfs-kernel-2.2.4-6.1.92',
+                        'zfs-kernel-2.2.4-6.8.11'],
+      'status_value': 'NOT_A_STATUS_CHANGE',
+      'suggestion_id': 121,
+      'timestamp': datetime.datetime(2024, 12, 6, 11, 59, 6, 668316, tzinfo=datetime.timezone.utc),
+      'username': 'ANONYMOUS'},
+     {'action': 'derivations.remove',
+      'package_count': 1,
+      'package_names': ['SPIRV-LLVM-Translator-16.0.0'],
+      'status_value': 'NOT_A_STATUS_CHANGE',
+      'suggestion_id': 11,
+      'timestamp': datetime.datetime(2024, 12, 5, 16, 15, 7, 899037, tzinfo=datetime.timezone.utc),
+      'username': 'ANONYMOUS'},
+     {'action': 'update',
+      'package_count': 0,
+      'package_names': [],
+      'status_value': 'accepted',
+      'suggestion_id': 11,
+      'timestamp': datetime.datetime(2024, 12, 5, 16, 14, 19, 520312, tzinfo=datetime.timezone.utc),
+      'username': 'ANONYMOUS'}]
     ```
     """
-
-    def __init__(self, suggestion: CVEDerivationClusterProposal) -> None:
-        self.log = {}
-        self.log["updates"] = {}
-
-        # Suggestion status updates
-        for event in (
-            self._annotate_username(
-                CVEDerivationClusterProposalStatusEvent.objects.prefetch_related(
-                    "pgh_context",
-                )
-                .filter(
-                    pgh_obj_id=suggestion.pk,
-                )
-                .exclude(
-                    # Ignore the insertion case
-                    pgh_label="insert",
-                )
-            )
-            .all()
-            .iterator()
-        ):
-            entry = {}
-
-            entry["user"] = event.username
-            entry["action"] = event.pgh_label
-            entry["field"] = "status"
-            entry["target"] = event.status
-
-            self.log["updates"] = self._upsert_dict(
-                self.log["updates"], event.pgh_created_at, entry
-            )
-
-        # Suggestion package updates (additions and removals)
-
-        # NOTE(alejandrosame): The following insertion timestamp logic can be removed once
-        # there's a guarantee that mixin times and pghistory times are in sync with the required
-        # transactionality. If that conditioin is met, instead of filtering by `insertion_timestamp`,
-        # it will suffice to filter by `suggestion.created_at`.
-        insertion_event = (
-            DerivationClusterProposalLinkEvent.objects.filter(proposal_id=suggestion.pk)
-            .order_by("pgh_created_at")
-            .first()
-        )
-
-        insertion_timestamp = None
-        if insertion_event:
-            insertion_timestamp = insertion_event.pgh_created_at
-
-        # First pass groups derivations by name (packages)
-        log_first_pass_packages = {}
-        for event in (
-            self._annotate_username(
-                DerivationClusterProposalLinkEvent.objects.prefetch_related(
-                    "pgh_context", "derivation"
-                )
-                .filter(proposal_id=suggestion.pk)
-                .exclude(
-                    # Ignore values at insertion time
-                    pgh_created_at=insertion_timestamp
-                )
-            )
-            .all()
-            .iterator()
-        ):
-            user = event.username
-            key = (event.pgh_created_at, event.pgh_label, user)
-            log_first_pass_packages = self._upsert_dict(
-                log_first_pass_packages, key, event.derivation
-            )
-
-        # Now we do a second pass over grouped packages to accomodate the timestamp
-        # ordered log
-        for (
-            timestamp,
-            action,
-            username,
-        ), derivations in log_first_pass_packages.items():
-            entry = {}
-
-            entry["user"] = username
-            entry["action"] = action
-            entry["field"] = "derivations"
-            entry["target"] = self._derivation_list_as_package_dict(derivations)
-
-            self.log["updates"] = self._upsert_dict(
-                self.log["updates"], timestamp, entry
-            )
-
-        # Return as OrderedDict sorted by timestamp
-        self.log["updates"] = OrderedDict(
-            {key: self.log["updates"][key] for key in sorted(self.log["updates"])}
-        )
-
-    def _upsert_dict(self, d: dict, key: Any, value: Any) -> dict:
-        if key in d:
-            d[key].append(value)
-        else:
-            d[key] = [value]
-        return d
-
-    def _derivation_list_as_package_dict(self, derivations: list) -> dict:
-        packages = {}
-
-        for derivation in derivations:
-            packages = self._upsert_dict(packages, derivation.name, derivation)
-
-        return packages
 
     def _annotate_username(self, query: EventQuerySet) -> EventQuerySet:
         return query.annotate(
@@ -195,5 +100,90 @@ class SuggestionActivityLog:
             )
         )
 
-    def get_structured_log(self) -> dict:
-        return self.log
+    def get_queryset(
+        self, suggestion_ids: list[str | None]
+    ) -> "ValuesQuerySet[Any, dict[str, Any]]":
+        fields = [
+            "suggestion_id",
+            "timestamp",
+            "username",
+            "action",
+            "status_value",
+            "package_names",
+            "package_count",
+        ]
+
+        status_qs = (
+            self._annotate_username(
+                CVEDerivationClusterProposalStatusEvent.objects.prefetch_related(
+                    "pgh_context",
+                )
+                .exclude(
+                    # Ignore insertion entry
+                    pgh_label="insert",
+                )
+                .filter(pgh_obj_id__in=suggestion_ids)
+            )
+            .annotate(
+                suggestion_id=Cast(F("pgh_obj_id"), BigIntegerField()),
+                timestamp=F("pgh_created_at"),
+                action=F("pgh_label"),
+                status_value=F("status"),
+                package_names=Value("{}"),
+                package_count=Value(0),
+            )
+            .values(*fields)
+        )
+
+        package_qs = (
+            self._annotate_username(
+                DerivationClusterProposalLinkEvent.objects.prefetch_related(
+                    "pgh_context", "derivation"
+                )
+                .exclude(
+                    # Ignore insertion entry
+                    pgh_created_at=Subquery(
+                        DerivationClusterProposalLinkEvent.objects.filter(
+                            proposal_id=OuterRef("proposal_id")
+                        )
+                        .order_by("pgh_created_at")
+                        .values("pgh_created_at")[:1]
+                    )
+                )
+                .filter(proposal_id__in=suggestion_ids)
+                .annotate(dummy_group_by_value=Value(1))
+                .values("dummy_group_by_value")
+                # NOTE(alejandrosame): Doing annotate "dummy_group_by_value" is a hack shared in
+                # the Django forum. Another user there complains about Django's decision to add the
+                # primary key by default when doing automated groupings. We hit here the same problem.
+                # Reference: https://forum.djangoproject.com/t/excess-group-by-columns-causing-problems-with-window-functions/26865/1
+            )
+            .annotate(
+                suggestion_id=Cast(F("proposal_id"), BigIntegerField()),
+                timestamp=F("pgh_created_at"),
+                action=F("pgh_label"),
+                status_value=Value("NOT_A_STATUS_CHANGE"),
+                package_names=ArrayAgg("derivation__name", distinct=True),
+                package_count=Count("derivation__name", distinct=True),
+            )
+            .values(*fields)
+        )
+
+        return status_qs.union(package_qs).order_by("timestamp")
+
+    def get_dict(
+        self, suggestion_ids: list[str | None]
+    ) -> dict[str | None, ActivityLogEntry]:
+        qs = self.get_queryset(suggestion_ids)
+
+        grouped_activity_log = {}
+
+        for event in qs.all().iterator():
+            suggestion_id = event.get("suggestion_id")
+
+            if suggestion_id in grouped_activity_log:
+                grouped_activity_log[suggestion_id].append(event)
+            else:
+                grouped_activity_log[suggestion_id] = [event]
+
+        return grouped_activity_log

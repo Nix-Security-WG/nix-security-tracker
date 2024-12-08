@@ -498,10 +498,16 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
+        suggestion_ids = [obj.proposal_id for obj in context["object_list"]]
+
+        grouped_activity_log = SuggestionActivityLog().get_dict(
+            suggestion_ids=suggestion_ids
+        )
+
         for obj in context["object_list"]:
-            obj.activity_log = SuggestionActivityLog(
-                suggestion=obj
-            ).get_structured_log()
+            obj.activity_log = []
+            if obj.proposal_id in grouped_activity_log:
+                obj.activity_log = grouped_activity_log[obj.proposal_id]
 
         context["adjusted_elided_page_range"] = context[
             "paginator"
@@ -525,7 +531,9 @@ class SuggestionListView(ListView):
         new_status = request.POST.get("new_status")
         current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-        activity_log = SuggestionActivityLog(suggestion=suggestion).get_structured_log()
+        activity_log = SuggestionActivityLog().get_queryset(
+            suggestion_ids=[suggestion_id]
+        )
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id
         )
