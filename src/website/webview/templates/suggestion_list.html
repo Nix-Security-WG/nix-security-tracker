@@ -3,30 +3,44 @@
 
 {% block content %}
 
+<header>
+  <nav class="issue-pipeline">
+    <ul>
+      <li><a href="/dismissed">Dismissed suggestions</a></li>
+      <li><a href="/suggestions">Untriaged suggestions</a></li>
+      <li><a href="/selected">Draft issues</a></li>
+      <li><a href="/issues">Published issues</a></li>
+    </ul>
+  </nav>
+</header>
+
 {% if status_filter == "pending" %}
 <h1>Automatically generated suggestions</h1>
 <p>
-<span class="hint selected-color">Select</span> to queue a suggestion for refinement. <a href="/selected">View all selected suggestions</a></s>
+<span class="hint selected-color">Select</span> to queue a suggestion for refinement.
 </p>
 <p>
-<span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+<span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue.
 </p>
 {% elif status_filter == "rejected" %}
 <h1>Dismissed suggestions</h1>
 <p>
-These automatic suggestions were dimissed after initial triaging. <a href="/suggestions">View all untriaged suggestions</a>
+These automatic suggestions were dimissed after initial triaging.
 </p>
 <p>
-<span class="hint selected-color">Restore</span> to select a suggestion for a revision. <a href="/selected">View all selected suggestions</a>
+<span class="hint selected-color">Restore</span> to select a suggestion for a revision.
 </p>
 {% elif status_filter == "accepted" %}
 <h1>Selected suggestions</h1>
+
 <p>
-<span class="hint draft-color">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing. <s><a href="/drafts">View all drafts</a></s>
+<span class="hint draft-color">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing.</br>
 </p>
+
 <p>
-<span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue. <a href="/dismissed">View all dismissed suggestions</a>
+<span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue.
 </p>
+
 {% endif %}
 
 <div id="suggestion-list">

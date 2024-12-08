@@ -377,7 +377,7 @@ body {
   font-family: "IBM Plex Sans Condensed";
 }
 
-nav {
+nav.header {
   background-color: black;
   padding: 0.5em;
   display: flex;
@@ -391,12 +391,12 @@ nav ul {
 nav.header ul {
   margin-left: auto;
 }
-nav ul li {
+nav.header ul li {
   margin-left: 2em;
   display: inline;
   flex: center;
 }
-nav a {
+nav.header a {
   text-decoration: none;
 }
 nav.header a:visited {
@@ -430,12 +430,34 @@ footer {
   text-align: center;
 }
 
+nav.issue-pipeline {
+  max-width: 55em;
+  margin: auto;
+  padding: 0 0.5em;
+}
+
+nav.issue-pipeline ul {
+  padding: 0;
+  margin: 0;
+}
+
+nav.issue-pipeline ul {
+  margin-left: auto;
+  display: flex;
+  justify-content: center;
+  gap: 1em;
+}
+
+nav.issue-pipeline ul li {
+  list-style-type: none;
+}
+
 #suggestion-list {
   max-width: 55rem;
   margin: auto;
   display: flex;
   row-gap: 0.5rem;
-  padding: 5px;
+  padding: 0.5em;
   flex-direction: column;
 }
 
@@ -765,6 +787,11 @@ article .nixpkgs-packages {
   min-width: 5em;
 }
 
+button[disabled],
+a[disabled] {
+  text-decoration: line-through;
+}
+
 .button-with-note .note {
   display: block;
   text-align: center;
@@ -777,6 +804,7 @@ span.hint {
   padding: 0 0.4em;
   border: none;
   border-radius: 0.3em;
+  cursor: initial;
 }
 
 .dismissed-color {
