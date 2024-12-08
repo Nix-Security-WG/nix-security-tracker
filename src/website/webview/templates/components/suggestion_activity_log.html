@@ -1,17 +1,19 @@
 {% load humanize %}
 {% load viewutils %}
 
-{% if not activity_log.updates|length_is:0 %}
+{% if not activity_log|length_is:0 %}
 <details class="activity-log"
          id="suggestion-activity-log-{{suggestion.id}}"
          data-relative=true
 >
   <summary class="main-summary">
     <span class="title-when-closed">
-      <span class="activity-log-timestamp">
-        updated {{ activity_log.updates|last_key|naturaltime }}
-      </span>
-      by&nbsp;<strong>@{{ activity_log.updates|last_user }}</strong>
+      {% with last_entry=activity_log|last_entry %}
+        <span class="activity-log-timestamp">
+          updated {{ last_entry.timestamp|naturaltime }}
+        </span>
+        by&nbsp;<strong>@{{ last_entry.username }}</strong>
+      {% endwith %}
     </span>
     <strong class="title-when-opened">Activity log</strong>
   </summary>
@@ -25,10 +27,9 @@
         {{ suggestion.created_at|naturaltime }}
       </span>
     </li>
-    {% for timestamp, log_entries in activity_log.updates.items %}
-    {% for log_entry in log_entries %}
+    {% for log_entry in activity_log %}
       <li class="activity-log-entry">
-        <strong>@{{ log_entry.user }}</strong>
+        <strong>@{{ log_entry.username }}</strong>
         {% if "derivations." in log_entry.action %}
         {# Package update entries #}
           {% if ".add" in log_entry.action %}
@@ -36,17 +37,15 @@
           {% else %}
             removed
           {% endif %}
-          {% if log_entry.target.items|length_is:1 %}
-            {% for packagename, derivations in log_entry.target.items %}
-              package <strong>{{ packagename }}</strong>
-            {% endfor %}
+          {% if log_entry.package_count == 1 %}
+            package <strong>{{ log_entry.package_names.0 }}</strong>
           {% else %}
             <details class="package-summary">
               <summary class="package-summary-title">
-                {{ log_entry.target.items|length }} packages
+                {{ log_entry.package_count }} packages
               </summary>
               <ul class="package-summary-listing">
-                {% for packagename, derivations in log_entry.target.items %}
+                {% for packagename in log_entry.package_names %}
                   <li>{{ packagename }}</li>
                 {% endfor %}
               </ul>
@@ -54,22 +53,21 @@
           {% endif %}
         {% else %}
           {# Status update entries #}
-          {% if "accepted" in log_entry.target  %}
+          {% if "accepted" in log_entry.status_value  %}
             <span class="suggestion-status-selected">selected</span>
-          {% elif "rejected" in log_entry.target %}
+          {% elif "rejected" in log_entry.status_value %}
             <span class="suggestion-status-dismissed">dismissed</span>
           {% else %}
             {{ log_entry.action }}
           {% endif %}
         {% endif %}
         <span class="activity-log-entry-timestamp"
-              data-timestamp-relative="{{ timestamp|naturaltime }}"
-              data-timestamp-iso="{{ timestamp|iso }}"
+              data-timestamp-relative="{{ log_entry.timestamp|naturaltime }}"
+              data-timestamp-iso="{{ log_entry.timestamp|iso }}"
         >
-          {{ timestamp|naturaltime }}
+          {{ log_entry.timestamp|naturaltime }}
         </span>
       </li>
-    {% endfor %}
     {% endfor %}
   </ul>
   <script>
