@@ -514,6 +514,7 @@ class SuggestionListView(ListView):
             .get_queryset()
             # TODO: order by timestamp of last update/creation descending
             .filter(proposal__status=self.status_filter)
+            .order_by("-proposal__updated_at", "-proposal__created_at")
         )
         return queryset
 
@@ -566,6 +567,7 @@ class SuggestionListView(ListView):
 
         # We only change the status if one of the status change buttons or undo button was clicked
         if new_status:
+            old_status = suggestion.status
             if new_status == "rejected":
                 suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
             elif new_status == "accepted":
@@ -576,7 +578,8 @@ class SuggestionListView(ListView):
             elif new_status == "pending" and undo_status_change:
                 suggestion.status = CVEDerivationClusterProposal.Status.PENDING
 
-        suggestion.save()
+            if old_status != new_status:
+                suggestion.save()
 
         if js_enabled:
             # Clicking on the undo button will return the original suggestion
