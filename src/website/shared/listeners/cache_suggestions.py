@@ -4,6 +4,7 @@ from itertools import chain
 from typing import Any
 
 import pgpubsub
+from django.db.models import Prefetch
 
 from shared.channels import CVEDerivationClusterProposalChannel
 from shared.models import NixDerivation, NixMaintainer
@@ -94,15 +95,19 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
 
     derivations = list(
         suggestion.derivations.select_related("metadata", "parent_evaluation")
-        .prefetch_related("outputs", "dependencies")
+        .prefetch_related(
+            "outputs",
+            "dependencies",
+            Prefetch(
+                "metadata__maintainers",
+                queryset=NixMaintainer.objects.distinct(),
+                to_attr="prefetched_maintainers",
+            ),
+        )
         .all()
     )
 
     prefetched_metrics = Metric.objects.filter(container__cve=suggestion.cve)
-
-    prefetched_maintainers = NixMaintainer.objects.filter(
-        nixderivationmeta__in=[d.metadata for d in derivations]
-    ).distinct()
 
     only_relevant_data = {
         "pk": suggestion.pk,
@@ -113,7 +118,6 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         "affected_products": affected_products,
         "packages": channel_structure(all_versions, derivations),
         "metrics": [to_dict(m) for m in prefetched_metrics],
-        "maintainers": [to_dict(m) for m in prefetched_maintainers],
     }
 
     # TODO: add format checking to avoid disasters in the frontend.
@@ -189,9 +193,14 @@ def channel_structure(
             packages[attribute] = {
                 "versions": {},
                 "derivation_ids": [],
+                "maintainers": [],
             }
-            if derivation.metadata and derivation.metadata.description:
-                packages[attribute]["description"] = derivation.metadata.description
+            if derivation.metadata:
+                if derivation.metadata.description:
+                    packages[attribute]["description"] = derivation.metadata.description
+                packages[attribute]["maintainers"] = [
+                    to_dict(m) for m in derivation.metadata.prefetched_maintainers
+                ]
         packages[attribute]["derivation_ids"].append(derivation.pk)
         branch_name = derivation.parent_evaluation.channel.channel_branch
         major_channel = get_major_channel(branch_name)

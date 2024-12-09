@@ -143,3 +143,16 @@ def suggestion_activity_log(
     activity_log: dict,
 ) -> SuggestionActivityLog:
     return {"suggestion": suggestion, "activity_log": activity_log}
+
+
+@register.inclusion_tag("components/maintainers_list.html")
+def maintainers_list(
+    packages: PackageList,
+) -> dict:
+    return {
+        "maintainers": [
+            maintainer
+            for _, package in packages.items()
+            for maintainer in package["maintainers"]
+        ]
+    }

@@ -45,24 +45,7 @@
       {% selectable_nixpkgs_package_list cached_suggestion.packages %}
     {% endif %}
 
-    {% if cached_suggestion.maintainers %}
-      <details class="maintainers">
-        <summary>
-          Notify package maintainers: {{ cached_suggestion.maintainers | length }}
-        </summary>
-        <ul>
-          {% for maintainer in cached_suggestion.maintainers %}
-            <li class="maintainer">
-              <a class="github-id" href="https://github.com/{{ maintainer.github | urlencode }}">
-                @{{ maintainer.github }}:
-              </a>
-              {{ maintainer.name }}
-              &lt;<a class="email" href="mailto:{{maintainer.email | urlencode}}">{{ maintainer.email }}</a>&gt;
-            </li>
-          {% endfor %}
-        </ul>
-      </details>
-    {% endif %}
+    {% maintainers_list cached_suggestion.packages %}
 
     <div class="change-issue-state">
       {% if status_filter == "pending" %}

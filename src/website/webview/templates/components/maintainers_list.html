@@ -1,0 +1,18 @@
+{% if maintainers %}
+  <details class="maintainers">
+    <summary>
+      Notify package maintainers: {{ maintainers | length }}
+    </summary>
+    <ul>
+      {% for maintainer in maintainers %}
+        <li class="maintainer">
+          <a class="github-id" href="https://github.com/{{ maintainer.github | urlencode }}">
+            @{{ maintainer.github }}:
+          </a>
+          {{ maintainer.name }}
+          &lt;<a class="email" href="mailto:{{maintainer.email | urlencode}}">{{ maintainer.email }}</a>&gt;
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}
