@@ -381,11 +381,6 @@ nav.header {
   background-color: black;
 }
 
-.flex-center {
-  display: flex;
-  justify-content: center;
-}
-
 nav h1,
 nav ul {
   padding: 0;
@@ -396,8 +391,13 @@ nav.header ul {
   margin-left: auto;
 }
 
-.inline-list > ul li {
-  margin-left: 2em;
+.centered-inline-list ul {
+  display: flex;
+  justify-content: center;
+  gap: 2em;
+}
+
+.centered-inline-list > ul li {
   display: inline;
 }
 
@@ -449,12 +449,6 @@ nav.issue-pipeline {
 nav.issue-pipeline ul {
   padding: 0;
   margin: 0;
-}
-
-nav.issue-pipeline ul {
-  display: flex;
-  justify-content: center;
-  gap: 1em;
 }
 
 nav.issue-pipeline ul li,
