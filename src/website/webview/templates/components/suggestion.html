@@ -47,14 +47,14 @@
 
     <div class="change-issue-state">
       {% if status_filter == "pending" %}
-        <button type="submit" name="new_status" value="accepted" class="selected-color">
-          Select
+        <button type="submit" name="new_status" value="accepted" class="draft-color">
+          Create draft
         </button>
         <button type="submit" name="new_status" value="rejected" class="dismissed-color">
           Dismiss
         </button>
       {% elif status_filter == "rejected" %}
-        <button type="submit" name="new_status" value="accepted" class="selected-color">
+        <button type="submit" name="new_status" value="accepted" class="draft-color">
           Restore
         </button>
       {% elif status_filter == "accepted" %}

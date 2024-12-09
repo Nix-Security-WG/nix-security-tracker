@@ -8,7 +8,7 @@
     <ul>
       <li><a href="/dismissed">Dismissed suggestions</a></li>
       <li><a href="/suggestions">Untriaged suggestions</a></li>
-      <li><a href="/selected">Draft issues</a></li>
+      <li><a href="/drafts">Draft issues</a></li>
       <li><a href="/issues">Published issues</a></li>
     </ul>
   </nav>
@@ -17,7 +17,7 @@
 {% if status_filter == "pending" %}
 <h1>Automatically generated suggestions</h1>
 <p>
-<span class="hint selected-color">Select</span> to queue a suggestion for refinement.
+<span class="hint drafts-color">Create Draft</span> to queue a suggestion for refinement.
 </p>
 <p>
 <span class="hint dismissed-color">Dismiss</span> to remove a suggestion from the queue.
@@ -28,10 +28,10 @@
 These automatic suggestions were dimissed after initial triaging.
 </p>
 <p>
-<span class="hint selected-color">Restore</span> to select a suggestion for a revision.
+<span class="hint drafts-color">Restore</span> to select a suggestion for a revision.
 </p>
 {% elif status_filter == "accepted" %}
-<h1>Selected suggestions</h1>
+<h1>Drafts</h1>
 
 <p>
 <span class="hint draft-color">Create draft</span> to convert the suggestion into a draft security issue that can be edited before publishing.</br>

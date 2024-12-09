@@ -357,13 +357,13 @@
   --dark-grey: #b5b2b1;
   --automatic-suggestion: lightblue;
   --dismissed-suggestion: #acb3c8;
-  --selected-suggestion: #7bca7b;
+  --draft-suggestion: #7bca7b;
   --draft: green;
   --affected: #ffabab;
   --unaffected: #bfb;
   --activity-log-automatic-suggestion: royalblue;
   --dismissed-suggestion-status: darkgreen;
-  --selected-suggestion-status: limegreen;
+  --draft-suggestion-status: limegreen;
 }
 
 body {
@@ -568,7 +568,7 @@ article .suggestion.state-changed .state-identifier.rejected {
 }
 
 article .suggestion.state-changed .state-identifier.accepted {
-  background: var(--selected-suggestion);
+  background: var(--draft-suggestion);
 }
 
 article .suggestion.state-changed h2 {
@@ -584,7 +584,7 @@ article .suggestion.state-changed h2 {
 }
 
 article .suggestion.state-changed h2 .accepted {
-  color: var(--selected-suggestion);
+  color: var(--draft-suggestion);
 }
 
 article .suggestion.state-changed h2 .rejected {
@@ -822,8 +822,8 @@ span.hint {
   background: darkgrey;
 }
 
-.selected-color {
-  background: var(--selected-suggestion);
+.draft-color {
+  background: var(--draft-suggestion);
   color: white;
   cursor: pointer;
 }
@@ -911,9 +911,9 @@ button:hover {
   padding-left: 1.5em;
 }
 
-.suggestion-status-selected {
+.suggestion-status-draft {
   font-weight: bold;
-  color: var(--selected-suggestion-status);
+  color: var(--draft-suggestion-status);
 }
 
 .suggestion-status-dismissed {
