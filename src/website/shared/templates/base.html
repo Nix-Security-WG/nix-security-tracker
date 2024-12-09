@@ -28,7 +28,16 @@
 
         {% block auth %}
         {% if user.is_authenticated %}
+        {% get_social_accounts user as accounts %}
         <li>
+          {% if accounts and "github" in accounts %}
+            <a href="https://github.com/{{ accounts.github.0.extra_data.login }}"
+               target="_blank">
+               {{ user.username }}
+            </a>
+          {% else %}
+            <span>{{user.username}}</span>
+          {% endif %}
           <a href="{% url 'account_logout' %}">
             Logout
           </a>

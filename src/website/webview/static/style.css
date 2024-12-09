@@ -403,6 +403,9 @@ nav.header a:visited {
   color: white;
   margin: 0;
 }
+nav.header span {
+  color: white;
+}
 nav#pagination {
   background-color: unset;
   color: black;
