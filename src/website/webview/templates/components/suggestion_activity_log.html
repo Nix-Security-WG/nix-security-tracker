@@ -54,7 +54,7 @@
         {% else %}
           {# Status update entries #}
           {% if "accepted" in log_entry.status_value  %}
-            <span class="suggestion-status-draft">drafted</span>
+            <span class="suggestion-status-draft">accepted as draft</span>
           {% elif "rejected" in log_entry.status_value %}
             <span class="suggestion-status-dismissed">dismissed</span>
           {% else %}
