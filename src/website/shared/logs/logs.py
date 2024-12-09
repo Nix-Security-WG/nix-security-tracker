@@ -8,6 +8,7 @@ from django.db.models import (
     BigIntegerField,
     Case,
     Count,
+    DateTimeField,
     F,
     OuterRef,
     Q,
@@ -15,7 +16,8 @@ from django.db.models import (
     Value,
     When,
 )
-from django.db.models.functions import Cast, Coalesce
+from django.db.models.expressions import Func
+from django.db.models.functions import Cast, Coalesce, TruncDay
 from pghistory.models import EventQuerySet
 
 from shared.models import (
@@ -140,15 +142,18 @@ class SuggestionActivityLog:
                 DerivationClusterProposalLinkEvent.objects.prefetch_related(
                     "pgh_context", "derivation"
                 )
-                .exclude(
-                    # Ignore insertion entry
-                    pgh_created_at=Subquery(
+                .annotate(
+                    insertion_timestamp=Subquery(
                         DerivationClusterProposalLinkEvent.objects.filter(
                             proposal_id=OuterRef("proposal_id")
                         )
                         .order_by("pgh_created_at")
                         .values("pgh_created_at")[:1]
                     )
+                )
+                .exclude(
+                    # Ignore insertion entry
+                    pgh_created_at=F("insertion_timestamp")
                 )
                 .filter(proposal_id__in=suggestion_ids)
                 .annotate(dummy_group_by_value=Value(1))
@@ -160,7 +165,13 @@ class SuggestionActivityLog:
             )
             .annotate(
                 suggestion_id=Cast(F("proposal_id"), BigIntegerField()),
-                timestamp=F("pgh_created_at"),
+                timestamp=Func(
+                    Value("5 minutes"),
+                    F("pgh_created_at"),
+                    TruncDay(F("insertion_timestamp")),
+                    function="date_bin",
+                    output_field=DateTimeField(),
+                ),
                 action=F("pgh_label"),
                 status_value=Value("NOT_A_STATUS_CHANGE"),
                 package_names=ArrayAgg("derivation__name", distinct=True),
