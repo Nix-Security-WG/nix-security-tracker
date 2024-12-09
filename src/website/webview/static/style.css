@@ -411,6 +411,7 @@ nav.header a:visited {
 
 .centered-inline-list > ul li {
   display: inline;
+  list-style-type: none;
 }
 
 .page-width {
@@ -452,11 +453,6 @@ nav.issue-pipeline {
 nav.issue-pipeline ul {
   padding: 0;
   margin: 0;
-}
-
-nav.issue-pipeline ul li,
-nav#pagination ul li {
-  list-style-type: none;
 }
 
 #suggestion-list {
