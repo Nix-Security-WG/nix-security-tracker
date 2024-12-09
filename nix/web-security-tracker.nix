@@ -146,6 +146,7 @@ in
         EVALUATION_LOGS_DIRECTORY = mkDefault "/var/log/web-security-tracker/evaluation";
         LOCAL_NIXPKGS_CHECKOUT = mkDefault "/var/lib/web-security-tracker/nixpkgs-repo";
         CVE_CACHE_DIR = mkDefault "/var/lib/web-security-tracker/cve-cache";
+        ACCOUNT_DEFAULT_HTTP_PROTOCOL = mkDefault (with cfg; if production then "https" else "http");
       };
 
       nginx.enable = true;
