@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from django import template
 from django.template.context import Context
@@ -41,6 +41,14 @@ class AffectedContext(TypedDict):
 class SuggestionActivityLog(TypedDict):
     suggestion: CVEDerivationClusterProposal
     activity_log: dict
+
+
+class Maintainer(TypedDict):
+    name: str
+    email: str
+    github: str
+    matrix: str
+    github_id: int
 
 
 @register.filter
@@ -143,3 +151,21 @@ def suggestion_activity_log(
     activity_log: dict,
 ) -> SuggestionActivityLog:
     return {"suggestion": suggestion, "activity_log": activity_log}
+
+
+@register.inclusion_tag("components/maintainers_list.html")
+def maintainers_list(
+    packages: PackageList,
+) -> dict[str, list[Maintainer]]:
+    maintainers = [
+        maintainer
+        for _, package in packages.items()
+        for maintainer in package["maintainers"]
+    ]
+    github_ids = set()
+    unique_maintainers = [
+        cast(Maintainer, m)
+        for m in maintainers
+        if m["github_id"] not in github_ids and not github_ids.add(m["github_id"])
+    ]
+    return {"maintainers": unique_maintainers}

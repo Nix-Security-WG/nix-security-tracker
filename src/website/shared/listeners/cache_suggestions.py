@@ -4,9 +4,10 @@ from itertools import chain
 from typing import Any
 
 import pgpubsub
+from django.db.models import Prefetch
 
 from shared.channels import CVEDerivationClusterProposalChannel
-from shared.models import NixDerivation
+from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import AffectedProduct, Metric, Version
 from shared.models.linkage import CVEDerivationClusterProposal
@@ -92,9 +93,17 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         )
         affected_products[package_name]["cpes"] = list(data["cpes"])
 
-    derivations = (
+    derivations = list(
         suggestion.derivations.select_related("metadata", "parent_evaluation")
-        .prefetch_related("outputs", "dependencies")
+        .prefetch_related(
+            "outputs",
+            "dependencies",
+            Prefetch(
+                "metadata__maintainers",
+                queryset=NixMaintainer.objects.distinct(),
+                to_attr="prefetched_maintainers",
+            ),
+        )
         .all()
     )
 
@@ -107,7 +116,7 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         "title": relevant_piece["title"],
         "description": relevant_piece["descriptions__value"],
         "affected_products": affected_products,
-        "packages": channel_structure(all_versions, list(derivations)),
+        "packages": channel_structure(all_versions, derivations),
         "metrics": [to_dict(m) for m in prefetched_metrics],
     }
 
@@ -184,9 +193,14 @@ def channel_structure(
             packages[attribute] = {
                 "versions": {},
                 "derivation_ids": [],
+                "maintainers": [],
             }
-            if derivation.metadata and derivation.metadata.description:
-                packages[attribute]["description"] = derivation.metadata.description
+            if derivation.metadata:
+                if derivation.metadata.description:
+                    packages[attribute]["description"] = derivation.metadata.description
+                packages[attribute]["maintainers"] = [
+                    to_dict(m) for m in derivation.metadata.prefetched_maintainers
+                ]
         packages[attribute]["derivation_ids"].append(derivation.pk)
         branch_name = derivation.parent_evaluation.channel.channel_branch
         major_channel = get_major_channel(branch_name)

@@ -45,6 +45,8 @@
       {% selectable_nixpkgs_package_list cached_suggestion.packages %}
     {% endif %}
 
+    {% maintainers_list cached_suggestion.packages %}
+
     <div class="change-issue-state">
       {% if status_filter == "pending" %}
         <button type="submit" name="new_status" value="accepted" class="draft-color">
