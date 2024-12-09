@@ -42,7 +42,7 @@ urlpatterns = [
     # TODO: this should probably be something like
     #       suggestions/queue
     #       suggestions/dismissed
-    #       suggestions/selected
+    #       suggestions/drafts
     path(
         "suggestions/",
         SuggestionListView.as_view(
@@ -58,10 +58,10 @@ urlpatterns = [
         name="dismissed_view",
     ),
     path(
-        "selected/",
+        "drafts/",
         SuggestionListView.as_view(
             status_filter=CVEDerivationClusterProposal.Status.ACCEPTED
         ),
-        name="selected_view",
+        name="drafts_view",
     ),
 ]
