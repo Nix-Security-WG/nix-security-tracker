@@ -186,4 +186,42 @@ class SuggestionActivityLog:
             else:
                 grouped_activity_log[suggestion_id] = [event]
 
-        return grouped_activity_log
+        # Second pass to fold repeated package actions by user
+        folded_activity_log = {}
+        for suggestion_id, events in grouped_activity_log.items():
+            suggestion_log = []
+
+            accumulator = None
+            for event in events:
+                if not event["action"].startswith("derivations."):
+                    if accumulator:
+                        suggestion_log.append(accumulator)
+                        accumulator = None
+                    suggestion_log.append(event)
+                else:
+                    if not accumulator:
+                        accumulator = event
+                    else:
+                        if (
+                            event["action"] == accumulator["action"]
+                            and event["username"] == accumulator["username"]
+                        ):
+                            accumulator["package_names"] = (
+                                accumulator["package_names"] + event["package_names"]
+                            )
+                            accumulator["package_count"] = (
+                                accumulator["package_count"] + event["package_count"]
+                            )
+                            accumulator["timestamp"] = event[
+                                "timestamp"
+                            ]  # Keep latest timestamp
+                        else:
+                            suggestion_log.append(accumulator)
+                            accumulator = event
+
+            if accumulator:
+                suggestion_log.append(accumulator)
+
+            folded_activity_log[suggestion_id] = suggestion_log
+
+        return folded_activity_log
