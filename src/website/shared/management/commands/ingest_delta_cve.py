@@ -179,7 +179,7 @@ class Command(BaseCommand):
         last_ingestion = (
             CveIngestion.objects.order_by("-valid_to")
             .values_list("valid_to", flat=True)
-            .last()
+            .first()
         )
 
         if last_ingestion is None:
