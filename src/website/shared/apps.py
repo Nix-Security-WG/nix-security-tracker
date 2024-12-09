@@ -13,7 +13,11 @@ class SharedConfig(AppConfig):
 
         # This hook is called on any `manage` subcommand.
         # Only connect to GitHub when the server is started.
-        if os.environ.get("RUN_MAIN", None) is None and "runserver" in sys.argv:
+        # TODO: run this as a separate service, as this is almost exclusively a deployment concern
+        if os.environ.get("RUN_MAIN", None) is None and (
+            "runserver" in sys.argv
+            or os.environ.get("SYNC_GITHUB_STATE_AT_STARTUP", False)
+        ):
             from shared.auth.github_state import GithubState
 
             self.github_state = GithubState()
