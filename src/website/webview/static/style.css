@@ -377,18 +377,30 @@ body {
   font-family: "IBM Plex Sans Condensed";
 }
 
-nav.header {
-  background-color: black;
-}
-
 nav h1,
 nav ul {
   padding: 0;
   margin: 0;
 }
 
+nav.header {
+  background-color: black;
+  padding: 0.5em;
+  display: flex;
+  align-items: center;
+}
+
 nav.header ul {
   margin-left: auto;
+}
+
+nav.header a {
+  text-decoration: none;
+}
+
+nav.header a:visited {
+  color: white;
+  margin: 0;
 }
 
 .centered-inline-list ul {
@@ -399,15 +411,6 @@ nav.header ul {
 
 .centered-inline-list > ul li {
   display: inline;
-}
-
-nav.header a {
-  text-decoration: none;
-}
-
-nav.header a:visited {
-  color: white;
-  margin: 0;
 }
 
 .page-width {
