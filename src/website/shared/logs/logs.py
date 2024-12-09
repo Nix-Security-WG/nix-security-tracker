@@ -194,7 +194,7 @@ class SuggestionActivityLog:
 
             accumulator = None
             for event in events:
-                if not event["action"].startswith("derivations."):
+                if not event["action"].startswith("derivations"):
                     if accumulator:
                         suggestion_log.append(accumulator)
                         accumulator = None
