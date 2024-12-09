@@ -186,7 +186,8 @@ class SuggestionActivityLog:
             else:
                 grouped_activity_log[suggestion_id] = [event]
 
-        # Second pass to fold repeated package actions by user
+        # Second pass to fold repeated package actions by user,
+        # needed because with htmx we're sending item-wise changes that we still want to display in bulk
         folded_activity_log = {}
         for suggestion_id, events in grouped_activity_log.items():
             suggestion_log = []
