@@ -1,5 +1,6 @@
 import logging
 import re
+import urllib.parse
 from itertools import chain
 from typing import Any
 
@@ -179,6 +180,24 @@ def is_version_affected(version_statuses: list[str]) -> Version.Status:
     return result
 
 
+def get_src_position(derivation: NixDerivation) -> str | None:
+    """
+    Get the GitHub URL pointing to the exact source file used for the evaluation of this derivation.
+    E.g. https://github.com/NixOS/nixpkgs/blob/0e8be3827d0298743ba71b91eea652d43d7dc03d/pkgs/by-name/he/hello/package.nix#L47
+    """
+    if derivation.metadata and derivation.metadata.position:
+        rev = urllib.parse.quote(derivation.parent_evaluation.commit_sha1)
+        # position is something like `/tmp/tmpfh7ff2xs/pkgs/development/python-modules/qemu/default.nix:67`
+        position_match = re.match(
+            r"/tmp/[^/]+/(.+):(\d+)", derivation.metadata.position
+        )
+        if position_match:
+            path = urllib.parse.quote(position_match.group(1))
+            linenumber = urllib.parse.quote(position_match.group(2))
+            return f"https://github.com/NixOS/nixpkgs/blob/{rev}/{path}#L{linenumber}"
+    return None
+
+
 def channel_structure(
     version_constraints: list[Version], derivations: list[NixDerivation]
 ) -> dict:
@@ -211,9 +230,17 @@ def channel_structure(
                     "major_version": None,
                     "status": None,
                     "uniform_versions": None,
+                    "src_position": None,
                     "sub_branches": dict(),
                 }
-            if not branch_name == major_channel:
+            if branch_name == major_channel:
+                packages[attribute]["versions"][major_channel]["major_version"] = (
+                    version
+                )
+                packages[attribute]["versions"][major_channel]["src_position"] = (
+                    get_src_position(derivation)
+                )
+            else:
                 packages[attribute]["versions"][major_channel]["sub_branches"][
                     branch_name
                 ] = {
@@ -221,11 +248,8 @@ def channel_structure(
                     "status": is_version_affected(
                         [v.is_affected(version) for v in version_constraints]
                     ),
+                    "src_position": get_src_position(derivation),
                 }
-            else:
-                packages[attribute]["versions"][major_channel]["major_version"] = (
-                    version
-                )
     for package_name in packages:
         for mc in packages[package_name]["versions"].keys():
             uniform_versions = True
