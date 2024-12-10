@@ -7,26 +7,31 @@
       {{ pdata.description }}
     </div>
     <ul class="channel-list">
-      {% for major_channel, val in pdata.versions %}
+      {% for major_channel, major_version in pdata.versions %}
         <li>
-          <details {% if val.uniform_versions %}open{% endif %}>
+          <details {% if major_version.uniform_versions %}open{% endif %}>
             <summary>
               <span class="branch-major">
                 <span class="branch-name">{{ major_channel }}</span>
-                <span class="version {{ val.status }}">
-                  {% if val.major_version %}
-                    {{ val.major_version }}
+                <a class="version {{ major_version.status }}" target="_blank" href="{{ major_version.src_position }}">
+                  {% if major_version.major_version %}
+                    {{ major_version.major_version }}
                   {% else %}
                     ???
                   {% endif %}
-                </span>
+                </a>
               </span>
             </summary>
             <ul class="channel-list">
-            {% for branch_name, vdata in val.sub_branches %}
+            {% for branch_name, minor_version in major_version.sub_branches %}
               <li class="branch-minor">
                 <span class="branch-name">{{ branch_name }}</span>
-                <span class="version {{ vdata.status }}">{{ vdata.version }}</span>
+                <a
+                  class="version {{ minor_version.status }}"
+                  target="_blank"
+                  href="{{ minor_version.src_position }}">
+                    {{ minor_version.version }}
+                </a>
               </li>
             {% endfor %}
             </ul>

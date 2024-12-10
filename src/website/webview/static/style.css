@@ -748,6 +748,10 @@ article .nixpkgs-packages {
   color: var(--dark-grey);
 }
 
+.nixpkgs-package .branch-minor .version {
+  color: var(--dark-grey);
+}
+
 .nixpkgs-package .branch-major {
   display: inline-flex;
   justify-content: flex-end;
@@ -762,6 +766,12 @@ article .nixpkgs-packages {
   min-width: 5em;
   display: inline-block;
   text-align: end;
+  text-decoration: none;
+  color: black;
+}
+
+.nixpkgs-package .version:hover {
+  text-decoration: underline;
 }
 
 .nixpkgs-package .version.affected {
