@@ -225,14 +225,6 @@ To upload a pre-existing database dump into the container with [`nixos-container
    EOF
    ```
 
-## Resetting the database
-
-Set up the database with known-good values to play around with:
-
-```console
-./contrib/reset.sh
-```
-
 ## Running tests
 
 Run all integration tests:
@@ -281,58 +273,6 @@ manage ingest_bulk_cve --subset 100
 
 This will take a few minutes on an average machine.
 Not passing `--subset N` will take about an hour and produce ~500 MB of data.
-
-### Nixpkgs evaluations
-
-Evaluating Nixpkgs happens on a local Git repository.
-Start with creating a checkout:
-
-```console
-manage initiate_checkout
-```
-
-The service will then listen on creation of channel entries in the database.
-These are made by the following command, which gets all recent channel branch evaluations and fetches the corresponding commits to the local Git repository:
-
-```console
-manage fetch_all_channels
-```
-
-To run an evaluation of Nixpkgs manually, for example of the `nixos-23.11` channel:
-
-```console
-./contrib/get-all-hydra-jobs.sh -I nixpkgs=channel:nixos-23.11
-```
-
-and take note of the Git revision of Nixpkgs you're evaluating.
-For a channel, this can be found in the associated `git-revision` file, for example <https://channels.nixos.org/nixos-23.11/git-revision>.
-
-The script will write to `$PWD/evaluation.jsonl`.
-This takes ~30 min on a fast machine and needs lots of RAM.
-
-To get it faster, use this temporary file:
-
-```console
-wget https://files.lahfa.xyz/private/evaluation.jsonl.zst
-zstd -d evaluation.jsonl.zst -o ./contrib/evaluation.jsonl
-```
-
-Before ingesting, call `manage runsever` and manually create a "Nix channel":
-
-```console
-manage register_channel '<null>' nixos-unstable UNSTABLE
-```
-
-The "Channel branch" field must match the parameter passed to `ingest_manual_evaluation`, which is `nixos-unstable` here.
-All other fields can have arbitrary values.
-
-Add 100 entries for one evaluation of a channel branch, and provide the commit hash of that evaluation as well as the channel branch:
-
-```console
-manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl --subset 100
-```
-
-Not passing `--subset N` will take about an hour and produce ~600 MB of data.
 
 ## Staging deployment
 
