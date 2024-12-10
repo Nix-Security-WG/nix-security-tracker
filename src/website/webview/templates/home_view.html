@@ -1,1 +1,31 @@
 {% extends "base.html" %}
+
+{% block content %}
+
+<article id="overview" class="page-width">
+  The <strong>Nixpkgs Security Tracker</strong> is a web service for managing information on <em>vulnerabilities</em> in software distributed through <em>Nixpkgs</em>. It operates on the following distinctions.
+  <ul>
+    <li>
+      <div class="category">
+        <a href="/suggestions">Untriaged suggestions</a> are automatically generated matches between a CVE and Nixpkgs attributes.
+      </div>
+    </li>
+    <li>
+      <div class="category">
+        <a href="/dismissed">Dismissed suggestions</a> are CVEs that already got classified by a human as <em>not affecting</em> Nixpkgs.
+      </div>
+    </li>
+    <li>
+      <div class="category">
+        <a href="/drafts">Draft issues</a> are matches between a CVE and Nixpkgs attributes that got selected as <em>security relevant</em>. They are elected to get published as a GitHub issue, but might need further refinement.
+      </div>
+    </li>
+    <li>
+      <div class="category">
+        <a href="/issues">Published issues</a> are a read-only mirror of GitHub issues that address one CVE each.
+      </div>
+    </li>
+  <ul>
+</article>
+
+{% endblock %}

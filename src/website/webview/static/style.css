@@ -455,6 +455,23 @@ nav.issue-pipeline ul {
   margin: 0;
 }
 
+#overview {
+  margin: auto;
+  padding: 2em;
+}
+
+#overview a {
+  font-weight: 700;
+}
+
+#overview li {
+  margin-bottom: 2em;
+}
+
+#overview .category {
+  border-radius: 1em;
+}
+
 #suggestion-list {
   display: flex;
   row-gap: 0.5rem;
@@ -965,5 +982,9 @@ button:hover {
 
   .nixpkgs-package h3 .pkgs {
     display: none;
+  }
+
+  #overview ul {
+    padding-left: 1em;
   }
 }
