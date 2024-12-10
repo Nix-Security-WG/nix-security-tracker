@@ -358,12 +358,8 @@
   --automatic-suggestion: lightblue;
   --dismissed-suggestion: #acb3c8;
   --draft-suggestion: #7bca7b;
-  --draft: green;
   --affected: #ffabab;
   --unaffected: #bfb;
-  --activity-log-automatic-suggestion: royalblue;
-  --dismissed-suggestion-status: darkgreen;
-  --draft-suggestion-status: limegreen;
 }
 
 body {
@@ -401,6 +397,10 @@ nav.header a {
 nav.header a:visited {
   color: white;
   margin: 0;
+}
+
+nav.header span {
+  color: white;
 }
 
 .centered-inline-list ul {
@@ -853,12 +853,6 @@ span.hint {
   cursor: pointer;
 }
 
-.draft-color {
-  background: var(--draft);
-  color: white;
-  cursor: pointer;
-}
-
 button:hover {
   filter: brightness(85%);
 }
@@ -919,7 +913,7 @@ button:hover {
 
 .activity-log-entry > .automatic-suggestion-text {
   font-weight: bold;
-  color: var(--activity-log-automatic-suggestion);
+  color: var(--automatic-suggestion);
 }
 
 .package-summary {
@@ -938,12 +932,12 @@ button:hover {
 
 .suggestion-status-draft {
   font-weight: bold;
-  color: var(--draft-suggestion-status);
+  color: var(--draft-suggestion);
 }
 
 .suggestion-status-dismissed {
   font-weight: bold;
-  color: var(--dismissed-suggestion-status);
+  color: var(--dismissed-suggestion);
 }
 
 /* Desktop */
