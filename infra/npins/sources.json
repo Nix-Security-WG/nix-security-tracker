@@ -1,0 +1,26 @@
+{
+  "pins": {
+    "agenix": {
+      "type": "GitRelease",
+      "repository": {
+        "type": "GitHub",
+        "owner": "ryantm",
+        "repo": "agenix"
+      },
+      "pre_releases": false,
+      "version_upper_bound": null,
+      "release_prefix": null,
+      "version": "0.15.0",
+      "revision": "564595d0ad4be7277e07fa63b5a991b3c645655d",
+      "url": "https://api.github.com/repos/ryantm/agenix/tarball/0.15.0",
+      "hash": "01dhrghwa7zw93cybvx4gnrskqk97b004nfxgsys0736823956la"
+    },
+    "nixpkgs": {
+      "type": "Channel",
+      "name": "nixpkgs-unstable",
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-24.11pre704822.85f7e662eda4/nixexprs.tar.xz",
+      "hash": "0dqlz0xqd3nn49hnx943y5sfqd7nmj25s6gi1pjm907j3vbgg47k"
+    }
+  },
+  "version": 3
+}
