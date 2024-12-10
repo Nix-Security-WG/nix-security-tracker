@@ -189,7 +189,11 @@ def get_src_position(derivation: NixDerivation) -> str | None:
         rev = urllib.parse.quote(derivation.parent_evaluation.commit_sha1)
         # position is something like `/tmp/tmpfh7ff2xs/pkgs/development/python-modules/qemu/default.nix:67`
         position_match = re.match(
-            r"/tmp/[^/]+/(.+):(\d+)", derivation.metadata.position
+            # FIXME the location of the eval store is going to be configurable in the future.
+            # https://github.com/Nix-Security-WG/nix-security-tracker/pull/451
+            # Ideally the position field is already relative to the location.
+            r"/tmp/[^/]+/(.+):(\d+)",
+            derivation.metadata.position,
         )
         if position_match:
             path = urllib.parse.quote(position_match.group(1))
