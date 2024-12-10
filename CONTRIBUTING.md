@@ -317,16 +317,8 @@ wget https://files.lahfa.xyz/private/evaluation.jsonl.zst
 zstd -d evaluation.jsonl.zst -o ./contrib/evaluation.jsonl
 ```
 
-Before ingesting, call `manage runsever` and manually create a "Nix channel":
-
-```console
-manage register_channel '<null>' nixos-unstable UNSTABLE
-```
-
-The "Channel branch" field must match the parameter passed to `ingest_manual_evaluation`, which is `nixos-unstable` here.
-All other fields can have arbitrary values.
-
-Add 100 entries for one evaluation of a channel branch, and provide the commit hash of that evaluation as well as the channel branch:
+Add 100 entries for one evaluation of a channel branch, and provide the commit hash of that evaluation as well as the channel branch.
+The channel branch is the name of the branch as returned from `manage fetch_all_channels` that we ran earlier, i.e. `nixos-unstable`, `nixos-24.11`, etc:
 
 ```console
 manage ingest_manual_evaluation d616185828194210bfa0e51980d78a8bcd1246cc nixos-unstable evaluation.jsonl --subset 100
