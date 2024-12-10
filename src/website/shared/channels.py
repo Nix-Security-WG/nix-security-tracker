@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from pgpubsub.channel import TriggerChannel
+from pgpubsub.channel import Channel, TriggerChannel
 
 from shared.models import NixDerivation
 from shared.models.cve import Container
@@ -46,3 +46,12 @@ class CVEDerivationClusterProposalChannel(TriggerChannel):
     # We don't need to lock notifications.
     # If we are caching twice the same proposal, we will just replace it.
     lock_notifications = False
+
+
+@dataclass
+class NixEvaluationCompleteChannel(Channel):
+    evaluation_id: int
+    # We do not want to want to perform twice attribute path tracking.
+    # It's expensive and the second time it's the identity mapping we are constructing.
+    # We may revisit this if needed.
+    lock_notifications = True
