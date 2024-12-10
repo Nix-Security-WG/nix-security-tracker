@@ -468,10 +468,6 @@ nav.issue-pipeline ul {
   margin-bottom: 2em;
 }
 
-#overview .category {
-  border-radius: 1em;
-}
-
 #suggestion-list {
   display: flex;
   row-gap: 0.5rem;
