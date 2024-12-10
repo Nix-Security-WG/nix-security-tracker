@@ -373,39 +373,56 @@ body {
   font-family: "IBM Plex Sans Condensed";
 }
 
+nav h1,
+nav ul {
+  padding: 0;
+  margin: 0;
+}
+
 nav.header {
   background-color: black;
   padding: 0.5em;
   display: flex;
   align-items: center;
 }
-nav h1,
-nav ul {
-  padding: 0;
-  margin: 0;
-}
+
 nav.header ul {
   margin-left: auto;
 }
-nav.header ul li {
-  margin-left: 2em;
-  display: inline;
-  flex: center;
-}
+
 nav.header a {
   text-decoration: none;
 }
+
 nav.header a:visited {
   color: white;
   margin: 0;
 }
+
 nav.header span {
   color: white;
 }
+
+.centered-inline-list ul {
+  display: flex;
+  justify-content: center;
+  gap: 2em;
+}
+
+.centered-inline-list > ul li {
+  display: inline;
+  list-style-type: none;
+}
+
+.page-width {
+  max-width: 55rem;
+  margin: auto;
+  padding: 1rem 0;
+}
+
 nav#pagination {
   background-color: unset;
   color: black;
-  justify-content: center;
 }
 
 #testing-disclaimer {
@@ -422,7 +439,7 @@ p {
 }
 
 article {
-  padding: 1em;
+  padding: 0 1em;
 }
 
 footer {
@@ -430,8 +447,6 @@ footer {
 }
 
 nav.issue-pipeline {
-  max-width: 55em;
-  margin: auto;
   padding: 0 0.5em;
 }
 
@@ -440,20 +455,7 @@ nav.issue-pipeline ul {
   margin: 0;
 }
 
-nav.issue-pipeline ul {
-  margin-left: auto;
-  display: flex;
-  justify-content: center;
-  gap: 1em;
-}
-
-nav.issue-pipeline ul li {
-  list-style-type: none;
-}
-
 #suggestion-list {
-  max-width: 55rem;
-  margin: auto;
   display: flex;
   row-gap: 0.5rem;
   padding: 0.5em;

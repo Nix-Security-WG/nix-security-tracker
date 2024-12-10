@@ -3,8 +3,8 @@
 
 {% block content %}
 
-<header>
-  <nav class="issue-pipeline">
+<header class="page-width">
+  <nav class="issue-pipeline centered-inline-list">
     <ul>
       <li><a href="/dismissed">Dismissed suggestions</a></li>
       <li><a href="/suggestions">Untriaged suggestions</a></li>
@@ -43,7 +43,7 @@ These automatic suggestions were dimissed after initial triaging.
 
 {% endif %}
 
-<div id="suggestion-list">
+<div id="suggestion-list" class="page-width">
   {% for object in object_list %}
     {% suggestion object.proposal object.payload object.activity_log %}
   {% endfor %}
