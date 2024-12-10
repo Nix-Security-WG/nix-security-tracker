@@ -13,13 +13,14 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.db.models import Avg
 
-from shared.channels import NixEvaluationChannel
+from shared.channels import NixEvaluationChannel, NixEvaluationCompleteChannel
 from shared.evaluation import (
     SyncBatchAttributeIngester,
     parse_evaluation_result,
 )
 from shared.git import GitRepo
 from shared.models import NixDerivation, NixEvaluation
+from shared.models.linkage import DerivationClusterProposalLink
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +241,14 @@ async def evaluation_entrypoint(
                         state=NixEvaluation.EvaluationState.COMPLETED,
                         elapsed=elapsed,
                     )
+
+                    # Notify that we have a new evaluation ready and
+                    # any listeners should now proceed to an global update of old derivations
+                    # via attribute path.
+                    pgpubsub.notify(
+                        'shared.channels.NixEvaluationCompleteChannel',
+                        model_id=evaluation.pk,
+                    )
     except Exception as e:
         elapsed = time.time() - start
         logger.exception(
@@ -279,3 +288,29 @@ def run_evaluation_job(old: NixEvaluation, new: NixEvaluation) -> None:
             new,
         )
     )
+
+def swap_derivations_based_on_attrpath(derivation_ids: list[int]):
+    new_derivation_id_subquery = """
+    SELECT new_derivation.id
+        FROM shared_nixderivation AS old_derivation
+        JOIN shared_nixderivation AS new_derivation
+          ON old_derivation.attribute = new_derivation.attribute
+    WHERE 
+        DerivationClusterProposalLink.derivation_id = old_derivation.id
+        AND new_derivation.parent_evaluation_id = %s
+    """
+
+
+@pgpubsub.listener(NixEvaluationCompleteChannel)
+def run_attribute_tracking_job(evaluation_id: int) -> None:
+    # Our objective is to update:
+    # - pending suggestions
+    # - accepted suggestions
+    # TODO: in the future, we should not update "mitigated" issues so we can easily revisit _which_ derivation was the last one.
+
+    for proposal in CVEDerivationClusterProposal.objects.filter(status__in=(CVEDerivationClusterProposal.Status.PENDING, CVEDerivationClusterProposal.ACCEPTED)).iterator():
+        # Update all proposal
+        swap_derivations_based_on_attrpath()
+
+    # TODO: Update all cached variants as well.
+
