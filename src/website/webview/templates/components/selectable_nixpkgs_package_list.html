@@ -3,6 +3,7 @@
 <div class="nixpkgs-packages">
   {% for attribute, pdata in packages.items %}
     <div class="nixpkgs-package-container">
+      {% if user_is_allowed_to_select %}
       <input
         type="checkbox"
         name="derivation_ids"
@@ -12,6 +13,7 @@
         hx-swap="none"
         hx-indicator="this .state-change-indicator"
       />
+      {% endif %}
       {% nixpkgs_package attribute pdata %}
     </div>
   {% endfor %}
