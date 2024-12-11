@@ -58,7 +58,12 @@ in
   services.web-security-tracker = {
     enable = true;
     domain = "sectracker.nixpkgs.lahfa.xyz";
-    settings.DEBUG = true;
+    settings = {
+      DEBUG = true;
+      GH_ORGANIZATION = "Nix-Security-WG";
+      GH_SECURITY_TEAM = "sectracker-dev-security";
+      GH_COMMITTERS_TEAM = "sectracker-dev-nixpkgs-committers";
+    };
     secrets = {
       SECRET_KEY = config.age.secrets.django-secret-key.path;
       GH_CLIENT_ID = config.age.secrets.gh-client.path;

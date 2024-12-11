@@ -147,9 +147,6 @@ in
         LOCAL_NIXPKGS_CHECKOUT = mkDefault "/var/lib/web-security-tracker/nixpkgs-repo";
         CVE_CACHE_DIR = mkDefault "/var/lib/web-security-tracker/cve-cache";
         ACCOUNT_DEFAULT_HTTP_PROTOCOL = mkDefault (with cfg; if production then "https" else "http");
-        GH_ORGANIZATION = "Nix-Security-WG";
-        GH_SECURITY_TEAM = "sectracker-dev-security";
-        GH_COMMITTERS_TEAM = "sectracker-dev-nixpkgs-committers";
       };
 
       nginx.enable = true;
