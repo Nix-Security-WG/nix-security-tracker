@@ -63,6 +63,7 @@ in
       GH_ORGANIZATION = "Nix-Security-WG";
       GH_SECURITY_TEAM = "sectracker-dev-security";
       GH_COMMITTERS_TEAM = "sectracker-dev-nixpkgs-committers";
+      GH_ISSUES_REPO = "sectracker-dev-issues";
     };
     secrets = {
       SECRET_KEY = config.age.secrets.django-secret-key.path;
