@@ -43,30 +43,6 @@
         padding-bottom: 0;
     }
 
-    nav.pagination {
-        background-color: white;
-        justify-content: center;
-        display: flex;
-        gap: 10px;
-    }
-
-    nav.pagination ul{
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    nav.pagination a {
-        color: black;
-    }
-
-    nav.pagination .current {
-        font-weight: bold;
-    }
-
-    nav.pagination li.index + li.index {
-        margin-left: 0.1em;
-    }
-
     .selectable-item {
         padding: 10px;
         border: 1px solid #ccc;
@@ -202,7 +178,7 @@
                     />
                 </div>
             </div>
-            <nav class="pagination cve">
+            <nav class="pagination centered-inline-list cve">
                 <ul>
                     {% for page_number in cve_paginator_range %}
                     <li class="index">
@@ -314,7 +290,7 @@
                     />
                 </div>
             </div>
-            <nav class="pagination pkg">
+            <nav class="pagination centered-inline-list pkg">
                 <ul>
                     {% for page_number in pkg_paginator_range %}
                     <li class="index">
