@@ -57,6 +57,8 @@
             <span class="suggestion-status-draft">accepted as draft</span>
           {% elif "rejected" in log_entry.status_value %}
             <span class="suggestion-status-dismissed">dismissed</span>
+          {% elif "pending" in log_entry.status_value %}
+            <span class="suggestion-status-automatic">marked as untriaged</span>
           {% else %}
             {{ log_entry.action }}
           {% endif %}

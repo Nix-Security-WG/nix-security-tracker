@@ -963,6 +963,11 @@ button:hover {
   color: var(--dismissed-suggestion);
 }
 
+.suggestion-status-automatic {
+  font-weight: bold;
+  color: var(--automatic-suggestion);
+}
+
 /* Desktop */
 @media (min-width: 50em) {
 }
