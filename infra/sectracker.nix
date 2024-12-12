@@ -65,7 +65,7 @@ in
       GH_APP_PRIVATE_KEY = config.age.secrets.gh-app-private-key.path;
       GH_APP_INSTALLATION_ID = config.age.secrets.gh-app-installation-id.path;
     };
-    maxJobProcessors = 6;
+    maxJobProcessors = 1;
   };
 
   age.secrets = {
