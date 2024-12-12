@@ -26,6 +26,8 @@ from shared.models import (
 if typing.TYPE_CHECKING:
     from django.db.models.query import ValuesQuerySet
 
+from django.db.models.functions import Concat, JSONObject, Replace
+
 
 class ActivityLogEntry(TypedDict):
     action: str
@@ -42,21 +44,20 @@ class SuggestionActivityLog:
     Example of queryset output:
     ```
     [{'action': 'derivations.remove',
-      'package_count': 7,
-      'package_names': ['apparmor-kernel-patches-3.1.6',
-                        'kernelshark-2.2.1',
-                        'linux-gpib-kernel-4.3.6',
-                        'linux-kernel-latest-htmldocs-6.9.3',
-                        'zfs-kernel-2.1.15-6.1.92',
-                        'zfs-kernel-2.2.4-6.1.92',
-                        'zfs-kernel-2.2.4-6.8.11'],
+      'package_count': 6,
+      'package_names': ['{"name": "onnxruntime-1.15.1", "attribute": "onnxruntime"}',
+                        '{"name": "python3.10-onnx-1.14.1", "attribute": "python310Packages.onnx"}',
+                        '{"name": "python3.10-onnxconverter-common-1.14.0", "attribute": "python310Packages.onnxconverter-common"}',
+                        '{"name": "python3.10-onnxmltools-1.11.2", "attribute": "python310Packages.onnxmltools"}',
+                        '{"name": "python3.10-onnxruntime-1.15.1", "attribute": "python310Packages.onnxruntime"}',
+                        '{"name": "python3.10-onnxruntime-tools-1.7.0", "attribute": "python310Packages.onnxruntime-tools"}'],
       'status_value': 'NOT_A_STATUS_CHANGE',
       'suggestion_id': 121,
       'timestamp': datetime.datetime(2024, 12, 6, 11, 59, 6, 668316, tzinfo=datetime.timezone.utc),
       'username': 'ANONYMOUS'},
      {'action': 'derivations.remove',
       'package_count': 1,
-      'package_names': ['SPIRV-LLVM-Translator-16.0.0'],
+      'package_names': ['{"name": "perl5.36.3-GSSAPI-0.28", "attribute": "perl536Packages.GSSAPI"}'],
       'status_value': 'NOT_A_STATUS_CHANGE',
       'suggestion_id': 11,
       'timestamp': datetime.datetime(2024, 12, 5, 16, 15, 7, 899037, tzinfo=datetime.timezone.utc),
@@ -163,7 +164,17 @@ class SuggestionActivityLog:
                 timestamp=F("pgh_created_at"),
                 action=F("pgh_label"),
                 status_value=Value("NOT_A_STATUS_CHANGE"),
-                package_names=ArrayAgg("derivation__name", distinct=True),
+                package_names=ArrayAgg(
+                    JSONObject(
+                        name="derivation__name",
+                        attribute=Replace(
+                            "derivation__attribute",  # type: ignore
+                            Concat(Value("."), "derivation__system"),  # type: ignore
+                            Value(""),
+                        ),
+                    ),
+                    distinct=True,
+                ),
                 package_count=Count("derivation__name", distinct=True),
             )
             .values(*fields)
