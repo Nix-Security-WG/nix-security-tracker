@@ -48,7 +48,10 @@ in
   zramSwap.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings.PasswordAuthentication = false;
+  };
   services.qemuGuest.enable = true;
 
   users.mutableUsers = false;
@@ -78,8 +81,31 @@ in
     zip
   ];
 
+  # Lifted from https://github.com/NixOS/nixos-wiki-infra/blob/ac9dfe854f748bf8acedf394750d404aaa8dd075/targets/nixos-wiki.nixos.org/configuration.nix#L40
+  # and https://wiki.nixos.org/wiki/Install_NixOS_on_Hetzner_Cloud#Network_configuration
+  systemd.network.enable = true;
+  systemd.network.networks."10-wan" = {
+    matchConfig.MACAddress = "96:00:03:d9:7c:85";
+    address = [
+      "188.245.41.195/32"
+      "2a01:4f8:1c1b:b87b::1/64"
+    ];
+    routes = [
+      # create default routes for both IPv6 and IPv4
+      { Gateway = "fe80::1"; }
+      # or when the gateway is not on the same network
+      {
+        Gateway = "172.31.1.1";
+        GatewayOnLink = true;
+      }
+    ];
+    # make the routes on this interface a dependency for network-online.target
+    linkConfig.RequiredForOnline = "routable";
+  };
+
   services.prometheus.exporters.node = {
     enable = true;
+    openFirewall = true;
   };
 
   system.stateVersion = "24.05";
