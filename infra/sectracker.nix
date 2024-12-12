@@ -45,8 +45,7 @@ in
     '';
   };
   security.acme.acceptTerms = true;
-  #TODO: Change this to a nixos.org email
-  security.acme.defaults.email = "stf@dgrig.com";
+  security.acme.defaults.email = "infra@nixos.org";
   networking.firewall.allowedTCPPorts = [
     80
     443
@@ -54,8 +53,7 @@ in
   services.web-security-tracker = {
     enable = true;
     production = true;
-    #TODO: Change this to a nixos.org domain once we know which one we'll use
-    domain = "stf.dgrig.com";
+    domain = "tracker.security.nixos.org";
     settings.DEBUG = false;
     secrets = {
       SECRET_KEY = config.age.secrets.django-secret-key.path;
