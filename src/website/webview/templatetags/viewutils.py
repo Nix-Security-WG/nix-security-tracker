@@ -1,8 +1,10 @@
 import datetime
+import json
 from typing import Any, TypedDict, cast
 
 from django import template
 from django.template.context import Context
+from shared.listeners.cache_suggestions import parse_drv_name
 from shared.models.cve import AffectedProduct
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
@@ -19,6 +21,11 @@ class VersionInfo(TypedDict):
 
 class Package(TypedDict):
     items: dict[str, str | list[str] | VersionInfo]
+
+
+class DerivationFields(TypedDict):
+    attribute: str
+    name: str
 
 
 class PackageContext(TypedDict):
@@ -85,6 +92,14 @@ def last_entry(log: list) -> Any | None:
         return next(reversed(log))
     except StopIteration:
         return None
+
+
+@register.filter
+def versioned_package_name(package_entry: str) -> str:
+    fields: DerivationFields = json.loads(package_entry)
+
+    _, version = parse_drv_name(fields["name"])
+    return f"pkgs.{fields["attribute"]} {version}"
 
 
 @register.inclusion_tag("components/suggestion.html", takes_context=True)

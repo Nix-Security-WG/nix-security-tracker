@@ -38,7 +38,7 @@
             removed
           {% endif %}
           {% if log_entry.package_count == 1 %}
-            package <strong>{{ log_entry.package_names.0 }}</strong>
+            package <strong>{{ log_entry.package_names.0|versioned_package_name }}</strong>
           {% else %}
             <details class="package-summary">
               <summary class="package-summary-title">
@@ -46,7 +46,7 @@
               </summary>
               <ul class="package-summary-listing">
                 {% for packagename in log_entry.package_names %}
-                  <li>{{ packagename }}</li>
+                  <li>{{ packagename|versioned_package_name }}</li>
                 {% endfor %}
               </ul>
             </details>
