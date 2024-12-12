@@ -105,7 +105,7 @@ def versioned_package_name(package_entry: str) -> str:
 
 
 def is_admin(user: Any) -> bool:
-    if user is None:
+    if user is None or user.is_anonymous:
         return False
     else:
         return isadmin(user)
@@ -113,7 +113,7 @@ def is_admin(user: Any) -> bool:
 
 @register.filter
 def is_maintainer(user: Any) -> bool:
-    if user is None:
+    if user is None or user.is_anonymous:
         return False
     else:
         return ismaintainer(user)
