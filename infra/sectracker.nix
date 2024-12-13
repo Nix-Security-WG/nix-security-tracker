@@ -54,7 +54,14 @@ in
     enable = true;
     production = true;
     domain = "tracker.security.nixos.org";
-    settings.DEBUG = false;
+    settings = {
+      DEBUG = false;
+      GH_ORGANIZATION = "Nix-Security-WG";
+      GH_SECURITY_TEAM = "sectracker-dev-security";
+      GH_COMMITTERS_TEAM = "sectracker-dev-nixpkgs-committers";
+      GH_ISSUES_REPO = "sectracker-dev-issues";
+    };
+
     secrets = {
       SECRET_KEY = config.age.secrets.django-secret-key.path;
       GH_CLIENT_ID = config.age.secrets.gh-client.path;

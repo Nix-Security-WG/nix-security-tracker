@@ -26,8 +26,8 @@ If in the future we need to create more VMs and do it in a declarative way, we c
 ## Secrets
 
 Secrets are managed using [Agenix](https://github.com/ryantm/agenix).
-Agenix decrypts secrets on the host by using its [OpenSSH host keys](https://github.com/ryantm/agenix?tab=readme-ov-file#ageidentitypaths).
-Reading the [Agenix tutorial](https://github.com/ryantm/agenix?tab=readme-ov-file#tutorial) is recommended.
+Agenix decrypts secrets on the host by using its [OpenSSH host keys](https://github.com/ryantm/agenix#ageidentitypaths).
+Reading the [Agenix tutorial](https://github.com/ryantm/agenix#tutorial) is recommended.
 
 ### Managing secrets
 
