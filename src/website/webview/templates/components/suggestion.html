@@ -42,11 +42,12 @@
     {% if status_filter == "rejected" %}
       {% nixpkgs_package_list cached_suggestion.packages %}
     {% else %}
-      {% selectable_nixpkgs_package_list cached_suggestion.packages %}
+      {% selectable_nixpkgs_package_list cached_suggestion.packages user|is_maintainer_or_admin %}
     {% endif %}
 
     {% maintainers_list cached_suggestion.packages %}
 
+    {% if user|is_maintainer_or_admin %}
     <div class="change-issue-state">
       {% if status_filter == "pending" %}
         <button type="submit" name="new_status" value="accepted" class="draft-color">
@@ -76,6 +77,7 @@
         </button>
       {% endif %}
     </div>
+    {% endif %}
   </form>
 </article>
 
