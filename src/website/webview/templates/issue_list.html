@@ -1,6 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<header class="page-width">
+  <nav class="issue-pipeline centered-inline-list">
+    <ul>
+      <li><a href="/dismissed">Dismissed suggestions</a></li>
+      <li><a href="/suggestions">Untriaged suggestions</a></li>
+      <li><a href="/drafts">Draft issues</a></li>
+      <li><a href="/issues">Published issues</a></li>
+    </ul>
+  </nav>
+</header>
+
 <ul>
     {% for object in object_list %}
       <li><a href="{% url 'webview:issue_detail' object.code %}">{{ object.code }}</a></li>
