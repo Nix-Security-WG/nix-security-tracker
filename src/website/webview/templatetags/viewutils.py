@@ -4,7 +4,6 @@ from typing import Any, TypedDict, cast
 
 from django import template
 from django.template.context import Context
-from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_suggestions import parse_drv_name
 from shared.models.cve import AffectedProduct
 from shared.models.linkage import (
@@ -40,7 +39,6 @@ class PackageList(TypedDict):
 
 class PackageListContext(TypedDict):
     packages: PackageList
-    user_is_allowed_to_select: bool
 
 
 class AffectedContext(TypedDict):
@@ -104,26 +102,6 @@ def versioned_package_name(package_entry: str) -> str:
     return f"pkgs.{fields["attribute"]} {version}"
 
 
-def is_admin(user: Any) -> bool:
-    if user is None:
-        return False
-    else:
-        return isadmin(user)
-
-
-@register.filter
-def is_maintainer(user: Any) -> bool:
-    if user is None:
-        return False
-    else:
-        return ismaintainer(user)
-
-
-@register.filter
-def is_maintainer_or_admin(user: Any) -> bool:
-    return is_maintainer(user) or is_admin(user)
-
-
 @register.inclusion_tag("components/suggestion.html", takes_context=True)
 def suggestion(
     context: Context,
@@ -137,7 +115,6 @@ def suggestion(
         "activity_log": activity_log,
         "status_filter": context["status_filter"],
         "page_obj": context["page_obj"],
-        "user": context["user"],
     }
 
 
@@ -147,9 +124,7 @@ def nixpkgs_package(attribute_name: str, pdata: Package) -> PackageContext:
 
 
 @register.inclusion_tag("components/selectable_nixpkgs_package_list.html")
-def selectable_nixpkgs_package_list(
-    packages: PackageList, user_is_allowed_to_select: bool
-) -> PackageListContext:
+def selectable_nixpkgs_package_list(packages: PackageList) -> PackageListContext:
     """Renders the nixpkgs package list with additional checkboxes to have packages selectable.
 
     Args:
@@ -161,10 +136,7 @@ def selectable_nixpkgs_package_list(
     Example:
         {% package_list package_dict %}
     """
-    return {
-        "packages": packages,
-        "user_is_allowed_to_select": user_is_allowed_to_select,
-    }
+    return {"packages": packages}
 
 
 @register.inclusion_tag("components/nixpkgs_package_list.html")
@@ -180,10 +152,7 @@ def nixpkgs_package_list(packages: PackageList) -> PackageListContext:
     Example:
         {% package_list package_dict %}
     """
-    return {
-        "packages": packages,
-        "user_is_allowed_to_select": False,
-    }
+    return {"packages": packages}
 
 
 @register.inclusion_tag("components/affected_products.html")
