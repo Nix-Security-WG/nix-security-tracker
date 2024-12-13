@@ -40,7 +40,6 @@ class PackageList(TypedDict):
 
 class PackageListContext(TypedDict):
     packages: PackageList
-    user_is_allowed_to_select: bool
 
 
 class AffectedContext(TypedDict):
@@ -147,9 +146,7 @@ def nixpkgs_package(attribute_name: str, pdata: Package) -> PackageContext:
 
 
 @register.inclusion_tag("components/selectable_nixpkgs_package_list.html")
-def selectable_nixpkgs_package_list(
-    packages: PackageList, user_is_allowed_to_select: bool
-) -> PackageListContext:
+def selectable_nixpkgs_package_list(packages: PackageList) -> PackageListContext:
     """Renders the nixpkgs package list with additional checkboxes to have packages selectable.
 
     Args:
@@ -163,7 +160,6 @@ def selectable_nixpkgs_package_list(
     """
     return {
         "packages": packages,
-        "user_is_allowed_to_select": user_is_allowed_to_select,
     }
 
 
@@ -182,7 +178,6 @@ def nixpkgs_package_list(packages: PackageList) -> PackageListContext:
     """
     return {
         "packages": packages,
-        "user_is_allowed_to_select": False,
     }
 
 

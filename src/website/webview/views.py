@@ -543,9 +543,9 @@ class SuggestionListView(ListView):
         new_status = request.POST.get("new_status")
         current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-        activity_log = SuggestionActivityLog().get_queryset(
-            suggestion_ids=[suggestion_id]
-        )
+        activity_log = SuggestionActivityLog().get_dict(suggestion_ids=[suggestion.pk])[
+            suggestion.pk
+        ]
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id
         )
@@ -611,6 +611,7 @@ class SuggestionListView(ListView):
                         "suggestion": suggestion,
                         "activity_log": activity_log,
                         "status_filter": self.status_filter,
+                        "user": request.user,
                         # This only matters in a non-JS environment
                         "page_obj": None,
                         "csrf_token": get_token(request),

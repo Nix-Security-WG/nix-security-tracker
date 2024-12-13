@@ -39,10 +39,14 @@
 
     {% affected_products cached_suggestion.affected_products %}
 
-    {% if status_filter == "rejected" %}
-      {% nixpkgs_package_list cached_suggestion.packages %}
+    {% if user|is_maintainer_or_admin %}
+      {% if status_filter == "rejected" %}
+        {% nixpkgs_package_list cached_suggestion.packages %}
+      {% else %}
+        {% selectable_nixpkgs_package_list cached_suggestion.packages %}
+      {% endif %}
     {% else %}
-      {% selectable_nixpkgs_package_list cached_suggestion.packages user|is_maintainer_or_admin %}
+      {% nixpkgs_package_list cached_suggestion.packages %}
     {% endif %}
 
     {% maintainers_list cached_suggestion.packages %}
