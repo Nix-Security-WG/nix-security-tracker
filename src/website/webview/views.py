@@ -31,18 +31,12 @@ from django.db.models import (
 )
 from django.db.models.manager import BaseManager
 from django.db.models.query import QuerySet
-from django.http import (
-    HttpRequest,
-    HttpResponse,
-    HttpResponseForbidden,
-    HttpResponseRedirect,
-)
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
-from shared.auth import isadmin, ismaintainer
 from shared.models import (
     AffectedProduct,
     Container,
@@ -531,11 +525,6 @@ class SuggestionListView(ListView):
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not request.user or not (
-            isadmin(request.user) or ismaintainer(request.user)
-        ):
-            return HttpResponseForbidden()
-
         # We want to provide graceful fallback for important workflows, when users have JavaScript disabled
         js_enabled: bool = "no-js" not in request.POST
         undo_status_change: bool = "undo-status-change" in request.POST
