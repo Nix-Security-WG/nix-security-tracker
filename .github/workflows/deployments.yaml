@@ -23,5 +23,5 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       - name: Trust staging server public SSH host keys
-        run: cat ./staging/staging_host_keys >> ~/.ssh/known_hosts
+        run: cat ./infra/host_keys >> ~/.ssh/known_hosts
       - run: nix-shell default.nix -A ci --run deploy

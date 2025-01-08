@@ -279,12 +279,12 @@ Not passing `--subset N` will take about an hour and produce ~500 MB of data.
 If you have your SSH keys set up on the staging environment (and can connect through IPv6), you can deploy the service with:
 
 ```console
-./staging/deploy.sh
+./infra/deploy.sh
 ```
 
 ### Adding SSH keys
 
-Add your SSH keys to `./staging/configuration.nix` and let existing owners deploy them.
+Add your SSH keys to `./infra/configuration.nix` and let existing owners deploy them.
 
 ## Operators guidance
 
@@ -295,5 +295,3 @@ Sentry-like collectors are endpoints where we ship error information from the Py
 Collectors are configured using [a DSN, i.e. a data source name.](https://docs.sentry.io/concepts/key-terms/dsn-explainer/) in Sentry parlance, this is where events are sent to.
 
 You can set `GLITCHTIP_DSN` as a credential secret with a DSN and this will connect to a Sentry-like endpoint via your DSN.
-
-We don't use Sentry but we run GlitchTip on staging.
