@@ -29,7 +29,7 @@ provider "hcloud" {
 resource "hcloud_server" "stfmaster" {
   name        = "security-tracker-1"
   image       = "debian-12"
-  server_type = "cx32"
+  server_type = "cpx41"
   public_net {
     ipv4_enabled = true
     ipv6_enabled = true
