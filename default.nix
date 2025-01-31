@@ -18,7 +18,7 @@ rec {
   overlays = [ overlay ];
   package = pkgs.web-security-tracker;
   module = import ./nix/web-security-tracker.nix;
-  dev-container = import ./staging/container.nix;
+  dev-container = import ./infra/container.nix;
   dev-setup = import ./nix/dev-setup.nix;
 
   pre-commit-check = pkgs.pre-commit-hooks {
@@ -98,20 +98,10 @@ rec {
     let
       deploy = pkgs.writeShellApplication {
         name = "deploy";
-        text = builtins.readFile ./staging/deploy.sh;
+        text = builtins.readFile ./infra/deploy.sh;
         runtimeInputs = with pkgs; [
           nixos-rebuild
           coreutils
-        ];
-        # TODO: satisfy shellcheck
-        checkPhase = "";
-      };
-      dump-database = pkgs.writeShellApplication {
-        name = "dump-database";
-        text = builtins.readFile ./staging/dump-database.sh;
-        runtimeInputs = with pkgs; [
-          awscli
-          pv
         ];
         # TODO: satisfy shellcheck
         checkPhase = "";
@@ -121,7 +111,6 @@ rec {
       packages = [
         pkgs.npins
         deploy
-        dump-database
       ];
     };
 
@@ -130,7 +119,7 @@ rec {
       manage = pkgs.writeScriptBin "manage" ''
         ${python3}/bin/python ${toString ./src/website/manage.py} $@
       '';
-      deploymentSources = import ./staging/npins;
+      deploymentSources = import ./infra/npins;
     in
     pkgs.mkShellNoCC {
       env = {
