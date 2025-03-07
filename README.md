@@ -1,6 +1,9 @@
 # Nixpkgs Security Tracker
 
-The [**Nixpkgs Security Tracker**](https://tracker.security.nixos.org/) is a web service for managing information on vulnerabilities in software distributed through Nixpkgs.
+The **Nixpkgs Security Tracker** is a web service for managing information on vulnerabilities in software distributed through Nixpkgs.
+
+This software is currently in prototype stage.
+A demo deployment is available at <https://tracker.security.nixos.org>.
 
 This tool is eventually supposed to be used by the Nixpkgs community to effectively work through security advisories.
 We identified three interest groups that the tool is going to address:
