@@ -29,6 +29,14 @@ in
 
     src = final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src/website;
 
+    postPatch = ''
+      cat <<EOF >> tracker/settings.py
+
+      APP_VERSION = "${version}"
+      APP_REVISION = "${(builtins.fetchGit { url = ../.; shallow = true; }).rev}"
+      EOF
+    '';
+
     propagatedBuildInputs = with python3.pkgs; [
       # Nix python packages
       dataclass-wizard

@@ -78,8 +78,19 @@
 
     <footer>
       <p>
-        <a href="https://github.com/Nix-Security-WG/nix-security-tracker">Nixpkgs Security Tracker</a> is part of a project funded by the
+        <a href="https://github.com/Nix-Security-WG/nix-security-tracker">Nixpkgs Security Tracker</a>
+        is part of a project funded by the
         <a href="https://sovereigntechfund.de/en/">Sovereign Tech Fund</a>.
+      </p>
+      <p>
+        {% if app_version %}
+          Running version {{ app_version }},
+          <a href="https://github.com/Nix-Security-WG/nix-security-tracker/commit/{{ app_revision }}">
+            {{ app_revision|slice:":20" }}
+          </a>
+        {% else %}
+          No version information available.
+        {% endif %}
       </p>
     </footer>
     <script src="/static/htmx.min.js"></script>
