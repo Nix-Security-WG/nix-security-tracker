@@ -5,8 +5,11 @@ from itertools import chain
 from typing import Any, cast
 
 from django.core.validators import RegexValidator
+from django.urls import reverse
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
+from shared.models.cve import Description
+from shared.utils import get_gh, create_gh_issue
 
 if typing.TYPE_CHECKING:
     # prevent typecheck from failing on some historic type
@@ -540,6 +543,7 @@ class SuggestionListView(ListView):
         undo_status_change: bool = "undo-status-change" in request.POST
         suggestion_id = request.POST.get("suggestion_id")
         new_status = request.POST.get("new_status")
+        publish_issue = "publish_issue" in request.POST
         current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
         activity_log = (
@@ -600,6 +604,14 @@ class SuggestionListView(ListView):
 
             if old_status != new_status:
                 suggestion.save()
+
+        if publish_issue:
+            assert suggestion.status != CVEDerivationClusterProposal.Status.REJECTED
+            issue = suggestion.create_nixpkgs_issue()
+            tracker_issue_link = request.build_absolute_uri(reverse('issue_detail', args=[issue.code]))
+
+            conn = get_gh()
+            create_gh_issue(conn, cached_suggestion, tracker_issue_link)
 
         if js_enabled:
             # Clicking on the undo button will return the original suggestion
