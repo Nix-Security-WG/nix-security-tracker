@@ -65,6 +65,10 @@ class DerivationClusterProposalLink(models.Model):
 
     derivation = models.ForeignKey(NixDerivation, on_delete=models.CASCADE)
 
+    # Whether this M2M is obsolete with regards to the existence of a younger NixEvaluation containing
+    # a potentially newer derivation.
+    outdated = models.BooleanField()
+
     # TODO: how to design the integrity here?
     # we probably want to add a fancy check here.
     provenance_flags = models.IntegerField()
