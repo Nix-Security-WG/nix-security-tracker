@@ -546,8 +546,10 @@ class SuggestionListView(ListView):
         new_status = request.POST.get("new_status")
         current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-        activity_log = SuggestionActivityLog().get_dict(suggestion_ids=[suggestion.pk]).get(
-            suggestion.pk, []
+        activity_log = (
+            SuggestionActivityLog()
+            .get_dict(suggestion_ids=[suggestion.pk])
+            .get(suggestion.pk, [])
         )
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id
@@ -612,8 +614,12 @@ class SuggestionListView(ListView):
         if status_change and new_status == "published":
             with transaction.atomic():
                 tracker_issue = suggestion.create_nixpkgs_issue()
-                tracker_issue_link = request.build_absolute_uri(reverse('webview:issue_detail', args=[tracker_issue.code]))
-                gh_issue_link = create_gh_issue(cached_suggestion, tracker_issue_link).html_url
+                tracker_issue_link = request.build_absolute_uri(
+                    reverse("webview:issue_detail", args=[tracker_issue.code])
+                )
+                gh_issue_link = create_gh_issue(
+                    cached_suggestion, tracker_issue_link
+                ).html_url
                 suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
                 suggestion.save()
 

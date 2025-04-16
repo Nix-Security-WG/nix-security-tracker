@@ -8,6 +8,7 @@ import shared.models.cached
 from shared.models.cve import CveRecord, NixpkgsIssue, Description, IssueStatus
 from shared.models.nix_evaluation import NixDerivation, TimeStampMixin
 
+
 def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
 
@@ -51,15 +52,16 @@ class CVEDerivationClusterProposal(TimeStampMixin):
             # By default we set the status to affected; a human might later
             # change the status if it turns out we're not affected in the
             # end.
-            status = IssueStatus.AFFECTED,
-            description = Description.objects.create(
-                value = self.cached.payload['description']
+            status=IssueStatus.AFFECTED,
+            description=Description.objects.create(
+                value=self.cached.payload["description"]
             ),
         )
         issue.cve.add(self.cve)
         issue.derivations.set(self.derivations.all())
         issue.save()
         return issue
+
 
 class ProvenanceFlags(IntFlag, boundary=STRICT):
     PACKAGE_NAME_MATCH = auto()
