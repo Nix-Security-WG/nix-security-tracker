@@ -558,7 +558,7 @@ class SuggestionListView(ListView):
         # issue in the response. We need to pass the issue's link to the
         # component, which is thus stored here (only when `status_change` is
         # true and `new_status = "published"`).
-        issue_link = None
+        gh_issue_link = None
 
         # We only have to modify derivations when they are editable
         if not (
@@ -614,10 +614,9 @@ class SuggestionListView(ListView):
             with transaction.atomic():
                 tracker_issue = suggestion.create_nixpkgs_issue()
                 tracker_issue_link = request.build_absolute_uri(reverse('webview:issue_detail', args=[tracker_issue.code]))
-                gh_issue = create_gh_issue(cached_suggestion, tracker_issue_link)
+                gh_issue_link = create_gh_issue(cached_suggestion, tracker_issue_link).html_url
                 suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
                 suggestion.save()
-                issue_link = gh_issue.html_url
 
         if js_enabled:
             # Clicking on the undo button will return the original suggestion
@@ -645,7 +644,7 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
-                        "issue_link": issue_link,
+                        "issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },
                 )

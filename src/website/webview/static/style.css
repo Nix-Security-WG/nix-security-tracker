@@ -585,6 +585,10 @@ article .suggestion.state-changed .state-identifier.accepted {
   background: var(--draft-suggestion);
 }
 
+article .suggestion.state-changed .state-identifier.published {
+  background: var(--draft-suggestion);
+}
+
 article .suggestion.state-changed h2 {
   flex-grow: 1;
   align-self: center;
@@ -595,6 +599,10 @@ article .suggestion.state-changed h2 {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+}
+
+article .suggestion.state-changed h2 .published{
+  color: var(--draft-suggestion);
 }
 
 article .suggestion.state-changed h2 .accepted {
