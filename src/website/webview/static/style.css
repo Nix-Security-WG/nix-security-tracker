@@ -601,7 +601,7 @@ article .suggestion.state-changed h2 {
   white-space: nowrap;
 }
 
-article .suggestion.state-changed h2 .published{
+article .suggestion.state-changed h2 .published {
   color: var(--draft-suggestion);
 }
 
