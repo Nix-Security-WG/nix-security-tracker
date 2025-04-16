@@ -4,10 +4,10 @@ import pghistory
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from shared.models import Description, IssueStatus
 import shared.models.cached
 from shared.models.cve import CveRecord, NixpkgsIssue
 from shared.models.nix_evaluation import NixDerivation, TimeStampMixin
-
 
 def text_length(choices: type[models.TextChoices]) -> int:
     return max(map(len, choices.values))
@@ -53,16 +53,13 @@ class CVEDerivationClusterProposal(TimeStampMixin):
             # end.
             status = IssueStatus.AFFECTED,
             description = Description.objects.create(
-                value=cached_suggestion.payload['description']
+                value = self.description
             ),
         )
-        issue.cve = suggestion.cve
-        issue.derivations = suggestion.derivations
-        # issue.cve.set(CveRecord.objects.filter(id__in=cached_suggestion.payload['cve_id']))
-        # issue.derivations.set(
-        #     NixDerivation.objects.filter(id__in=suggestio)
-        # )
+        issue.cve = self.cve
+        issue.derivations = self.derivations
         issue.save()
+        return issue
 
 class ProvenanceFlags(IntFlag, boundary=STRICT):
     PACKAGE_NAME_MATCH = auto()
