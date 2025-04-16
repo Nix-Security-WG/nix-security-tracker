@@ -67,7 +67,7 @@ def create_gh_issue(cached_suggestion: CachedSuggestions, tracker_issue_uri:
 
     if severity:
         metric = severity['metric']
-        f"""
+        details = f"""
 <details>
 <summary>CVSS {metric['vectorString']}</summary>
 
