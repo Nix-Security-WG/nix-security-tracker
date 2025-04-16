@@ -53,11 +53,11 @@ class CVEDerivationClusterProposal(TimeStampMixin):
             # end.
             status = IssueStatus.AFFECTED,
             description = Description.objects.create(
-                value = self.description
+                value = self.cached.payload['description']
             ),
         )
-        issue.cve = self.cve
-        issue.derivations = self.derivations
+        issue.cve.add(self.cve)
+        issue.derivations.set(self.derivations.all())
         issue.save()
         return issue
 
