@@ -643,7 +643,7 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
-                        "issue_link": gh_issue_link,
+                        "gh_issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },
                 )
