@@ -23,6 +23,7 @@ class CVEDerivationClusterProposal(TimeStampMixin):
         PENDING = "pending", _("pending")
         REJECTED = "rejected", _("rejected")
         ACCEPTED = "accepted", _("accepted")
+        PUBLISHED = "published", _("published")
 
     cached: "shared.models.cached.CachedSuggestions"
 
