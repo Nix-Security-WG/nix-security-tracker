@@ -14,9 +14,9 @@
   </form>
 
   <!-- Open a new tab with the create GitHub issue, if any -->
-  {% if issue_link %}
+  {% if gh_issue_link %}
     <script>
-      window.open("{{ issue_link }}", "_blank");
+      window.open("{{ gh_issue_link }}", "_blank");
     </script>
   {% endif %}
 </article>
