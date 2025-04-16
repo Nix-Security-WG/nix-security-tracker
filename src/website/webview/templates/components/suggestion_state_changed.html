@@ -12,4 +12,11 @@
       ↺
     </button>
   </form>
+
+  <!-- Open a new tab with the create GitHub issue, if any -->
+  {% if issue_link %}
+    <script>
+      window.open("{{ issue_link }}", "_blank");
+    </script>
+  {% endif %}
 </article>

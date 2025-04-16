@@ -65,7 +65,7 @@
           Restore
         </button>
       {% elif status_filter == "accepted" %}
-        <button type="submit" name="publish_issue" class="draft-color">
+        <button type="submit" name="new_status" value="published" class="draft-color">
           Publish issue
         </button>
         {% if cached_suggestion.packages %}
