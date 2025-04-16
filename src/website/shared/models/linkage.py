@@ -4,9 +4,8 @@ import pghistory
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from shared.models import Description, IssueStatus
 import shared.models.cached
-from shared.models.cve import CveRecord, NixpkgsIssue
+from shared.models.cve import CveRecord, NixpkgsIssue, Description, IssueStatus
 from shared.models.nix_evaluation import NixDerivation, TimeStampMixin
 
 def text_length(choices: type[models.TextChoices]) -> int:
