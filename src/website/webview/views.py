@@ -613,8 +613,12 @@ class SuggestionListView(ListView):
         if status_change and new_status == "published":
             with transaction.atomic():
                 tracker_issue = suggestion.create_nixpkgs_issue()
-                tracker_issue_link = request.build_absolute_uri(reverse('webview:issue_detail', args=[tracker_issue.code]))
-                gh_issue_link = create_gh_issue(cached_suggestion, tracker_issue_link).html_url
+                tracker_issue_link = request.build_absolute_uri(
+                    reverse("webview:issue_detail", args=[tracker_issue.code])
+                )
+                gh_issue_link = create_gh_issue(
+                    cached_suggestion, tracker_issue_link
+                ).html_url
                 suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
                 suggestion.save()
 

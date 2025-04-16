@@ -48,11 +48,13 @@ def get_gh(per_page: int = 30) -> Github:
 
     return Github(auth=gh_auth, per_page=per_page)
 
-def create_gh_issue(cached_suggestion: CachedSuggestions, tracker_issue_uri:
-                    str, github = get_gh()) -> GithubIssue:
+
+def create_gh_issue(
+    cached_suggestion: CachedSuggestions, tracker_issue_uri: str, github=get_gh()
+) -> GithubIssue:
     """
-    Create a GitHub issue for the given suggestion, given a link to the
-    corresponding NixpkgsIssue on the tracker side, on the nixpkgs repository.
+    Creates a GitHub issue for the given suggestion on the Nixpkgs repository,
+    given a link to the corresponding NixpkgsIssue on the tracker side.
 
     The tracker issue URI could be derived automatically from NixpkgsIssue here,
     but it's more annoying to build without a request object at hand, so we
@@ -60,13 +62,13 @@ def create_gh_issue(cached_suggestion: CachedSuggestions, tracker_issue_uri:
     """
 
     repo = github.get_repo(f"{GH_ORGANIZATION}/{GH_ISSUES_REPO}")
-    title = cached_suggestion.payload['title']
-    severity = severity_badge(cached_suggestion.payload['metrics'])
+    title = cached_suggestion.payload["title"]
+    severity = severity_badge(cached_suggestion.payload["metrics"])
 
     details = ""
 
     if severity:
-        metric = severity['metric']
+        metric = severity["metric"]
         details = f"""
 <details>
 <summary>CVSS {metric['vectorString']}</summary>
