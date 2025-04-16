@@ -2,6 +2,7 @@ import logging
 from os import environ as env
 
 from github import Auth, Github
+from github.Issue import Issue as GithubIssue
 from urllib.parse import quote
 from django.urls import reverse
 from tracker.settings import GH_ISSUES_REPO, GH_ORGANIZATION, get_secret
@@ -47,7 +48,8 @@ def get_gh(per_page: int = 30) -> Github:
 
     return Github(auth=gh_auth, per_page=per_page)
 
-def create_gh_issue(cached_suggestion: CachedSuggestions, tracker_issue_uri: str, github = get_gh()):
+def create_gh_issue(cached_suggestion: CachedSuggestions, tracker_issue_uri:
+                    str, github = get_gh()) -> GithubIssue:
     """
     Create a GitHub issue for the given suggestion, given a link to the
     corresponding NixpkgsIssue on the tracker side, on the nixpkgs repository.
