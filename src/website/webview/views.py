@@ -6,6 +6,7 @@ from typing import Any, cast
 
 from django.core.validators import RegexValidator
 from django.urls import reverse
+from django.db import transaction
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import Description
@@ -607,10 +608,13 @@ class SuggestionListView(ListView):
 
         if publish_issue:
             assert suggestion.status != CVEDerivationClusterProposal.Status.REJECTED
-            tracker_issue = suggestion.create_nixpkgs_issue()
-            tracker_issue_link = request.build_absolute_uri(reverse('issue_detail', args=[tracker_issue.code]))
-            create_gh_issue(cached_suggestion, tracker_issue_link)
-            suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
+
+            with transaction.atomic():
+                tracker_issue = suggestion.create_nixpkgs_issue()
+                tracker_issue_link = request.build_absolute_uri(reverse('issue_detail', args=[tracker_issue.code]))
+                create_gh_issue(cached_suggestion, tracker_issue_link)
+                suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
+                suggestion.save()
 
         if js_enabled:
             # Clicking on the undo button will return the original suggestion
