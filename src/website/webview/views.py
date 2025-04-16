@@ -594,9 +594,10 @@ class SuggestionListView(ListView):
             cached_suggestion.payload["packages"] = new_packages
             cached_suggestion.save()
 
-        # We only change the status if one of the status change buttons or undo button was clicked
-        # We handle the case of "published" separately, because we only want to
-        # update it if the GH issue creation was successful.
+        # We only change the status if one of the status change buttons or undo
+        # button was clicked We handle the case of "published" separately,
+        # because we only want to update the state if the GitHub issue creation
+        # was successful.
         if status_change and new_status != "published":
             if new_status == "rejected":
                 suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
