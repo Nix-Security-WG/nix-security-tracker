@@ -9,7 +9,7 @@ from django.urls import reverse
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import Description
-from shared.utils import get_gh, create_gh_issue
+from shared.github import create_gh_issue
 
 if typing.TYPE_CHECKING:
     # prevent typecheck from failing on some historic type
@@ -607,11 +607,10 @@ class SuggestionListView(ListView):
 
         if publish_issue:
             assert suggestion.status != CVEDerivationClusterProposal.Status.REJECTED
-            issue = suggestion.create_nixpkgs_issue()
-            tracker_issue_link = request.build_absolute_uri(reverse('issue_detail', args=[issue.code]))
-
-            conn = get_gh()
-            create_gh_issue(conn, cached_suggestion, tracker_issue_link)
+            tracker_issue = suggestion.create_nixpkgs_issue()
+            tracker_issue_link = request.build_absolute_uri(reverse('issue_detail', args=[tracker_issue.code]))
+            create_gh_issue(cached_suggestion, tracker_issue_link)
+            suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
 
         if js_enabled:
             # Clicking on the undo button will return the original suggestion
