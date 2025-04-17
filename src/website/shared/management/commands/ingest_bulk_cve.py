@@ -16,7 +16,7 @@ from django.db import transaction
 from github.GitRelease import GitRelease
 from shared.fetchers import make_cve
 from shared.models import CveIngestion
-from shared.utils import get_gh
+from shared.github import get_gh
 
 logger = logging.getLogger(__name__)
 

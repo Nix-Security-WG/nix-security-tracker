@@ -8,8 +8,13 @@
     <input type="hidden" name="undo-status-change">
     {% csrf_token %}
     <input type="hidden" name="suggestion_id" value="{{ suggestion_id }}">
+    <!-- We can't undo publication -->
+    {% if status != "published" %}
     <button type="submit" name="new_status" value="{{ old_status }}" title="Undo">
       ↺
     </button>
+    {% else %}
+    <a href="{{ gh_issue_link }}">GitHub issue</a>
+    {% endif %}
   </form>
 </article>
