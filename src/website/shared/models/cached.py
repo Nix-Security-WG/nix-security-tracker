@@ -21,6 +21,11 @@ class CachedSuggestions(TimeStampMixin):
     payload = models.JSONField(encoder=DjangoJSONEncoder)
 
     @property
+    # TODO: for now we blindly list all maintainers of all affected packages,
+    # but in the future we might want to be able to edit this list before
+    # creating the GitHub issue. When that happens, this function will need to
+    # be updated (or the GitHub creation code should use a distinct
+    # `maintainers()` property, for example).
     def all_maintainers(self) -> list[dict]:
         """
         Returns a deduplicated list (by GitHub ID) of all the maintainers of all
