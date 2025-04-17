@@ -119,7 +119,7 @@ def create_gh_issue(
 
     body = f"""\
 - [{cached_suggestion.payload['cve_id']}](https://nvd.nist.gov/vuln/detail/{quote(cached_suggestion.payload['cve_id'])})
-- [Vulnerability tracker issue]({tracker_issue_uri})
+- [Nix security tracker issue]({tracker_issue_uri})
 {maintainers()}
 ## Description
 
