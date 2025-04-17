@@ -4,9 +4,13 @@ from os import environ as env
 from github import Auth, Github
 from github.Issue import Issue as GithubIssue
 from urllib.parse import quote
-from django.urls import reverse
-from tracker.settings import GH_ISSUES_REPO, GH_ORGANIZATION, get_secret
-from shared.models import CachedSuggestions, NixpkgsIssue
+from tracker.settings import (
+    GH_ISSUES_REPO,
+    GH_ORGANIZATION,
+    GH_ISSUES_PING_MAINTAINERS,
+    get_secret,
+)
+from shared.models import CachedSuggestions
 from webview.templatetags.viewutils import severity_badge
 
 logger = logging.getLogger(__name__)
@@ -61,15 +65,22 @@ def create_gh_issue(
     leave it to the caller.
     """
 
-    repo = github.get_repo(f"{GH_ORGANIZATION}/{GH_ISSUES_REPO}")
-    title = cached_suggestion.payload["title"]
-    severity = severity_badge(cached_suggestion.payload["metrics"])
+    def mention(maintainer: str) -> str:
+        """
+        Convert a maintainer to a GitHub mention with a leading `@`. If the
+        setting GH_ISSUES_PING_MAINTAINERS is set to False, this mention is
+        escaped with backticks to prevent actually pinging the maintainers.
+        """
+        if GH_ISSUES_PING_MAINTAINERS:
+            return f"@{maintainer}"
+        else:
+            return f"`@{maintainer}`"
 
-    details = ""
-
-    if severity:
-        metric = severity["metric"]
-        details = f"""
+    def cvss_details() -> str:
+        severity = severity_badge(cached_suggestion.payload["metrics"])
+        if severity:
+            metric = severity["metric"]
+            return f"""
 <details>
 <summary>CVSS {metric['vectorString']}</summary>
 
@@ -83,15 +94,51 @@ def create_gh_issue(
 - Integrity impact (I): {metric['integrityImpact']}
 - Availability impact (A): {metric['availabilityImpact']}
 </details>"""
+        else:
+            return ""
+
+    def maintainers() -> str:
+        # We need to query for the latest username of each maintainers, because
+        # those might have changed since they were written out in Nixpkgs; since we
+        # have the user id (which is stable), we can ask the GitHub API
+        maintainers_list = [
+            get_maintainer_username(maintainer, github)
+            for maintainer in cached_suggestion.all_maintainers
+            if "github_id" in maintainer and "github" in maintainer
+        ]
+
+        if maintainers_list:
+            maintainers_joined = ", ".join(mention(m) for m in maintainers_list)
+            return f"- affected package maintainers: cc {maintainers_joined}\n"
+        else:
+            return ""
+
+    repo = github.get_repo(f"{GH_ORGANIZATION}/{GH_ISSUES_REPO}")
+    title = cached_suggestion.payload["title"]
+    logger.error("all maintainers: %s", cached_suggestion.all_maintainers)
 
     body = f"""\
-[{cached_suggestion.payload['cve_id']}](https://nvd.nist.gov/vuln/detail/{quote(cached_suggestion.payload['cve_id'])})
-
-[Vulnerability tracker issue]({tracker_issue_uri})
-
+- [{cached_suggestion.payload['cve_id']}](https://nvd.nist.gov/vuln/detail/{quote(cached_suggestion.payload['cve_id'])})
+- [Vulnerability tracker issue]({tracker_issue_uri})
+{maintainers()}
 ## Description
 
 {cached_suggestion.payload['description']}
-{details}"""
+{cvss_details()}"""
 
-    repo.create_issue(title, body)
+    return repo.create_issue(title, body)
+
+
+def get_maintainer_username(maintainer: dict, github=get_gh()) -> str:
+    """
+    Get the current GitHub username of a maintainer given their user ID. If the
+    request failed, fallback to the github handle stored in the maintainer
+    object that comes from Nixpkgs, which might be out of date.
+    """
+    try:
+        return github.get_user_by_id(maintainer["github_id"]).login
+    except Exception as e:
+        logger.error(
+            f"Couldn't retrieve the GitHub username for maintainer {maintainer["github_id"]}, fallback to {maintainer["github"]}: {e}"
+        )
+        return maintainer["github"]

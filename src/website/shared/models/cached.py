@@ -23,16 +23,19 @@ class CachedSuggestions(TimeStampMixin):
     @property
     def all_maintainers(self) -> list[dict]:
         """
-        Returns a deduplicated and sorted (by GitHub handle) list of all the
-        maintainers of all the affected packages linked to this suggestion.
+        Returns a deduplicated list (by GitHub ID) of all the maintainers of all
+        the affected packages linked to this suggestion.
         """
 
-        dedup = [
-            dict(deduped)
-            for deduped in {
-                tuple(maintainer.items())
-                for package in self.payload["packages"].values()
-                for maintainer in package["maintainers"]
-            }
+        seen = set()
+        result = []
+        all_maintainers = [
+            m for pkg in self.payload["packages"].values() for m in pkg["maintainers"]
         ]
-        return sorted(dedup, key=lambda x: x["github"])
+
+        for m in all_maintainers:
+            if m["github_id"] not in seen:
+                seen.add(m["github_id"])
+                result.append(m)
+
+        return result

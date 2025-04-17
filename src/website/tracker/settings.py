@@ -336,6 +336,12 @@ DB_SECURITY_TEAM = "security_team"
 
 GH_WEBHOOK_SECRET = get_secret("GH_WEBHOOK_SECRET")
 
+# When set to False, the application will escape package maintainers' name when
+# mentioning them in the issue body to avoid actually pinging them. This is used
+# as a safety measure during development. When the GitHub issue story is ironed
+# out, this should be set to True in production.
+GH_ISSUES_PING_MAINTAINERS = False
+
 TEST_RUNNER = "tracker.test_runner.CustomTestRunner"
 
 # Make history log immutable by default
