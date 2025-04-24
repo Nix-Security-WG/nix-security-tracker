@@ -17,17 +17,42 @@ from pathlib import Path
 
 import dj_database_url
 import sentry_sdk
+from pydantic import BaseModel, DirectoryPath, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sentry_sdk.integrations.django import DjangoIntegration
+
+
+class Secrets(BaseSettings):
+    CREDENTIALS_DIRECTORY: DirectoryPath
+
+
+class Settings(BaseSettings):
+    # https://docs.pydantic.dev/latest/concepts/pydantic_settings/
+
+    model_config = SettingsConfigDict(
+        # https://docs.pydantic.dev/latest/concepts/pydantic_settings/#secrets
+        # https://systemd.io/CREDENTIALS/
+        secrets_dir=Secrets().CREDENTIALS_DIRECTORY,  # type: ignore[reportCallIssue]
+    )
+
+    class DjangoSettings(BaseModel):
+        # SECURITY WARNING: don't run with debug turned on in production!
+        DEBUG: bool = False
+
+    DJANGO_SETTINGS: DjangoSettings
+
+
+for key, value in Settings().dict()["DJANGO_SETTINGS"].items():  # type: ignore[reportCallIssue]
+    setattr(sys.modules[__name__], key, value)
+
+# TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def get_secret(name: str, encoding: str = "utf-8") -> str:
-    credentials_dir = env.get("CREDENTIALS_DIRECTORY")
-
-    if credentials_dir is None:
-        raise RuntimeError("No credentials directory available.")
+    credentials_dir = Secrets().CREDENTIALS_DIRECTORY  # type: ignore[reportCallIssue]
 
     try:
         with open(f"{credentials_dir}/{name}", encoding=encoding) as f:
@@ -59,8 +84,6 @@ CHANNEL_LAYERS = {
 }
 
 ## Logging settings
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -81,7 +104,7 @@ LOGGING = {
     },
     "handlers": {
         "console": {
-            "level": "DEBUG" if DEBUG else "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",  # type: ignore # noqa: F821
             "filters": ["require_debug_true"],
             "class": "logging.StreamHandler",
             "formatter": "verbose",
@@ -107,7 +130,7 @@ LOGGING = {
         },
         "shared": {
             "handlers": ["console", "mail_admins"],
-            "level": "DEBUG" if DEBUG else "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",  # type: ignore # noqa: F821
             "filters": [],
         },
     },
