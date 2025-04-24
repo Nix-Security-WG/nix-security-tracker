@@ -128,6 +128,10 @@ rec {
         # psql doesn't take DATABASE_URL
         PGDATABASE = "nix-security-tracker";
         PGUSER = "nix-security-tracker";
+        CREDENTIALS_DIRECTORY = toString ./.credentials;
+        DJANGO_SETTINGS = builtins.toJSON {
+          DEBUG = true;
+        };
       };
 
       # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
@@ -149,8 +153,8 @@ rec {
 
         ln -sf ${sources.htmx}/dist/htmx.js src/website/webview/static/htmx.min.js
 
-        mkdir -p .credentials
-        export CREDENTIALS_DIRECTORY=${builtins.toString ./.credentials}
+        mkdir -p $CREDENTIALS_DIRECTORY
+        # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
         touch .settings.py
         export USER_SETTINGS_FILE=${builtins.toString ./.settings.py}
       '';

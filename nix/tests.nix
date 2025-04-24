@@ -15,6 +15,9 @@ let
       production = false;
       restart = "no"; # fail fast
       domain = "example.org";
+      env = {
+        DEBUG = true;
+      };
       secrets = {
         SECRET_KEY = pkgs.writeText "SECRET_KEY" "secret";
         GH_CLIENT_ID = pkgs.writeText "gh_client" "bonjour";

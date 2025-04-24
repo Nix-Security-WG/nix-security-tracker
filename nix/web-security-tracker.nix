@@ -42,6 +42,11 @@ let
     name = "wst-manage";
 
     runtimeInputs = [ pkgs.git ];
+    runtimeEnv = environment;
+    excludeShellChecks = [
+      "SC2089"
+      "SC2090"
+    ];
 
     text = ''
       sudo="exec"
@@ -54,6 +59,13 @@ let
   };
   credentials = mapAttrsToList (name: secretPath: "${name}:${secretPath}") cfg.secrets;
   databaseUrl = "postgres:///web-security-tracker";
+
+  environment = {
+    DATABASE_URL = databaseUrl;
+    USER_SETTINGS_FILE = "${configFile}";
+    DJANGO_SETTINGS = builtins.toJSON cfg.env;
+  };
+
   # This script has access to the credentials, no matter where it is.
   wstExternalManageScript = writeScriptBin "wst-manage" ''
     #!${stdenv.shell}
@@ -67,7 +79,9 @@ let
       --property "Group=web-security-tracker" \
       --property "WorkingDirectory=/var/lib/web-security-tracker" \
       ${concatStringsSep "\n" (map (cred: "--property 'LoadCredential=${cred}' \\") credentials)}
-      --property "Environment=DATABASE_URL=${databaseUrl} USER_SETTINGS_FILE=${settingsFile}" \
+      --property "Environment=${
+        toString (lib.mapAttrsToList (name: value: "${name}=${value}") environment)
+      }" \
       "${wstManageScript}/bin/wst-manage" "$@"
   '';
 in
@@ -93,6 +107,10 @@ in
     unixSocket = mkOption {
       type = types.nullOr types.str;
       default = null;
+    };
+    env = mkOption {
+      type = types.attrsOf types.anything;
+      default = { };
     };
     settings = mkOption {
       type = types.attrsOf types.anything;
@@ -132,6 +150,7 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = [ wstExternalManageScript ];
     services = {
+      # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
       web-security-tracker.settings = {
         STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
         DEBUG = mkDefault false;
@@ -198,10 +217,7 @@ in
             LogsDirectory = "web-security-tracker";
             LoadCredential = credentials;
           };
-          environment = {
-            DATABASE_URL = databaseUrl;
-            USER_SETTINGS_FILE = "${configFile}";
-          };
+          inherit environment;
         };
       in
       mapAttrs (_: recursiveUpdate defaults) {

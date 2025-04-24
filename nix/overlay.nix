@@ -42,6 +42,7 @@ in
       httpretty
       ipython
       psycopg2
+      pydantic-settings
       pygithub
       requests
       tqdm
