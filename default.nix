@@ -156,8 +156,5 @@ rec {
       '';
     };
 
-  tests = import ./nix/tests/vm-basic.nix {
-    inherit pkgs;
-    wstModule = module;
-  };
+  tests = pkgs.callPackage ./nix/tests.nix { };
 }
