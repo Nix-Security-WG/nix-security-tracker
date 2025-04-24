@@ -28,6 +28,7 @@ in
         {
           name = "nix-security-tracker";
           ensureDBOwnership = true;
+          ensureClauses.createdb = true;
         }
       ];
       identMap = ''
