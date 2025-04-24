@@ -117,7 +117,7 @@ rec {
   shell =
     let
       manage = pkgs.writeScriptBin "manage" ''
-        ${python3}/bin/python ${toString ./src/website/manage.py} $@
+        exec ${python3}/bin/python ${toString ./src/website/manage.py} $@
       '';
       deploymentSources = import ./infra/npins;
     in
