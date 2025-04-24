@@ -16,7 +16,7 @@ from github.Repository import Repository
 from shared import models
 from shared.fetchers import make_cve
 from shared.models import CveIngestion
-from shared.utils import get_gh
+from shared.github import get_gh
 
 logger = logging.getLogger(__name__)
 
