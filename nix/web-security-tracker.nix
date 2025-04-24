@@ -150,6 +150,9 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = [ wstExternalManageScript ];
     services = {
+      web-security-tracker.env = {
+        SYNC_GITHUB_STATE_AT_STARTUP = mkDefault true;
+      };
       # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
       web-security-tracker.settings = {
         STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
@@ -232,9 +235,6 @@ in
           serviceConfig = {
             Restart = cfg.restart;
             TimeoutStartSec = lib.mkDefault "10m";
-            Environment = [
-              "SYNC_GITHUB_STATE_AT_STARTUP=true"
-            ];
           };
           preStart = ''
             # Auto-migrate on first run or if the package has changed

@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     class DjangoSettings(BaseModel):
         # SECURITY WARNING: don't run with debug turned on in production!
         DEBUG: bool = False
+        SYNC_GITHUB_STATE_AT_STARTUP: bool = Field(
+            description="""
+            Connect to GitHub when the service is started and update
+            team membership (security team and committers team)
+            of Nixpkgs maintainers in the evaluation database.
+            """
+        )
 
     DJANGO_SETTINGS: DjangoSettings
 
