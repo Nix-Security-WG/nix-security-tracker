@@ -6,7 +6,6 @@ from typing import Any
 
 import pgpubsub
 from django.db.models import Prefetch
-
 from shared.channels import CVEDerivationClusterProposalChannel
 from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions

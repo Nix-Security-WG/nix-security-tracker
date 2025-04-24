@@ -55,7 +55,6 @@ from shared.models import (
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
-
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 
@@ -543,8 +542,10 @@ class SuggestionListView(ListView):
         new_status = request.POST.get("new_status")
         current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-        activity_log = SuggestionActivityLog().get_dict(suggestion_ids=[suggestion.pk]).get(
-            suggestion.pk, []
+        activity_log = (
+            SuggestionActivityLog()
+            .get_dict(suggestion_ids=[suggestion.pk])
+            .get(suggestion.pk, [])
         )
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id

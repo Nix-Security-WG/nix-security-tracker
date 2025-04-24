@@ -17,7 +17,6 @@ from django.db.models import (
 )
 from django.db.models.functions import Cast, Coalesce
 from pghistory.models import EventQuerySet
-
 from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
     DerivationClusterProposalLinkEvent,  # type: ignore

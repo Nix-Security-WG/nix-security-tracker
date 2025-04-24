@@ -23,17 +23,21 @@ in
   };
   swapDevices = [ { device = "/dev/disk/by-label/swap"; } ];
 
-  boot.loader.grub.enable = true;
-  boot.loader.grub.device = "/dev/sda";
-  boot.initrd.availableKernelModules = [
-    "ahci"
-    "xhci_pci"
-    "virtio_pci"
-    "virtio_scsi"
-    "sd_mod"
-    "sr_mod"
-    "ext4"
-  ];
+  boot = {
+    loader.grub = {
+      enable = true;
+      device = "/dev/sda";
+    };
+    initrd.availableKernelModules = [
+      "ahci"
+      "xhci_pci"
+      "virtio_pci"
+      "virtio_scsi"
+      "sd_mod"
+      "sr_mod"
+      "ext4"
+    ];
+  };
 
   nix.settings.experimental-features = [
     "nix-command"
@@ -48,11 +52,13 @@ in
   zramSwap.enable = true;
   security.sudo.wheelNeedsPassword = false;
 
-  services.openssh = {
-    enable = true;
-    settings.PasswordAuthentication = false;
+  services = {
+    openssh = {
+      enable = true;
+      settings.PasswordAuthentication = false;
+    };
+    qemuGuest.enable = true;
   };
-  services.qemuGuest.enable = true;
 
   users.mutableUsers = false;
   users.users.root = {
