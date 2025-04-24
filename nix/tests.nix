@@ -16,6 +16,7 @@ let
       restart = "no"; # fail fast
       domain = "example.org";
       env = {
+        SYNC_GITHUB_STATE_AT_STARTUP = false;
         DEBUG = true;
       };
       secrets = {

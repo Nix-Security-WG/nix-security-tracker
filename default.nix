@@ -130,6 +130,7 @@ rec {
         PGUSER = "nix-security-tracker";
         CREDENTIALS_DIRECTORY = toString ./.credentials;
         DJANGO_SETTINGS = builtins.toJSON {
+          SYNC_GITHUB_STATE_AT_STARTUP = false;
           DEBUG = true;
         };
       };
