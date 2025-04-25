@@ -114,5 +114,33 @@ in
     openFirewall = true;
   };
 
+  services.prometheus.exporters.postgres = {
+    enable = true;
+    openFirewall = true;
+  };
+
+  services.prometheus.exporters.sql = {
+    enable = true;
+    openFirewall = true;
+    configuration.jobs.sectracker = {
+      queries = {
+        users = {
+          query = "select count(*) from auth_user;";
+          values = [ "count" ];
+        };
+        delta = {
+          query = "select extract(EPOCH from timestamp) AS unix_timestamp from shared_cveingestion where delta = 't' order by timestamp desc limit 1;";
+          values = [ "unix_timestamp" ];
+        };
+        matching = {
+          query = "select extract(EPOCH from created_at) AS unix_timestamp from shared_cvederivationclusterproposal order by created_at desc limit 1;";
+          values = [ "unix_timestamp" ];
+        };
+      };
+      connections = [ "postgres://postgres@/web-security-tracker?host=/run/postgresql" ];
+      interval = "1h";
+    };
+  };
+
   system.stateVersion = "24.05";
 }
