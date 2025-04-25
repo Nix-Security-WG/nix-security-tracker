@@ -34,3 +34,9 @@ Reading the [Agenix tutorial](https://github.com/ryantm/agenix#tutorial) is reco
 To add or edit a secret, you don't need to have access to the private keys.
 You only have to make sure that the file for the secret you want to edit doesn't exist, (i.e. delete `secrets/name_of_secret.age` if it already exists) and then run `agenix -e secrets/name_of_secret.age` from the directory that `secrets.nix` is in.
 Then commit `secrets/name_of_secret.age` as usual.
+
+## Metrics
+
+A [Prometheus Node Exporter](https://github.com/prometheus/node_exporter) is running exposing host specfic metrics. These are scraped by the nixos.org [Prometheus](https://prometheus.nixos.org/graph) and are also available under [Grafana](https://grafana.nixos.org/).
+
+Moreover, a [Postgres Exporter](https://github.com/prometheus-community/postgres_exporter) and a [SQL exporter](https://github.com/justwatchcom/sql_exporter) run in the host exposing Postgres and application specific metrics.
