@@ -1,10 +1,9 @@
 from enum import STRICT, IntFlag, auto
 
 import pghistory
+import shared.models.cached
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
-import shared.models.cached
 from shared.models.cve import CveRecord, Description, IssueStatus, NixpkgsIssue
 from shared.models.nix_evaluation import NixDerivation, TimeStampMixin
 
