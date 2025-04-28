@@ -15,8 +15,8 @@ from github import UnknownObjectException
 from github.Repository import Repository
 from shared import models
 from shared.fetchers import make_cve
-from shared.models import CveIngestion
 from shared.github import get_gh
+from shared.models import CveIngestion
 
 logger = logging.getLogger(__name__)
 

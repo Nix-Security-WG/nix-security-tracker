@@ -21,7 +21,6 @@ from github import Github
 from github.NamedUser import NamedUser
 from github.Organization import Organization
 from github.Team import Team
-
 from shared.github import get_gh
 
 logger = logging.getLogger(__name__)
