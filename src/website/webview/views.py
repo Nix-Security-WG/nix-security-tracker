@@ -5,6 +5,9 @@ from itertools import chain
 from typing import Any, cast
 
 from django.core.validators import RegexValidator
+from django.db import transaction
+from django.urls import reverse
+from shared.github import create_gh_issue
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
 
@@ -55,6 +58,7 @@ from shared.models import (
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
+
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 
@@ -550,6 +554,12 @@ class SuggestionListView(ListView):
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id
         )
+        status_change = new_status and suggestion.status != new_status
+        # When clicking "Publish issue", we want to open a tab with the GitHub
+        # issue in the response. We need to pass the issue's link to the
+        # component, which is thus stored here (only when `status_change` is
+        # true and `new_status = "published"`).
+        gh_issue_link = None
 
         # We only have to modify derivations when they are editable
         if not (
@@ -585,9 +595,12 @@ class SuggestionListView(ListView):
             cached_suggestion.payload["packages"] = new_packages
             cached_suggestion.save()
 
-        # We only change the status if one of the status change buttons or undo button was clicked
-        if new_status:
-            old_status = suggestion.status
+        # We only update the status if one of the status change buttons or undo
+        # button was clicked.
+        # We handle the case of "published" separately: publication implies a
+        # series of fallible actions that we want to handle in a properly
+        # sequenced transaction.
+        if status_change and new_status != "published":
             if new_status == "rejected":
                 suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
             elif new_status == "accepted":
@@ -598,7 +611,18 @@ class SuggestionListView(ListView):
             elif new_status == "pending" and undo_status_change:
                 suggestion.status = CVEDerivationClusterProposal.Status.PENDING
 
-            if old_status != new_status:
+            suggestion.save()
+
+        if status_change and new_status == "published":
+            with transaction.atomic():
+                tracker_issue = suggestion.create_nixpkgs_issue()
+                tracker_issue_link = request.build_absolute_uri(
+                    reverse("webview:issue_detail", args=[tracker_issue.code])
+                )
+                gh_issue_link = create_gh_issue(
+                    cached_suggestion, tracker_issue_link
+                ).html_url
+                suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
                 suggestion.save()
 
         if js_enabled:
@@ -619,7 +643,7 @@ class SuggestionListView(ListView):
                     },
                 )
                 return HttpResponse(snippet)
-            elif new_status:
+            elif status_change:
                 snippet = render_to_string(
                     "components/suggestion_state_changed.html",
                     {
@@ -627,6 +651,7 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
+                        "gh_issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },
                 )
