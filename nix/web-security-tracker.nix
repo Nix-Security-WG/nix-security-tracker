@@ -150,9 +150,6 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = [ wstExternalManageScript ];
     services = {
-      web-security-tracker.env = {
-        SYNC_GITHUB_STATE_AT_STARTUP = mkDefault true;
-      };
       # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
       web-security-tracker.settings = {
         STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";

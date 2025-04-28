@@ -131,6 +131,7 @@ rec {
         CREDENTIALS_DIRECTORY = toString ./.credentials;
         DJANGO_SETTINGS = builtins.toJSON {
           SYNC_GITHUB_STATE_AT_STARTUP = false;
+          GH_ISSUES_PING_MAINTAINERS = false;
           DEBUG = true;
         };
       };

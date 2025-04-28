@@ -55,6 +55,10 @@ in
     enable = true;
     production = true;
     domain = "tracker.security.nixos.org";
+    env = {
+      SYNC_GITHUB_STATE_AT_STARTUP = true;
+      GH_ISSUES_PING_MAINTAINERS = false;
+    };
     settings = {
       DEBUG = false;
       GH_ORGANIZATION = "Nix-Security-WG";
