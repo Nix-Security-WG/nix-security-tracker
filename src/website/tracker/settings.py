@@ -45,6 +45,11 @@ class Settings(BaseSettings):
             of Nixpkgs maintainers in the evaluation database.
             """
         )
+        # When set to False, the application will escape package maintainers' name when
+        # mentioning them in the issue body to avoid actually pinging them. This is used
+        # as a safety measure during development. When the GitHub issue story is ironed
+        # out, this should be set to True in production.
+        GH_ISSUES_PING_MAINTAINERS: bool = False
 
     DJANGO_SETTINGS: DjangoSettings
 
