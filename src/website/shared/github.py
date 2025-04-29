@@ -137,6 +137,8 @@ def get_maintainer_username(maintainer: dict, github: Github = get_gh()) -> str:
     Get the current GitHub username of a maintainer given their user ID. If the
     request failed, fallback to the github handle stored in the maintainer
     object that comes from Nixpkgs, which might be out of date.
+    # TODO: Cache the mapping, e.g. on initial sync and when receiving GitHub events
+    # on username change, or simply when doing these calls for resolving the user ID.
     """
     try:
         return github.get_user_by_id(maintainer["github_id"]).login
