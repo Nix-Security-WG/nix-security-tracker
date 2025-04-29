@@ -116,6 +116,25 @@ def create_gh_issue(
         else:
             return ""
 
+    def affected_nix_packages() -> str:
+        packages = []
+
+        for attribute_name, pkg in cached_suggestion.payload["packages"].items():
+            versions = []
+            for major_channel, version_data in pkg["versions"]:
+                if version_data["major_version"]:
+                    versions.append(f"{version_data['major_version']}@{major_channel}")
+
+            versions_details = f" ({", ".join(versions)})" if versions else ""
+            packages.append(f"- `{attribute_name}`{versions_details}")
+
+        return f"""
+<details>
+<summary>Affected packages</summary>
+
+{ "\n".join(packages) }
+</details>"""
+
     repo = github.get_repo(f"{GH_ORGANIZATION}/{GH_ISSUES_REPO}")
     title = cached_suggestion.payload["title"]
     logger.error("all maintainers: %s", cached_suggestion.all_maintainers)
@@ -127,7 +146,8 @@ def create_gh_issue(
 ## Description
 
 {cached_suggestion.payload['description']}
-{cvss_details()}"""
+{cvss_details()}
+{affected_nix_packages()}"""
 
     return repo.create_issue(title, body)
 
