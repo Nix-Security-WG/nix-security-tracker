@@ -1,0 +1,13 @@
+<!--
+  This component packs up an error message with the original suggestion view. By
+  default, the suggestion modification form replaces the original suggestion by
+  the status change component: indeed, when a status changes, the suggestion
+  shouldn't appear in the current view anymore. However, upon error, we do want
+  to keep the suggestion here. It turns out conditional swapping in HTMX isn't
+  entirely trivial. It is simpler to unconditionally swap the original
+  suggestion and put it back upon error, which is precisely what this component
+  does.
+-->
+{% include "components/suggestion_state_error.html" with title=suggestion_state_error.title target_status=suggestion_state_error.target_status %}
+
+{% include "components/suggestion.html" with suggestion=suggestion.suggestion cached_suggestion=suggestion.cached_suggestion activity_log=suggestion.activity_log status_filter=suggestion.status_filter user=suggestion.user page_obj=suggestion.page_obj csrf_token=suggestion.csrf_token %}

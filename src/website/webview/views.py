@@ -1,3 +1,4 @@
+import logging
 import re
 import typing
 from collections.abc import Callable
@@ -61,6 +62,8 @@ from shared.models.linkage import (
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
+
+logger = logging.getLogger(__name__)
 
 
 class HomeView(TemplateView):
@@ -561,6 +564,23 @@ class SuggestionListView(ListView):
         # true and `new_status = "published"`).
         gh_issue_link = None
 
+        def suggestion_view_context() -> dict:
+            """
+            Creates a proper context for the `suggestion` view. Since this is
+            used at least in two different code paths, this is factored out in
+            this function.
+            """
+            return {
+                "cached_suggestion": cached_suggestion.payload,
+                "suggestion": suggestion,
+                "activity_log": activity_log,
+                "status_filter": self.status_filter,
+                "user": request.user,
+                # This only matters in a non-JS environment
+                "page_obj": None,
+                "csrf_token": get_token(request),
+            }
+
         # We only have to modify derivations when they are editable
         if not (
             self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
@@ -614,16 +634,31 @@ class SuggestionListView(ListView):
             suggestion.save()
 
         if status_change and new_status == "published":
-            with transaction.atomic():
-                tracker_issue = suggestion.create_nixpkgs_issue()
-                tracker_issue_link = request.build_absolute_uri(
-                    reverse("webview:issue_detail", args=[tracker_issue.code])
+            try:
+                with transaction.atomic():
+                    tracker_issue = suggestion.create_nixpkgs_issue()
+                    tracker_issue_link = request.build_absolute_uri(
+                        reverse("webview:issue_detail", args=[tracker_issue.code])
+                    )
+                    gh_issue_link = create_gh_issue(
+                        cached_suggestion, tracker_issue_link
+                    ).html_url
+                    suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
+                    suggestion.save()
+            except Exception as e:
+                logger.error(f"Failed to publish issue: {e}")
+                snippet = render_to_string(
+                    "components/suggestion_state_error_wrapper.html",
+                    {
+                        "suggestion": suggestion_view_context(),
+                        "suggestion_state_error": {
+                            "suggestion_id": suggestion.pk,
+                            "title": cached_suggestion.payload["title"],
+                            "target_status": "published",
+                        },
+                    },
                 )
-                gh_issue_link = create_gh_issue(
-                    cached_suggestion, tracker_issue_link
-                ).html_url
-                suggestion.status = CVEDerivationClusterProposal.Status.PUBLISHED
-                suggestion.save()
+                return HttpResponse(snippet)
 
         if js_enabled:
             # Clicking on the undo button will return the original suggestion
@@ -631,16 +666,7 @@ class SuggestionListView(ListView):
             if undo_status_change:
                 snippet = render_to_string(
                     "components/suggestion.html",
-                    {
-                        "cached_suggestion": cached_suggestion.payload,
-                        "suggestion": suggestion,
-                        "activity_log": activity_log,
-                        "status_filter": self.status_filter,
-                        "user": request.user,
-                        # This only matters in a non-JS environment
-                        "page_obj": None,
-                        "csrf_token": get_token(request),
-                    },
+                    suggestion_view_context(),
                 )
                 return HttpResponse(snippet)
             elif status_change:

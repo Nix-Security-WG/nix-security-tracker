@@ -358,6 +358,7 @@
   --automatic-suggestion: lightblue;
   --dismissed-suggestion: #acb3c8;
   --draft-suggestion: #7bca7b;
+  --error-suggestion: #ffabab;
   --affected: #ffabab;
   --unaffected: #bfb;
 }
@@ -587,6 +588,10 @@ article .suggestion.state-changed .state-identifier.accepted {
 
 article .suggestion.state-changed .state-identifier.published {
   background: var(--draft-suggestion);
+}
+
+article .suggestion.state-changed .state-identifier.error {
+  background: var(--error-suggestion);
 }
 
 article .suggestion.state-changed h2 {
