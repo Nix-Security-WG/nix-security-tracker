@@ -63,7 +63,7 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
     - In **Personal access tokens** approve the request under **Pending requests** if approval is required
     - In **Developer settings** GitHub Apps, create a new application
 
-      - In **Repository Permissions** select **Administration (read-only)** and **(Metadata: read-only)**.
+      - In **Repository Permissions** select **Administration (read-only)**, **Issues (read and write)** and **(Metadata: read-only)**.
       - In **Organization Permissions** select **Administration (read-only)** and **(Members: read-only)**.
 
       Store the **Client ID** in `.credentials/GH_CLIENT_ID`

@@ -59,6 +59,7 @@ from shared.models import (
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
+
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 
