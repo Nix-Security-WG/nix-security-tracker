@@ -1,10 +1,31 @@
 {% extends "base.html" %}
+{% load viewutils %}
 
 {% block title %}
 {{ issue }}
 {% endblock title %}
 
 {% block content %}
+
+<div id="subscribe-panel">
+  <form
+    method="post"
+    action=""
+    hx-indicator="find .state-change-indicator"
+    hx-params="not no-js"
+    autocomplete="off"
+  >
+  <input type="hidden" name="no-js">
+  {% csrf_token %}
+  <input type="hidden" name="nixpkgs_issue_id" value="{{ object.id }}">
+
+  {% if user|is_subscribed_to:object %}
+  <button name="subscribe" value="unsubscribe">Unsubscribe</button>
+  {% elif user.is_authenticated %}
+  <button name="subscribe" value="subscribe">Subscribe</button>
+  {% endif %}
+  </form>
+</div>
 
 <h1>{{ object.code }}</h1>
 
