@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 from github import Auth, Github
 from github.Issue import Issue as GithubIssue
+from shared.models import CachedSuggestions
 from tracker.settings import (
     GH_ISSUES_PING_MAINTAINERS,
     GH_ISSUES_REPO,
@@ -11,8 +12,6 @@ from tracker.settings import (
     get_secret,
 )
 from webview.templatetags.viewutils import severity_badge
-
-from shared.models import CachedSuggestions
 
 logger = logging.getLogger(__name__)
 
