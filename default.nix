@@ -130,9 +130,13 @@ rec {
         PGUSER = "nix-security-tracker";
         CREDENTIALS_DIRECTORY = toString ./.credentials;
         DJANGO_SETTINGS = builtins.toJSON {
+          DEBUG = true;
           SYNC_GITHUB_STATE_AT_STARTUP = false;
           GH_ISSUES_PING_MAINTAINERS = false;
-          DEBUG = true;
+          GH_ORGANIZATION = "Nix-Security-WG";
+          GH_ISSUES_REPO = "sectracker-testing";
+          GH_SECURITY_TEAM = "setracker-testing-security";
+          GH_COMMITTERS_TEAM = "sectracker-testing-committers";
         };
       };
 
