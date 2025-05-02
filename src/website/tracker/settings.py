@@ -79,6 +79,16 @@ class Settings(BaseSettings):
             Set `nixpkgs-committers` for the production deployment.
             """
         )
+        GH_ISSUES_LABELS: list[str] = Field(
+            description="""
+            Labels to attach to Github issues created from the tracker, making
+            it easier to filter them on the target repository.
+            """,
+            # It's always ok to operate with an empty list of labels both in
+            # production and in development mode. Override accordingly depending
+            # on the environment.
+            default=[],
+        )
 
     DJANGO_SETTINGS: DjangoSettings
 

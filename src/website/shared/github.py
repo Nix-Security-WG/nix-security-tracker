@@ -4,14 +4,16 @@ from urllib.parse import quote
 
 from github import Auth, Github
 from github.Issue import Issue as GithubIssue
-from shared.models import CachedSuggestions
 from tracker.settings import (
+    GH_ISSUES_LABELS,
     GH_ISSUES_PING_MAINTAINERS,
     GH_ISSUES_REPO,
     GH_ORGANIZATION,
     get_secret,
 )
 from webview.templatetags.viewutils import severity_badge
+
+from shared.models import CachedSuggestions
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +138,6 @@ def create_gh_issue(
 
     repo = github.get_repo(f"{GH_ORGANIZATION}/{GH_ISSUES_REPO}")
     title = cached_suggestion.payload["title"]
-    logger.error("all maintainers: %s", cached_suggestion.all_maintainers)
 
     body = f"""\
 - [{cached_suggestion.payload['cve_id']}](https://nvd.nist.gov/vuln/detail/{quote(cached_suggestion.payload['cve_id'])})
@@ -148,7 +149,7 @@ def create_gh_issue(
 {cvss_details()}
 {affected_nix_packages()}"""
 
-    return repo.create_issue(title, body)
+    return repo.create_issue(title=title, body=body, labels=GH_ISSUES_LABELS)
 
 
 def get_maintainer_username(maintainer: dict, github: Github = get_gh()) -> str:
