@@ -16,9 +16,13 @@ let
       restart = "no"; # fail fast
       domain = "example.org";
       env = {
+        DEBUG = true;
         SYNC_GITHUB_STATE_AT_STARTUP = false;
         GH_ISSUES_PING_MAINTAINERS = true;
-        DEBUG = true;
+        GH_ORGANIZATION = "dummy";
+        GH_ISSUES_REPO = "dummy";
+        GH_COMMITTERS_TEAM = "dummy-committers";
+        GH_SECURITY_TEAM = "dummy-security";
       };
       secrets = {
         SECRET_KEY = pkgs.writeText "SECRET_KEY" "secret";

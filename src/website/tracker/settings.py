@@ -52,6 +52,43 @@ class Settings(BaseSettings):
             This is used as a safety measure during development. Set to True in production.
             """
         )
+        GH_ORGANIZATION: str = Field(
+            description="""
+            The GitHub organisation from which to get team membership.
+            Set `NixOS` for the production deployment.
+            """
+        )
+        GH_ISSUES_REPO: str = Field(
+            description="""
+            The GitHub repository to post issues to when publishing a vulnerability record.
+            It must exist in `GH_ORGANIZATION.`
+            Set `nixpkgs` for the production deployment.
+            """
+        )
+        GH_SECURITY_TEAM: str = Field(
+            description="""
+            The GitHub team to use for mapping "security team" (essentially admin) permissions onto users of the security tracker.
+            It must exist in `GH_ORGANIZATION.`
+            Set `security` for the production deployment.
+            """
+        )
+        GH_COMMITTERS_TEAM: str = Field(
+            description="""
+            The GitHub team to use for mapping "maintainer" permissions onto users of the security tracker.
+            It must exist in `GH_ORGANIZATION.`
+            Set `nixpkgs-committers` for the production deployment.
+            """
+        )
+        GH_ISSUES_LABELS: list[str] = Field(
+            description="""
+            Labels to attach to Github issues created from the tracker, making
+            it easier to filter them on the target repository.
+            """,
+            # It's always ok to operate with an empty list of labels both in
+            # production and in development mode. Override accordingly depending
+            # on the environment.
+            default=[],
+        )
 
     DJANGO_SETTINGS: DjangoSettings
 
@@ -330,12 +367,6 @@ INTERNAL_IPS = [
     "[::1]",
 ]
 
-# Github auth settings
-GH_ORGANIZATION = "NixOS"
-GH_COMMITTERS_TEAM = "nixpkgs-committers"
-GH_SECURITY_TEAM = "security"
-# Repository to post issues to
-GH_ISSUES_REPO = "nixpkgs"
 # This will be synced with GH_COMMITTERS_TEAM in GH_ORGANIZATION.
 DB_COMMITTERS_TEAM = "committers"
 # This will be synced with GH_SECURITY_TEAM in GH_ORGANIZATION
