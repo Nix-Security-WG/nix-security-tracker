@@ -1,15 +1,19 @@
 import datetime
 import json
+from logging import getLogger
 from typing import Any, TypedDict, cast
 
 from django import template
 from django.template.context import Context
 from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_suggestions import parse_drv_name
+from shared.models import NixpkgsIssue
 from shared.models.cve import AffectedProduct
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
+
+logger = getLogger(__name__)
 
 register = template.Library()
 
@@ -121,6 +125,18 @@ def is_maintainer(user: Any) -> bool:
 @register.filter
 def is_maintainer_or_admin(user: Any) -> bool:
     return is_maintainer(user) or is_admin(user)
+
+
+@register.filter
+def is_subscribed_to(user: Any, issue: NixpkgsIssue) -> bool:
+    if user is None or user.is_anonymous:
+        return False
+    else:
+        profile = user.profile
+        if profile is None:
+            return False
+        else:
+            return profile.subscriptions.filter(id=issue.id).exists()
 
 
 @register.inclusion_tag("components/suggestion.html", takes_context=True)

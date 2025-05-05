@@ -7,10 +7,13 @@ from typing import Any, cast
 
 from django.core.validators import RegexValidator
 from django.db import transaction
+from django.shortcuts import render
 from django.urls import reverse
 from shared.github import create_gh_issue
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
+
+from webview.models import Profile
 
 if typing.TYPE_CHECKING:
     # prevent typecheck from failing on some historic type
@@ -425,6 +428,39 @@ class NixpkgsIssueView(DetailView):
         cves = [s for s in known_vulnerabilities if self.pattern.match(s)]
         existing_cves = Container.objects.filter(cve__cve_id__in=cves)
         return existing_cves or None
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not request.user:
+            return HttpResponseForbidden()
+
+        user = request.user
+        nixpkgs_issue_id = request.POST.get("nixpkgs_issue_id")
+        subscribe = request.POST.get("subscribe")
+        nixpkgs_issue = get_object_or_404(NixpkgsIssue, id=nixpkgs_issue_id)
+
+        if subscribe == "subscribe":
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.subscriptions.add(nixpkgs_issue_id)
+            profile.save()
+        elif subscribe == "unsubscribe":
+            try:
+                profile = Profile.objects.get(user=user)
+                profile.subscriptions.remove(nixpkgs_issue)
+                profile.save()
+            except Profile.DoesNotExist:
+                # This can't really happen from the interface since the
+                # Unsubscribe button is only visible when the user is subscribed
+                # to said issue. We log it but we don't bother showing the user
+                # an error message.
+                logger.error(
+                    f"Tried to unsubscribe user {user.id} from issue #{nixpkgs_issue_id} but user doesn't have a profile"
+                )
+        else:
+            logger.warn(
+                f"Ignoring subscription action with unexpected `subscribe` value: {subscribe}"
+            )
+
+        return render(request, "issue_detail.html", {"object": nixpkgs_issue})
 
 
 class NixpkgsIssueListView(ListView):
