@@ -322,7 +322,7 @@ class SyncBatchAttributeIngester:
         metadata: NixDerivationMeta | None = None,
     ) -> NixDerivation:
         return NixDerivation(
-            attribute=evaluation.attr,
+            attribute=evaluation.attr.removesuffix(f".{evaluation.system}"),
             derivation_path=evaluation.drv_path,
             name=evaluation.name,
             metadata=metadata,
