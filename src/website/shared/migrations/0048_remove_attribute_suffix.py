@@ -4,23 +4,49 @@ from django.db import migrations
 
 def remove_suffix(apps, schema_editor):
     NixDerivation = apps.get_model('shared', 'NixDerivation')
-    for instance in NixDerivation.objects.all():
-        if instance.attribute and instance.system:
-            # Remove the suffix if it matches the system field
-            suffix = f".{instance.system}"
-            if instance.attribute.endswith(suffix):
-                instance.attribute = instance.attribute.removesuffix(suffix)
-                instance.save()
+    batch_size = 30000
+    instances = NixDerivation.objects.all()
+    count = instances.count()
+
+    for offset in range(0, count, batch_size):
+        instances_to_update = []
+        batch = instances[offset : offset + batch_size]
+        for instance in batch:
+            if instance.attribute and instance.system:
+                # Remove the suffix if it matches the system field
+                suffix = f".{instance.system}"
+                if instance.attribute.endswith(suffix):
+                    instance.attribute = instance.attribute.removesuffix(suffix)
+                    instances_to_update.append(instance)
+
+        if instances_to_update:
+            NixDerivation.objects.bulk_update(
+                instances_to_update, ["attribute"], batch_size=1000
+            )
+
 
 def reapply_suffix(apps, schema_editor):
     NixDerivation = apps.get_model('shared', 'NixDerivation')
-    for instance in NixDerivation.objects.all():
-        if instance.attribute and instance.system:
-            # Reapply the suffix if it doesn't already exist
-            suffix = f".{instance.system}"
-            if not instance.attribute.endswith(suffix):
-                instance.attribute = f"{instance.attribute}{suffix}"
-                instance.save()
+    batch_size = 30000
+    instances = NixDerivation.objects.all()
+    count = instances.count()
+
+    for offset in range(0, offset, batch_size):
+        instances_to_update = []
+        batch = instances[offset : offset + batch_size]
+        for instance in batch:
+            if instance.attribute and instance.system:
+                # Reapply the suffix if it doesn't already exist
+                suffix = f".{instance.system}"
+                if not instance.attribute.endswith(suffix):
+                    instance.attribute = f"{instance.attribute}{suffix}"
+                    instances_to_update.append(instance)
+
+        if instances_to_update:
+            NixDerivation.objects.bulk_update(
+                instances_to_update, ["attribute"], batch_size=1000
+            )
+
 
 class Migration(migrations.Migration):
 
