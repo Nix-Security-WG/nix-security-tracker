@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from shared.models import NixpkgsIssue
+from shared.models import NixChannel
+from shared.models.nix_evaluation import NixDerivation
 
 
 class Profile(models.Model):
@@ -15,7 +16,8 @@ class Profile(models.Model):
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    subscriptions = models.ManyToManyField(NixpkgsIssue, related_name="subscribers")
+    channels = models.ManyToManyField(NixChannel, related_name="subscribers")
+    packages = models.ManyToManyField(NixDerivation, related_name="subscribers")
 
 
 @receiver(post_save, sender=User)
