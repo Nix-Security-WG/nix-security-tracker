@@ -1,0 +1,33 @@
+name: Actionlint
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  push:
+    branches: main
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+# Restrict permissions for GITHUB_TOKEN to minimum required
+permissions:
+  contents: read
+  # All other permissions are implicitly none
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false # Because installing actionlint runs arbitrary code, we discard the GITHUB_TOKEN after this step
+      # Taken from https://github.com/rhysd/actionlint/blob/v1.7.7/docs/usage.md#use-actionlint-on-github-actions
+      - name: Download actionlint
+        id: get_actionlint
+        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+        shell: bash
+      - name: Check workflow files
+        run: ${{ steps.get_actionlint.outputs.executable }}
+        shell: bash
