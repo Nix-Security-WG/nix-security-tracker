@@ -1,0 +1,30 @@
+name: "CodeQL"
+
+on:
+  pull_request:
+  push:
+    branches: main
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  codeql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v29
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: "python"
+          queries: security-and-quality
+          config-file: .github/codeql/codeql-config.yaml
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
