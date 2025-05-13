@@ -499,6 +499,13 @@ class SuggestionListView(ListView):
     paginate_by = 10
     context_object_name = "objects"
 
+    status_route_dict = {
+        CVEDerivationClusterProposal.Status.PENDING.value: "/suggestions",
+        CVEDerivationClusterProposal.Status.ACCEPTED.value: "/drafts",
+        CVEDerivationClusterProposal.Status.REJECTED.value: "/dismissed",
+        CVEDerivationClusterProposal.Status.PUBLISHED.value: "/issues",
+    }
+
     # Determines how the list is filtered for and some control elements that
     # only are shown depending on the context.
     status_filter: CVEDerivationClusterProposal.Status = (
@@ -677,6 +684,9 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
+                        "changed_suggestion_link": self.status_route_dict[
+                            suggestion.status
+                        ],
                         "gh_issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },

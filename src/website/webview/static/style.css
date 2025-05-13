@@ -621,6 +621,11 @@ article .suggestion.state-changed h2 .rejected {
 article .suggestion.state-changed form {
 }
 
+article .suggestion.state-changed a {
+  text-decoration: none;
+  color: var(--dark-grey);
+}
+
 article .suggestion.state-changed button {
   border: none;
   background: none;
