@@ -66,29 +66,20 @@ class MockGithub:
         )
 
 
-# Object creation utilities
-def create_sociallogin_for_user(user: User, user_uid: str) -> SocialLogin:
-    user_socialaccount = SocialAccount.objects.create(
-        user=user,
-        provider="github",
-        uid=user_uid,
-    )
-
-    return SocialLogin(
-        user=user,
-        account=user_socialaccount,
-    )
-
-
-def create_user_with_sociallogin(
-    name: str, uid_base: int, amount: int
+def create_users_with_sociallogin(
+    name: str, uid_offset: int, amount: int
 ) -> list[SocialLogin]:
     result = []
 
     for i in range(amount):
-        uid: str = str(uid_base + i)
+        uid: str = str(uid_offset + i)  # GitHub has numeric user IDs
         user = User.objects.create_user(username=f"{name}-{i+1}")
-        result.append(create_sociallogin_for_user(user=user, user_uid=uid))
+        account = SocialAccount.objects.create(
+            user=user,
+            provider="github",
+            uid=uid,
+        )
+        result.append(SocialLogin(user=user, account=account))
 
     return result
 
@@ -103,16 +94,16 @@ class GithubSyncTests(TestCase):
             username="superuser", password="pass", email="superuser@localhost"
         )
         # Security members get admin permissions.
-        cls.security_users = create_user_with_sociallogin(
-            name="security-member", uid_base=10, amount=2
+        cls.security_users = create_users_with_sociallogin(
+            name="security-member", uid_offset=10, amount=2
         )
         # Committers get write permissions to models that relate to derivations they maintain
-        cls.committer_users = create_user_with_sociallogin(
-            name="committer", uid_base=20, amount=2
+        cls.committer_users = create_users_with_sociallogin(
+            name="committer", uid_offset=20, amount=2
         )
         # Anybody else gets read permissions
-        cls.reader_users = create_user_with_sociallogin(
-            name="reader", uid_base=30, amount=1
+        cls.reader_users = create_users_with_sociallogin(
+            name="reader", uid_offset=30, amount=1
         )
         cls.user_without_social = User.objects.create_user(
             username="user-without-social"
