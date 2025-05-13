@@ -9,6 +9,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
+
 from shared.auth import isadmin, iscommitter
 from shared.auth.github_state import GithubState, set_groups_for_new_user
 from shared.auth.github_webhook import handle_webhook
