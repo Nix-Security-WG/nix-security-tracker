@@ -108,9 +108,16 @@ in
       type = types.nullOr types.str;
       default = null;
     };
-    env = mkOption {
+    env = mkOption rec {
+      description = ''
+        Django configuration via environment variables, see `settings.py` for options.
+      '';
       type = types.attrsOf types.anything;
-      default = { };
+      default = {
+        STATIC_ROOT = "/var/lib/web-security-tracker/static/"; # trailing slash is required!
+      };
+      # only override defaults with explicit values
+      apply = lib.recursiveUpdate default;
     };
     settings = mkOption {
       type = types.attrsOf types.anything;
@@ -152,7 +159,6 @@ in
     services = {
       # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
       web-security-tracker.settings = {
-        STATIC_ROOT = mkDefault "/var/lib/web-security-tracker/static";
         DEBUG = mkDefault false;
         ALLOWED_HOSTS = mkDefault [
           (with cfg; if production then domain else "*")
@@ -174,7 +180,7 @@ in
           {
             locations = {
               "/".proxyPass = "http://localhost:${toString cfg.wsgi-port}";
-              "/static/".alias = "/var/lib/web-security-tracker/static/";
+              "/static/".alias = cfg.env.STATIC_ROOT;
             };
           }
           // lib.optionalAttrs cfg.production {
