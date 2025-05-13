@@ -684,9 +684,7 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
-                        "changed_suggestion_link": self.status_route_dict[
-                            suggestion.status
-                        ],
+                        "changed_suggestion_link": f"{self.status_route_dict[suggestion.status]}#suggestion-{suggestion.pk}",
                         "gh_issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },
