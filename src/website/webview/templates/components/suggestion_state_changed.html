@@ -9,6 +9,7 @@
     {% csrf_token %}
     <input type="hidden" name="suggestion_id" value="{{ suggestion_id }}">
     <!-- We can't undo publication -->
+    <a href="{{ changed_suggestion_link }}">👁</a>
     {% if status != "published" %}
     <button type="submit" name="new_status" value="{{ old_status }}" title="Undo">
       ↺
