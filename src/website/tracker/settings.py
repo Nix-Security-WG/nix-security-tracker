@@ -14,12 +14,25 @@ import importlib.util
 import sys
 from os import environ as env
 from pathlib import Path
+from typing import Annotated
 
 import dj_database_url
 import sentry_sdk
-from pydantic import BaseModel, DirectoryPath, Field
+from pydantic import BaseModel, DirectoryPath, Field, PlainSerializer
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sentry_sdk.integrations.django import DjangoIntegration
+
+
+def get_secret(name: str, encoding: str = "utf-8") -> str:
+    credentials_dir = Secrets().CREDENTIALS_DIRECTORY  # type: ignore[reportCallIssue]
+
+    try:
+        with open(f"{credentials_dir}/{name}", encoding=encoding) as f:
+            secret = f.read().removesuffix("\n")
+    except FileNotFoundError:
+        raise RuntimeError(f"No secret named {name} found in {credentials_dir}.")
+
+    return secret
 
 
 class Secrets(BaseSettings):
@@ -90,10 +103,35 @@ class Settings(BaseSettings):
             default=[],
         )
 
+        class SocialAccountProviders(BaseModel):
+            class GitHub(BaseModel):
+                SCOPE: list[str] = Field(
+                    description="Access scopes required by the application"
+                )
+
+                class AppSettings(BaseModel):
+                    client_id: Annotated[str, PlainSerializer(get_secret)]
+                    secret: Annotated[str, PlainSerializer(get_secret)]
+                    key: str = ""
+
+                APPS: list[AppSettings] = []
+
+            github: GitHub | None
+
+        _GitHub = SocialAccountProviders.GitHub
+        _App = SocialAccountProviders.GitHub.AppSettings
+
+        SOCIALACCOUNT_PROVIDERS: SocialAccountProviders = SocialAccountProviders(
+            github=_GitHub(
+                SCOPE=["read:user", "read:org"],
+                APPS=[_App(client_id="GH_CLIENT_ID", secret="GH_SECRET")],
+            ),
+        )
+
     DJANGO_SETTINGS: DjangoSettings
 
 
-for key, value in Settings().dict()["DJANGO_SETTINGS"].items():  # type: ignore[reportCallIssue]
+for key, value in Settings().model_dump()["DJANGO_SETTINGS"].items():  # type: ignore[reportCallIssue]
     setattr(sys.modules[__name__], key, value)
 
 # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
@@ -101,21 +139,7 @@ for key, value in Settings().dict()["DJANGO_SETTINGS"].items():  # type: ignore[
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-def get_secret(name: str, encoding: str = "utf-8") -> str:
-    credentials_dir = Secrets().CREDENTIALS_DIRECTORY  # type: ignore[reportCallIssue]
-
-    try:
-        with open(f"{credentials_dir}/{name}", encoding=encoding) as f:
-            secret = f.read().removesuffix("\n")
-    except FileNotFoundError:
-        raise RuntimeError(f"No secret named {name} found in {credentials_dir}.")
-
-    return secret
-
-
 ## GlitchTip setup
-
 if "GLITCHTIP_DSN" in env:
     sentry_sdk.init(
         dsn=get_secret("GLITCHTIP_DSN"),
@@ -312,21 +336,6 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
-SOCIALACCOUNT_PROVIDERS = {
-    "github": {
-        "SCOPE": [
-            "read:user",
-            "read:org",
-        ],
-        "APPS": [
-            {
-                "client_id": get_secret("GH_CLIENT_ID"),
-                "secret": get_secret("GH_SECRET"),
-                "key": "",
-            }
-        ],
-    }
-}
 
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"]
