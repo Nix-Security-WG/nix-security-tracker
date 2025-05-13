@@ -415,12 +415,6 @@ nav.header span {
   list-style-type: none;
 }
 
-.page-width {
-  max-width: 55rem;
-  margin: auto;
-  padding: 1rem 0;
-}
-
 nav#pagination {
   background-color: unset;
   color: black;
@@ -434,13 +428,11 @@ nav#pagination {
 
 h1,
 p {
-  max-width: 55rem;
-  margin: auto;
   margin-bottom: 1rem;
 }
 
 article {
-  padding: 0 1em;
+  margin: auto;
 }
 
 footer {
@@ -458,7 +450,6 @@ nav.issue-pipeline ul {
 
 #overview {
   margin: auto;
-  padding: 2em;
 }
 
 #overview a {
@@ -472,7 +463,6 @@ nav.issue-pipeline ul {
 #suggestion-list {
   display: flex;
   row-gap: 0.5rem;
-  padding: 0.5em;
   flex-direction: column;
 }
 
@@ -483,7 +473,6 @@ article .suggestion {
   align-items: start;
   align-content: stretch;
   justify-content: start;
-  padding: 1rem;
   flex-direction: column;
   flex-wrap: nowrap;
   flex-grow: 1;
@@ -983,12 +972,16 @@ button:hover {
 
 /* Desktop */
 @media (min-width: 50em) {
+  article {
+    width: 55em;
+    padding: 1rem;
+  }
 }
 
 /* Smartphone */
 @media (max-width: 50em) {
   article {
-    padding: 0;
+    padding: 0.5rem 0;
   }
 
   h1,
