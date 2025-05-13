@@ -8,16 +8,19 @@
     inherit system;
   },
   lib ? import "${sources.nixpkgs}/lib",
+  name ? "web-security-tracker",
 }:
 rec {
-  inherit pkgs;
+  inherit pkgs name;
   inherit (pkgs) python3;
   localPythonPackages = import ./pkgs { inherit pkgs python3; };
 
   # For exports.
   overlays = [ overlay ];
+  # TODO: `callPackage` the derivation here instead of splicing through
+  # overlays, it's needlessly hard to follow
   package = pkgs.web-security-tracker;
-  module = import ./nix/web-security-tracker.nix;
+  module = ./nix/web-security-tracker.nix;
   dev-container = import ./infra/container.nix;
   dev-setup = import ./nix/dev-setup.nix;
 
@@ -167,5 +170,5 @@ rec {
       '';
     };
 
-  tests = pkgs.callPackage ./nix/tests.nix { };
+  tests = pkgs.callPackage ./nix/tests.nix { application = name; };
 }

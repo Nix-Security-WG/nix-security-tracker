@@ -5,11 +5,12 @@
   ...
 }:
 let
+  application = "web-security-tracker";
   sectracker = import ../. { };
   secretsPath = "/etc/secrets";
   secretsGuestPath = "/mnt/secrets";
   secretsHostPath = toString ../.credentials;
-  cfg = config.containers.nix-security-tracker;
+  cfg = config.containers.${application};
 in
 {
   /**
@@ -18,17 +19,17 @@ in
 
     The container can be managed at runtime with [`nixos-container`](https://nixos.org/manual/nixos/unstable/#sec-imperative-containers).
   */
-  users.users.web-security-tracker = {
+  users.users.${application} = {
     isSystemUser = true;
-    group = "web-security-tracker";
+    group = application;
   };
-  users.groups.web-security-tracker = { };
-  systemd.services."container@nix-security-tracker" = {
+  users.groups.${application} = { };
+  systemd.services."container@${application}" = {
     serviceConfig = {
       TimeoutStartSec = lib.mkForce "15m";
     };
   };
-  containers.nix-security-tracker = {
+  containers.${application} = {
     autoStart = true;
     privateNetwork = true;
     # local address range that is unlikely to collide with something else
@@ -56,7 +57,7 @@ in
         # which almost certainly won't be the same as the user under which the service runs
         boot.postBootCommands = ''
           cp -r ${secretsGuestPath}/* ${secretsPath}
-          chown web-security-tracker ${secretsPath}
+          chown ${application} ${secretsPath}
         '';
         networking.firewall.allowedTCPPorts = map (forward: forward.containerPort) (
           lib.filter (forward: forward.protocol == "tcp") cfg.forwardPorts
@@ -67,7 +68,7 @@ in
         imports = [
           sectracker.module
         ];
-        services.web-security-tracker = {
+        services.${application} = {
           enable = true;
           domain = "sectracker.local";
           production = false;

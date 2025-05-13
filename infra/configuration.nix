@@ -137,7 +137,7 @@ in
           values = [ "unix_timestamp" ];
         };
       };
-      connections = [ "postgres://postgres@/web-security-tracker?host=/run/postgresql" ];
+      connections = [ "postgres://postgres@/${application}?host=/run/postgresql" ];
       interval = "1h";
     };
   };
