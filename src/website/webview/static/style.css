@@ -361,6 +361,7 @@
   --error-suggestion: #ffabab;
   --affected: #ffabab;
   --unaffected: #bfb;
+  --highlighted: #fcf9c4;
 }
 
 body {
@@ -487,6 +488,18 @@ article .suggestion {
   flex-direction: column;
   flex-wrap: nowrap;
   flex-grow: 1;
+}
+
+@keyframes suggestion-quick-highlight {
+  0% {
+    background: var(--highlighted);
+  }
+  100% {
+  }
+}
+
+article .suggestion:target {
+  animation: suggestion-quick-highlight 3s;
 }
 
 article .row1 {
