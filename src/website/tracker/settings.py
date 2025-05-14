@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     class DjangoSettings(BaseModel):
         # SECURITY WARNING: don't run with debug turned on in production!
         DEBUG: bool = False
+        STATIC_ROOT: Path = Field(
+            description="""
+            Writeable directory for compilimg static files, such as stylesheets, when running `manage collectstatic`.
+            """
+        )
         SYNC_GITHUB_STATE_AT_STARTUP: bool = Field(
             description="""
             Connect to GitHub when the service is started and update
