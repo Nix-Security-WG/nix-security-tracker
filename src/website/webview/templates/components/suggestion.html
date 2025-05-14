@@ -49,7 +49,7 @@
       {% nixpkgs_package_list cached_suggestion.packages %}
     {% endif %}
 
-    {% maintainers_list cached_suggestion.packages %}
+    {% maintainers_list cached_suggestion.maintainers %}
 
     {% if user|is_maintainer_or_admin %}
     <div class="change-issue-state">

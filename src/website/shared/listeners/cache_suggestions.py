@@ -11,7 +11,7 @@ from shared.channels import CVEDerivationClusterProposalChannel
 from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import AffectedProduct, Metric, Version
-from shared.models.linkage import CVEDerivationClusterProposal
+from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
 from shared.models.nix_evaluation import get_major_channel
 
 logger = logging.getLogger(__name__)
@@ -109,6 +109,11 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
     )
 
     prefetched_metrics = Metric.objects.filter(container__cve=suggestion.cve)
+    packages = channel_structure(all_versions, derivations)
+    maintainers_edits = list(
+        suggestion.maintainers_edits.select_related("maintainer").all()
+    )
+    maintainers = maintainers_list(packages, maintainers_edits)
 
     only_relevant_data = {
         "pk": suggestion.pk,
@@ -117,8 +122,9 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         "title": relevant_piece["title"],
         "description": relevant_piece["descriptions__value"],
         "affected_products": affected_products,
-        "packages": channel_structure(all_versions, derivations),
+        "packages": packages,
         "metrics": [to_dict(m) for m in prefetched_metrics],
+        "maintainers": maintainers,
     }
 
     # TODO: add format checking to avoid disasters in the frontend.
@@ -295,3 +301,32 @@ def parse_drv_name(name: str) -> tuple[str, str]:
         return match.group(1), match.group(2)
     else:
         return name, ""
+
+
+def maintainers_list(packages: dict, edits: list[MaintainersEdit]) -> list[dict]:
+    """
+    Returns a deduplicated list (by GitHub ID) of all the maintainers of all the
+    affected packages linked to this suggestion, modified by potential
+    user-supplied edits.
+    """
+
+    to_remove = {
+        m.maintainer for m in edits if m.type == MaintainersEdit.EditType.REMOVE
+    }
+    to_add = [m.maintainer for m in edits if m.type == MaintainersEdit.EditType.ADD]
+
+    seen_ids = set()
+    maintainers = list()
+    all_maintainers = [m for pkg in packages.values() for m in pkg["maintainers"]]
+
+    for m in all_maintainers:
+        if m["github_id"] not in seen_ids and m["github_id"] not in to_remove:
+            seen_ids.add(m["github_id"])
+            maintainers.append(m)
+
+    for m in to_add:
+        if m.github_id not in seen_ids and m.github_id not in to_remove:
+            seen_ids.add(m.github_id)
+            maintainers.append(m)
+
+    return maintainers

@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict
 
 from django import template
 from django.template.context import Context
@@ -196,17 +196,6 @@ def suggestion_activity_log(
 
 @register.inclusion_tag("components/maintainers_list.html")
 def maintainers_list(
-    packages: PackageList,
-) -> dict[str, list[Maintainer]]:
-    maintainers = [
-        maintainer
-        for _, package in packages.items()
-        for maintainer in package["maintainers"]
-    ]
-    github_ids = set()
-    unique_maintainers = [
-        cast(Maintainer, m)
-        for m in maintainers
-        if m["github_id"] not in github_ids and not github_ids.add(m["github_id"])
-    ]
-    return {"maintainers": unique_maintainers}
+    maintainers: list[dict],
+) -> dict[str, list[dict]]:
+    return {"maintainers": maintainers}

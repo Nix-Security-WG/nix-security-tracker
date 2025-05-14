@@ -1,11 +1,12 @@
 from enum import STRICT, IntFlag, auto
 
 import pghistory
-import shared.models.cached
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+import shared.models.cached
 from shared.models.cve import CveRecord, Description, IssueStatus, NixpkgsIssue
-from shared.models.nix_evaluation import NixDerivation, TimeStampMixin
+from shared.models.nix_evaluation import NixDerivation, NixMaintainer, TimeStampMixin
 
 
 def text_length(choices: type[models.TextChoices]) -> int:
@@ -60,6 +61,26 @@ class CVEDerivationClusterProposal(TimeStampMixin):
         issue.derivations.set(self.derivations.all())
         issue.save()
         return issue
+
+
+class MaintainersEdit(models.Model):
+    """
+    A single manual edit of the list of maintainers of a suggestion.
+    """
+
+    class EditType(models.TextChoices):
+        ADD = "add", _("add")
+        REMOVE = "remove", _("remove")
+
+    edit_type = models.CharField(
+        max_length=text_length(EditType), choices=EditType.choices
+    )
+    maintainer = models.ForeignKey(NixMaintainer, on_delete=models.CASCADE)
+    suggestion = models.ForeignKey(
+        CVEDerivationClusterProposal,
+        related_name="maintainers_edits",
+        on_delete=models.CASCADE,
+    )
 
 
 class ProvenanceFlags(IntFlag, boundary=STRICT):
