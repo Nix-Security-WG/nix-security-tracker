@@ -1,7 +1,9 @@
-{ lib, pkgs }:
+{
+  lib,
+  pkgs,
+  application,
+}:
 let
-  # TODO: specify project/service name globally
-  application = "web-security-tracker";
   defaults = {
     documentation.enable = lib.mkDefault false;
 
