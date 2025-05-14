@@ -431,9 +431,17 @@ class NixpkgsIssueView(DetailView):
 class NixpkgsIssueListView(ListView):
     template_name = "issue_list.html"
     model = NixpkgsIssue
+    paginate_by = 10
 
     def get_queryset(self) -> BaseManager[NixpkgsIssue]:
         return NixpkgsIssue.objects.all()
+
+    def get_context_data(self, **kwargs: Any) -> Any:
+        context = super().get_context_data(**kwargs)
+        context["adjusted_elided_page_range"] = context[
+            "paginator"
+        ].get_elided_page_range(context["page_obj"].number)
+        return context
 
 
 class NixderivationPerChannelView(ListView):

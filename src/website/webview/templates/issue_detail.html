@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load viewutils %}
 
 {% block title %}
 {{ issue }}
@@ -6,54 +7,21 @@
 
 {% block content %}
 
-<h1>{{ object.code }}</h1>
+<header class="page-width">
+  <nav class="issue-pipeline centered-inline-list">
+    <ul>
+      <li><a href="/dismissed">Dismissed suggestions</a></li>
+      <li><a href="/suggestions">Untriaged suggestions</a></li>
+      <li><a href="/drafts">Draft issues</a></li>
+      <li><a href="/issues">Published issues</a></li>
+    </ul>
+  </nav>
+</header>
 
-<p>{{ object.description.value }}</p>
+<h1>Details of issue {{ object.code }}</h1>
 
-<dl>
-  <dt>Issue status</dt>
-    <dd>{{ object.status_string }}</dd>
-  <dt>Created</dt>
-    <dd>{{ object.created }}</dd>
-</dl>
-
-<h2>Vulnerabilities</h2>
-
-<ul>
-  {% for cve in object.cve.all %}
-    <li>{{ cve.cve_id }}</li>
-  {% endfor %}
-</ul>
-
-<h2>Related derivations</h2>
-<ul>
-    {% for drv in object.derivations_with_cves %}
-      <li>
-        {{ drv.name }} (<a href="{{drv.metadata.position}}">source</a>)
-        {% if drv.metadata.maintainers.all %}
-        <figure>
-          <figcaption>Maintainers</figcaption>
-          <ul>
-            {% for maintainer in drv.metadata.maintainers.all %}
-              <li><a href="https://github.com/{{ maintainer.github }}">@{{ maintainer.github }}</a></li>
-            {% endfor %}
-          </ul>
-        </figure>
-        {% endif %}
-
-        {% if drv.known_cves %}
-        <figure>
-          <figcaption>Known vulnerabilities</figcaption>
-          <ul>
-            {% for cve in drv.known_cves %}
-              <li>{{ cve.cve.cve_id }}</li>
-            {% endfor %}
-          </ul>
-        </figure>
-        {% endif %}
-
-      </li>
-    {% endfor %}
-</ul>
+<article class="page-width">
+  {% issue object %}
+</article>
 
 {% endblock content %}

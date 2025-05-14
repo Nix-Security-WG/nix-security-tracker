@@ -362,6 +362,11 @@
   --affected: #ffabab;
   --unaffected: #bfb;
   --highlighted: #fcf9c4;
+  --issue-unknown: #fcee92;
+  --issue-affected: #99e87d;
+  --issue-notaffected: #e8867d;
+  --issue-notforus: #e2e2e2
+  --issue-wontfix: #ccccdd
 }
 
 body {
@@ -467,6 +472,88 @@ nav.issue-pipeline ul {
   flex-direction: column;
 }
 
+#issue-list {
+  display: flex;
+  row-gap: 0.5rem;
+  padding: 0.5em;
+  flex-direction: column;
+}
+
+article .issue {
+  border: 1px solid var(--grey);
+  border-radius: 5px;
+  align-items: start;
+  align-content: stretch;
+  justify-content: start;
+  padding: 1rem;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  flex-grow: 1;
+}
+
+article .issue .status {
+  font-weight: bold;
+  padding: .1em .5em;
+  text-transform: uppercase;
+}
+
+article .issue .status-unknown {
+  background: var(--issue-unknown);
+}
+
+article .issue .status-affected {
+  background: var(--issue-affected);
+}
+
+article .issue .status-notaffected {
+  background: var(--issue-notaffected);
+}
+
+article .issue .status-notforus {
+  background: var(--issue-notforus);
+}
+
+article .issue .status-wontfix {
+  background: var(--issue-wontfix);
+}
+
+article .issue .top-row {
+  display: flex;
+  font-size: 0.8rem;
+  justify-content: space-between;
+  margin-bottom: .5em;
+}
+
+article .issue .creation-date {
+  font-style: italic;
+}
+
+article .issue .vulnerabilities {
+  margin: 1em auto;
+}
+
+article .issue .related-derivations {
+  margin: 1em auto;
+}
+
+article .issue .related-derivations .derivation-list {
+  margin-top: 1em;
+  margin-left: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: .3em;
+}
+
+article .issue .related-derivations .derivation-list .derivation {
+  border: 1px solid var(--grey);
+  border-radius: 5px;
+  padding: .5em;
+}
+
+article .vulnerabilities .cve-id {
+  font-style: italic;
+}
+
 article .suggestion {
   position: relative;
   border: 1px solid var(--grey);
@@ -504,7 +591,7 @@ article .state-change-indicator {
   margin-top: 0.5em;
 }
 
-article .cve-id {
+article .suggestion .cve-id {
   color: var(--grey);
   padding: 0.2rem;
 }
@@ -642,6 +729,7 @@ details.description > summary {
 }
 
 details.description > summary:after {
+  margin-left: .5em;
   content: "Show\a0 more…";
   color: var(--dark-grey);
   cursor: pointer;
