@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load viewutils %}
 
 {% block content %}
 
@@ -13,9 +14,11 @@
   </nav>
 </header>
 
-<ul>
+<h1>Published issues</h1>
+
+<div id="issue-list" class="page-width">
     {% for object in object_list %}
-      <li><a href="{% url 'webview:issue_detail' object.code %}">{{ object.code }}</a></li>
+      {% issue object %}
     {% endfor %}
-</ul>
+</div>
 {% endblock content %}
