@@ -433,7 +433,7 @@ class NixpkgsIssueListView(ListView):
     paginate_by = 10
 
     def get_queryset(self) -> BaseManager[NixpkgsIssue]:
-        return NixpkgsIssue.objects.all()
+        return NixpkgsIssue.objects.all().order_by("-created")
 
     def get_context_data(self, **kwargs: Any) -> Any:
         context = super().get_context_data(**kwargs)
