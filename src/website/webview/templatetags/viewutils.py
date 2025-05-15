@@ -6,7 +6,7 @@ from django import template
 from django.template.context import Context
 from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_suggestions import parse_drv_name
-from shared.models.cve import AffectedProduct
+from shared.models.cve import AffectedProduct, NixpkgsIssue
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
@@ -137,6 +137,19 @@ def suggestion(
         "status_filter": context["status_filter"],
         "page_obj": context["page_obj"],
         "user": context["user"],
+    }
+
+
+@register.inclusion_tag("components/issue.html", takes_context=True)
+def issue(
+    context: Context,
+    issue: NixpkgsIssue,
+    show_permalink: bool = False,
+) -> dict:
+    return {
+        "issue": issue,
+        "show_permalink": show_permalink,
+        "page_obj": context.get("page_obj", None),
     }
 
 
