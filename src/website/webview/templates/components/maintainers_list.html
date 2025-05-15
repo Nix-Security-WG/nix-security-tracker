@@ -11,10 +11,9 @@
         <div class="maintainer-container">
           {% if selectable %}
           <input
-            type="checkbox"
-            name="maintainer_id"
+            type="button"
+            name="edit_maintainer_id"
             value="{{ maintainer.github_id }}"
-            checked
             hx-post=""
             hx-swap="none"
             hx-indicator="this .state-change-indicator"

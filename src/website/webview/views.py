@@ -11,6 +11,7 @@ from django.urls import reverse
 from shared.github import create_gh_issue
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
+from website.shared.listeners.cache_suggestions import maintainers_list
 
 if typing.TYPE_CHECKING:
     # prevent typecheck from failing on some historic type
@@ -55,9 +56,11 @@ from shared.models import (
     NixChannel,
     NixDerivation,
     NixpkgsIssue,
+    NixMaintainer,
 )
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
+    MaintainersEdit
 )
 
 from webview.forms import NixpkgsIssueForm
@@ -555,6 +558,7 @@ class SuggestionListView(ListView):
         suggestion_id = request.POST.get("suggestion_id")
         new_status = request.POST.get("new_status")
         current_page = request.POST.get("page", "1")
+        edit_maintainer_id = request.POST.get("edit_maintainer_id")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
         activity_log = (
             SuggestionActivityLog()
@@ -570,6 +574,10 @@ class SuggestionListView(ListView):
         # component, which is thus stored here (only when `status_change` is
         # true and `new_status = "published"`).
         gh_issue_link = None
+        editable = not (
+            self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
+            or undo_status_change
+        )
 
         def suggestion_view_context() -> dict:
             """
@@ -588,11 +596,55 @@ class SuggestionListView(ListView):
                 "csrf_token": get_token(request),
             }
 
+        # When clicking the button to the left of a maintainer, there are two
+        # cases:
+        #
+        # 1. The maintainer is currently in the list of maintainers: the button
+        #    was a remove button, and we should remove the maintainer from the
+        #    list.
+        # 2. The maintainer is not in the list of maintainers: the button was
+        #    an add button, and we should add the maintainer to the list.
+        #
+        # The button basically works as a toggle. Both cases have themselves two
+        # sub-cases, depending on the existence of a prior edit:
+        #
+        # 1. Removal
+        #    a) there was no prior edit, in which case we add a new "remove" edit
+        #    b) there was a prior "add" edit, in which case we remove the "add" edit from the list (meaning
+        #    the maintainer wasn't part of the list originally)
+        # 2. Addition
+        #    a) there was no prior edit, in which case we add a new "add" edit
+        #    b) there was a prior "remove" edit (undo/add back case), in which case we remove the edit from the
+        #    list
+        #
+        # Note that in both cases, if there was a prior edit, we always remove
+        # it from the list (1b and 2b).
+        if editable and edit_maintainer_id:
+            with transaction.atomic():
+                edit = suggestion.maintainers_edits.filter(maintainer__github_id=edit_maintainer_id)
+                # case 1b and 2b
+                if edit.exists():
+                    edit.delete()
+                    # If we removed an "add" edit, then our actual action is to
+                    # remove a maintainer from the current list, and conversely.
+                    edit_type = MaintainersEdit.EditType.REMOVE if edit.first().edit_type == MaintainersEdit.EditType.ADD else MaintainersEdit.EditType.ADD
+                else:
+                    maintainer = get_object_or_404(NixMaintainer, github_id=edit_maintainer_id)
+                    was_there = suggestion.maintainers_edits.filter(maintainer__github_id=edit_maintainer_id).exists()
+                    edit_type = MaintainersEdit.EditType.REMOVE if was_there else MaintainersEdit.EditType.ADD
+                    edit = MaintainersEdit(
+                            edit_type=edit_type,
+                            maintainer=maintainer,
+                            suggestion=suggestion,
+                    )
+                    edit.save()
+
+                cached_suggestion.payload["maintainers"] = maintainers_list(cached_suggestion.payload["packages"], suggestion.maintainers_edits.all())
+                cached_suggestion.save()
+                return HttpResponse(status=200)
+
         # We only have to modify derivations when they are editable
-        if not (
-            self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
-            or undo_status_change
-        ):
+        if editable:
             selected_derivations = [
                 str.split(",") for str in request.POST.getlist("derivation_ids")
             ]
@@ -696,3 +748,9 @@ class SuggestionListView(ListView):
         else:
             # Just reload the page
             return redirect(f"{request.path}?page={current_page}")
+
+class MaintainersListView(TemplateView):
+    template_name = "maintainers_list.html"
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        return HttpResponse(status=200)
