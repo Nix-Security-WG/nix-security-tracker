@@ -60,7 +60,6 @@ from shared.models import (
     NixpkgsIssue,
 )
 from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
-
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 
@@ -693,7 +692,7 @@ class SuggestionListView(ListView):
                     if tracker_issue:
                         changed_suggestion_link = f"/issues/{tracker_issue.code}"
                     else:
-                        changed_suggestion_link = f"/issues"
+                        changed_suggestion_link = "/issues"
                 else:
                     changed_suggestion_link = f"{self.status_route_dict[suggestion.status]}#suggestion-{suggestion.pk}"
                 snippet = render_to_string(

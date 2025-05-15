@@ -6,10 +6,7 @@ from django import template
 from django.template.context import Context
 from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_suggestions import parse_drv_name
-from shared.models.cve import (
-    AffectedProduct,
-    NixpkgsIssue
-)
+from shared.models.cve import AffectedProduct, NixpkgsIssue
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
@@ -156,6 +153,7 @@ def suggestion(
         "page_obj": context["page_obj"],
         "user": context["user"],
     }
+
 
 @register.inclusion_tag("components/issue.html", takes_context=True)
 def issue(
