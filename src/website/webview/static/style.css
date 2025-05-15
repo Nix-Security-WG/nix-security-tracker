@@ -480,15 +480,14 @@ nav.issue-pipeline ul {
 }
 
 article .issue {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .5em;
   border: 1px solid var(--grey);
   border-radius: 5px;
-  align-items: start;
-  align-content: stretch;
-  justify-content: start;
   padding: 1rem;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  flex-grow: 1;
 }
 
 article .issue .status {
@@ -528,12 +527,9 @@ article .issue .creation-date {
   font-style: italic;
 }
 
-article .issue .vulnerabilities {
-  margin: 1em auto;
-}
-
-article .issue .related-derivations {
-  margin: 1em auto;
+article .issue .vulnerabilities ul {
+  list-style-type: none;
+  margin: 0;
 }
 
 article .issue .related-derivations .derivation-list {
@@ -548,6 +544,10 @@ article .issue .related-derivations .derivation-list .derivation {
   border: 1px solid var(--grey);
   border-radius: 5px;
   padding: .5em;
+}
+
+article .issue .permalink {
+  align-self: flex-end;
 }
 
 article .vulnerabilities .cve-id {
