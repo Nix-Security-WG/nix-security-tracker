@@ -538,6 +538,28 @@ article .issue .creation-date {
   font-style: italic;
 }
 
+article .issue .vulnerabilities {
+  margin: 1em auto;
+}
+
+article .issue .related-derivations {
+  margin: 1em auto;
+}
+
+article .issue .related-derivations .derivation-list {
+  margin-top: 1em;
+  margin-left: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: .3em;
+}
+
+article .issue .related-derivations .derivation-list .derivation {
+  border: 1px solid var(--grey);
+  border-radius: 5px;
+  padding: .5em;
+}
+
 article .vulnerabilities .cve-id {
   font-style: italic;
 }
@@ -718,6 +740,7 @@ details.description > summary {
 }
 
 details.description > summary:after {
+  margin-left: .5em;
   content: "Show\a0 more…";
   color: var(--dark-grey);
   cursor: pointer;
