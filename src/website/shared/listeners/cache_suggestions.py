@@ -1,3 +1,4 @@
+import itertools
 import logging
 import re
 import urllib.parse
@@ -305,28 +306,29 @@ def parse_drv_name(name: str) -> tuple[str, str]:
 
 def maintainers_list(packages: dict, edits: list[MaintainersEdit]) -> list[dict]:
     """
-    Returns a deduplicated list (by GitHub ID) of all the maintainers of all the
-    affected packages linked to this suggestion, modified by potential
-    user-supplied edits.
+    Returns a deduplicated list (by GitHub ID) of all the maintainers, as dicts,
+    of all the affected packages linked to this suggestion, modified by
+    potential user-supplied edits.
     """
 
-    to_remove = {
-        m.maintainer for m in edits if m.type == MaintainersEdit.EditType.REMOVE
+    # Set of maintainers manually removed by the user. We use it to store
+    # maintainers that have already been added as well, for deduplication. If a
+    # maintainer's id is in this set at some point, it'll be ignored from there.
+    to_skip_or_seen: set[int] = {
+        m.maintainer.github_id
+        for m in edits
+        if m.type == MaintainersEdit.EditType.REMOVE
     }
-    to_add = [m.maintainer for m in edits if m.type == MaintainersEdit.EditType.ADD]
+    to_add: list[dict] = [
+        to_dict(m.maintainer) for m in edits if m.type == MaintainersEdit.EditType.ADD
+    ]
 
-    seen_ids = set()
-    maintainers = list()
+    maintainers: list[dict] = list()
     all_maintainers = [m for pkg in packages.values() for m in pkg["maintainers"]]
 
-    for m in all_maintainers:
-        if m["github_id"] not in seen_ids and m["github_id"] not in to_remove:
-            seen_ids.add(m["github_id"])
-            maintainers.append(m)
-
-    for m in to_add:
-        if m.github_id not in seen_ids and m.github_id not in to_remove:
-            seen_ids.add(m.github_id)
+    for m in itertools.chain(all_maintainers, to_add):
+        if m["github_id"] not in to_skip_or_seen:
+            to_skip_or_seen.add(m["github_id"])
             maintainers.append(m)
 
     return maintainers
