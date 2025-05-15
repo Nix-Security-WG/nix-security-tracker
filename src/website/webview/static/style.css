@@ -365,8 +365,8 @@
   --issue-unknown: #fcee92;
   --issue-affected: #99e87d;
   --issue-notaffected: #e8867d;
-  --issue-notforus: #e2e2e2
-  --issue-wontfix: #ccccdd
+  --issue-notforus: #e2e2e2;
+  --issue-wontfix: #ccccdd;
 }
 
 body {
@@ -484,7 +484,7 @@ article .issue {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: .5em;
+  gap: 0.5em;
   border: 1px solid var(--grey);
   border-radius: 5px;
   padding: 1rem;
@@ -492,7 +492,7 @@ article .issue {
 
 article .issue .status {
   font-weight: bold;
-  padding: .1em .5em;
+  padding: 0.1em 0.5em;
   text-transform: uppercase;
 }
 
@@ -520,7 +520,7 @@ article .issue .top-row {
   display: flex;
   font-size: 0.8rem;
   justify-content: space-between;
-  margin-bottom: .5em;
+  margin-bottom: 0.5em;
 }
 
 article .issue .creation-date {
@@ -537,13 +537,13 @@ article .issue .related-derivations .derivation-list {
   margin-left: 1em;
   display: flex;
   flex-direction: column;
-  gap: .3em;
+  gap: 0.3em;
 }
 
 article .issue .related-derivations .derivation-list .derivation {
   border: 1px solid var(--grey);
   border-radius: 5px;
-  padding: .5em;
+  padding: 0.5em;
 }
 
 article .issue .permalink {
@@ -729,7 +729,7 @@ details.description > summary {
 }
 
 details.description > summary:after {
-  margin-left: .5em;
+  margin-left: 0.5em;
   content: "Show\a0 more…";
   color: var(--dark-grey);
   cursor: pointer;
