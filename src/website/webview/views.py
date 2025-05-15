@@ -580,6 +580,9 @@ class SuggestionListView(ListView):
         # true and `new_status = "published"`).
         gh_issue_link = None
 
+        # Issue on the tracker that is defined after publishing
+        tracker_issue = None
+
         def suggestion_view_context() -> dict:
             """
             Creates a proper context for the `suggestion` view. Since this is
@@ -686,6 +689,13 @@ class SuggestionListView(ListView):
                 )
                 return HttpResponse(snippet)
             elif status_change:
+                if suggestion.status == "published":
+                    if tracker_issue:
+                        changed_suggestion_link = f"/issues/{tracker_issue.code}"
+                    else:
+                        changed_suggestion_link = f"/issues"
+                else:
+                    changed_suggestion_link = f"{self.status_route_dict[suggestion.status]}#suggestion-{suggestion.pk}"
                 snippet = render_to_string(
                     "components/suggestion_state_changed.html",
                     {
@@ -693,7 +703,7 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
-                        "changed_suggestion_link": f"{self.status_route_dict[suggestion.status]}#suggestion-{suggestion.pk}",
+                        "changed_suggestion_link": changed_suggestion_link,
                         "gh_issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },

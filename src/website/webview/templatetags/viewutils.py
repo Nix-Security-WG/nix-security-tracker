@@ -160,10 +160,12 @@ def suggestion(
 @register.inclusion_tag("components/issue.html", takes_context=True)
 def issue(
     context: Context,
-    issue: NixpkgsIssue
+    issue: NixpkgsIssue,
+    show_permalink: bool = False,
 ) -> dict:
     return {
         "issue": issue,
+        "show_permalink": show_permalink,
         "page_obj": context.get("page_obj", None),
     }
 
