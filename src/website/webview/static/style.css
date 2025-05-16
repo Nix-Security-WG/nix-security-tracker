@@ -871,18 +871,24 @@ a:focus {
   cursor: pointer;
 }
 
-.maintainer-container input::after {
+.maintainer-container button {
   position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: center;
+  cursor: pointer;
+}
+
+.maintainer-edit-add button::after {
   top: -0.2em;
   content: "↺";
-  text-align: center;
   font-weight: 700;
   font-size: 1.5em;
   color: var(--grey);
 }
 
-.maintainer-container input:checked::after {
-  position: relative;
+.maintainer-edit-remove button::after {
   top: 0.2em;
   content: "🗑";
   text-align: center;
@@ -895,7 +901,7 @@ a:focus {
   padding: 0;
 }
 
-.maintainer-container input:not(:checked) ~ article {
+.maintainer-container .maintainer-edit-add article {
   color: var(--grey);
   text-decoration: line-through;
 }

@@ -320,7 +320,9 @@ def maintainers_list(packages: dict, edits: list[MaintainersEdit]) -> list[dict]
         if m.edit_type == MaintainersEdit.EditType.REMOVE
     }
     to_add: list[dict] = [
-        to_dict(m.maintainer) for m in edits if m.edit_type == MaintainersEdit.EditType.ADD
+        to_dict(m.maintainer)
+        for m in edits
+        if m.edit_type == MaintainersEdit.EditType.ADD
     ]
 
     maintainers: list[dict] = list()

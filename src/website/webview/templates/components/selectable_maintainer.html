@@ -1,0 +1,15 @@
+{% load viewutils %}
+
+<div class="maintainer-container {% if deleted %} maintainer-edit-add{% else %} maintainer-edit-remove{%endif %}">
+  <button
+    type="submit"
+    name="edit_maintainer_id"
+    value="{{ maintainer.github_id }}"
+    hx-post="{% url 'webview:edit_maintainers' %}"
+    hx-swap="outerHTML"
+    hx-target="closest .maintainer-container"
+    hx-indicator="this .state-change-indicator"
+  />
+  </button>
+  {% maintainer maintainer %}
+</div>

@@ -1,7 +1,7 @@
 {% load viewutils %}
 
 {% if maintainers %}
-  <details class="maintainers">
+  <details class="maintainers" id="">
     <summary>
       Notify package maintainers: {{ maintainers | length }}
     </summary>
@@ -10,16 +10,10 @@
       {% for maintainer in maintainers %}
         <div class="maintainer-container">
           {% if selectable %}
-          <input
-            type="button"
-            name="edit_maintainer_id"
-            value="{{ maintainer.github_id }}"
-            hx-post=""
-            hx-swap="none"
-            hx-indicator="this .state-change-indicator"
-          />
-          {% endif %}
+          {% selectable_maintainer maintainer %}
+          {% else %}
           {% maintainer maintainer %}
+          {% endif %}
         </div>
       {% endfor %}
     </div>
