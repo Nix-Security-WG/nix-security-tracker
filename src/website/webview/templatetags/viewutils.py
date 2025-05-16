@@ -40,6 +40,7 @@ class PackageList(TypedDict):
 
 class PackageListContext(TypedDict):
     packages: PackageList
+    selectable: bool
 
 
 class AffectedContext(TypedDict):
@@ -57,6 +58,15 @@ class Maintainer(TypedDict):
     github: str
     matrix: str
     github_id: int
+
+
+class MaintainerContext(TypedDict):
+    maintainer: Maintainer
+
+
+class MaintainersListContext(TypedDict):
+    maintainers: list[Maintainer]
+    selectable: bool
 
 
 @register.filter
@@ -145,7 +155,7 @@ def nixpkgs_package(attribute_name: str, pdata: Package) -> PackageContext:
     return {"attribute_name": attribute_name, "pdata": pdata}
 
 
-@register.inclusion_tag("components/selectable_nixpkgs_package_list.html")
+@register.inclusion_tag("components/nixpkgs_package_list.html")
 def selectable_nixpkgs_package_list(packages: PackageList) -> PackageListContext:
     """Renders the nixpkgs package list with additional checkboxes to have packages selectable.
 
@@ -160,6 +170,7 @@ def selectable_nixpkgs_package_list(packages: PackageList) -> PackageListContext
     """
     return {
         "packages": packages,
+        "selectable": True,
     }
 
 
@@ -178,6 +189,7 @@ def nixpkgs_package_list(packages: PackageList) -> PackageListContext:
     """
     return {
         "packages": packages,
+        "selectable": False,
     }
 
 
@@ -196,6 +208,20 @@ def suggestion_activity_log(
 
 @register.inclusion_tag("components/maintainers_list.html")
 def maintainers_list(
-    maintainers: list[dict],
-) -> dict[str, list[dict]]:
-    return {"maintainers": maintainers}
+    maintainers: list[Maintainer],
+) -> MaintainersListContext:
+    return {"maintainers": maintainers, "selectable": False}
+
+
+@register.inclusion_tag("components/maintainers_list.html")
+def selectable_maintainers_list(
+    maintainers: list[Maintainer],
+) -> MaintainersListContext:
+    return {"maintainers": maintainers, "selectable": True}
+
+
+@register.inclusion_tag("components/maintainer.html")
+def maintainer(
+    maintainer: Maintainer,
+) -> MaintainerContext:
+    return {"maintainer": maintainer}
