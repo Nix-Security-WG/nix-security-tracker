@@ -82,6 +82,16 @@ class MaintainersEdit(models.Model):
         on_delete=models.CASCADE,
     )
 
+    class Meta:  # type: ignore[override]
+        constraints = [
+            # Ensures that a maintainer can only be added or removed once per
+            # suggestion.
+            models.UniqueConstraint(
+                fields=["suggestion", "maintainer"],
+                name="unique_maintainer_edit_per_suggestion",
+            )
+        ]
+
 
 class ProvenanceFlags(IntFlag, boundary=STRICT):
     PACKAGE_NAME_MATCH = auto()
