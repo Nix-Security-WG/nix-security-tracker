@@ -166,7 +166,7 @@ def selectable_nixpkgs_package_list(packages: PackageList) -> PackageListContext
         Context dictionary for the template
 
     Example:
-        {% package_list package_dict %}
+        {% selectable_nixpkgs_package_list package_dict %}
     """
     return {
         "packages": packages,
@@ -185,7 +185,7 @@ def nixpkgs_package_list(packages: PackageList) -> PackageListContext:
         Context dictionary for the template
 
     Example:
-        {% package_list package_dict %}
+        {% nixpkgs_package_list package_dict %}
     """
     return {
         "packages": packages,

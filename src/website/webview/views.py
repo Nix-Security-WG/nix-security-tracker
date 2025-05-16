@@ -625,12 +625,11 @@ class SuggestionListView(ListView):
                 # case 1b and 2b
                 if edit.exists():
                     edit.delete()
-                    # If we removed an "add" edit, then our actual action is to
-                    # remove a maintainer from the current list, and conversely.
-                    edit_type = MaintainersEdit.EditType.REMOVE if edit.first().edit_type == MaintainersEdit.EditType.ADD else MaintainersEdit.EditType.ADD
+                    suggestion.save()
+                # case 1a and 2a
                 else:
                     maintainer = get_object_or_404(NixMaintainer, github_id=edit_maintainer_id)
-                    was_there = suggestion.maintainers_edits.filter(maintainer__github_id=edit_maintainer_id).exists()
+                    was_there = any(str(m["github_id"]) == edit_maintainer_id for m in cached_suggestion.payload["maintainers"])
                     edit_type = MaintainersEdit.EditType.REMOVE if was_there else MaintainersEdit.EditType.ADD
                     edit = MaintainersEdit(
                             edit_type=edit_type,
@@ -641,6 +640,7 @@ class SuggestionListView(ListView):
 
                 cached_suggestion.payload["maintainers"] = maintainers_list(cached_suggestion.payload["packages"], suggestion.maintainers_edits.all())
                 cached_suggestion.save()
+
                 return HttpResponse(status=200)
 
         # We only have to modify derivations when they are editable
