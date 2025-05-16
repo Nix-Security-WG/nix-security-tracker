@@ -102,12 +102,12 @@ def create_gh_issue(
             return ""
 
     def maintainers() -> str:
-        # We need to query for the latest username of each maintainers, because
-        # those might have changed since they were written out in Nixpkgs; since we
-        # have the user id (which is stable), we can ask the GitHub API
+        # We need to query for the latest username of each maintainer, because
+        # those might have changed since they were written out in Nixpkgs; since
+        # we have the user id (which is stable), we can ask the GitHub API
         maintainers_list = [
             get_maintainer_username(maintainer, github)
-            for maintainer in cached_suggestion.all_maintainers
+            for maintainer in cached_suggestion.payload["maintainers"]
             if "github_id" in maintainer and "github" in maintainer
         ]
 

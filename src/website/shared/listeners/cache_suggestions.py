@@ -1,3 +1,4 @@
+import itertools
 import logging
 import re
 import urllib.parse
@@ -11,7 +12,7 @@ from shared.channels import CVEDerivationClusterProposalChannel
 from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import AffectedProduct, Metric, Version
-from shared.models.linkage import CVEDerivationClusterProposal
+from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
 from shared.models.nix_evaluation import get_major_channel
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,11 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
     )
 
     prefetched_metrics = Metric.objects.filter(container__cve=suggestion.cve)
+    packages = channel_structure(all_versions, derivations)
+    maintainers_edits = list(
+        suggestion.maintainers_edits.select_related("maintainer").all()
+    )
+    maintainers = maintainers_list(packages, maintainers_edits)
 
     only_relevant_data = {
         "pk": suggestion.pk,
@@ -117,8 +123,9 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         "title": relevant_piece["title"],
         "description": relevant_piece["descriptions__value"],
         "affected_products": affected_products,
-        "packages": channel_structure(all_versions, derivations),
+        "packages": packages,
         "metrics": [to_dict(m) for m in prefetched_metrics],
+        "maintainers": maintainers,
     }
 
     # TODO: add format checking to avoid disasters in the frontend.
@@ -295,3 +302,33 @@ def parse_drv_name(name: str) -> tuple[str, str]:
         return match.group(1), match.group(2)
     else:
         return name, ""
+
+
+def maintainers_list(packages: dict, edits: list[MaintainersEdit]) -> list[dict]:
+    """
+    Returns a deduplicated list (by GitHub ID) of all the maintainers, as dicts,
+    of all the affected packages linked to this suggestion, modified by
+    potential user-supplied edits.
+    """
+
+    # Set of maintainers manually removed by the user. We use it to store
+    # maintainers that have already been added as well, for deduplication. If a
+    # maintainer's id is in this set at some point, it'll be ignored from there.
+    to_skip_or_seen: set[int] = {
+        m.maintainer.github_id
+        for m in edits
+        if m.type == MaintainersEdit.EditType.REMOVE
+    }
+    to_add: list[dict] = [
+        to_dict(m.maintainer) for m in edits if m.type == MaintainersEdit.EditType.ADD
+    ]
+
+    maintainers: list[dict] = list()
+    all_maintainers = [m for pkg in packages.values() for m in pkg["maintainers"]]
+
+    for m in itertools.chain(all_maintainers, to_add):
+        if m["github_id"] not in to_skip_or_seen:
+            to_skip_or_seen.add(m["github_id"])
+            maintainers.append(m)
+
+    return maintainers
