@@ -51,7 +51,7 @@ in
     80
     443
   ];
-  services.web-security-tracker = {
+  services.${sectracker.name} = {
     enable = true;
     production = true;
     domain = "tracker.security.nixos.org";
