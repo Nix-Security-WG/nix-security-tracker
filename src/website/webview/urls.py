@@ -51,7 +51,7 @@ urlpatterns = [
         ),
         name="suggestions_view",
     ),
-    # This is an POST endpoint only, handling maintainers edit requests.
+    # This is a POST endpoint only, handling maintainers edit requests.
     path(
         "edit_maintainers/",
         SelectableMaintainerView.as_view(),

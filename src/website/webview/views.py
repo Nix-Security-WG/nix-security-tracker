@@ -571,10 +571,6 @@ class SuggestionListView(ListView):
         # component, which is thus stored here (only when `status_change` is
         # true and `new_status = "published"`).
         gh_issue_link = None
-        editable = not (
-            self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
-            or undo_status_change
-        )
 
         def suggestion_view_context() -> dict:
             """
@@ -594,7 +590,10 @@ class SuggestionListView(ListView):
             }
 
         # We only have to modify derivations when they are editable
-        if editable:
+        if not (
+            self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
+            or undo_status_change
+        ):
             selected_derivations = [
                 str.split(",") for str in request.POST.getlist("derivation_ids")
             ]
