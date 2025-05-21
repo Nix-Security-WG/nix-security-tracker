@@ -10,6 +10,7 @@ from webview.views import (
     NixderivationPerChannelView,
     NixpkgsIssueListView,
     NixpkgsIssueView,
+    SelectableMaintainerView,
     SuggestionListView,
     TriageView,
 )
@@ -49,6 +50,12 @@ urlpatterns = [
             status_filter=CVEDerivationClusterProposal.Status.PENDING
         ),
         name="suggestions_view",
+    ),
+    # This is a POST endpoint only, handling maintainers edit requests.
+    path(
+        "edit_maintainers/",
+        SelectableMaintainerView.as_view(),
+        name="edit_maintainers",
     ),
     path(
         "dismissed/",
