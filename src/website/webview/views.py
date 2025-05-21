@@ -430,9 +430,17 @@ class NixpkgsIssueView(DetailView):
 class NixpkgsIssueListView(ListView):
     template_name = "issue_list.html"
     model = NixpkgsIssue
+    paginate_by = 10
 
     def get_queryset(self) -> BaseManager[NixpkgsIssue]:
         return NixpkgsIssue.objects.all()
+
+    def get_context_data(self, **kwargs: Any) -> Any:
+        context = super().get_context_data(**kwargs)
+        context["adjusted_elided_page_range"] = context[
+            "paginator"
+        ].get_elided_page_range(context["page_obj"].number)
+        return context
 
 
 class NixderivationPerChannelView(ListView):
@@ -571,6 +579,9 @@ class SuggestionListView(ListView):
         # true and `new_status = "published"`).
         gh_issue_link = None
 
+        # Issue on the tracker that is defined after publishing
+        tracker_issue = None
+
         def suggestion_view_context() -> dict:
             """
             Creates a proper context for the `suggestion` view. Since this is
@@ -677,6 +688,13 @@ class SuggestionListView(ListView):
                 )
                 return HttpResponse(snippet)
             elif status_change:
+                if suggestion.status == "published":
+                    if tracker_issue:
+                        changed_suggestion_link = f"/issues/{tracker_issue.code}"
+                    else:
+                        changed_suggestion_link = "/issues"
+                else:
+                    changed_suggestion_link = f"{self.status_route_dict[suggestion.status]}#suggestion-{suggestion.pk}"
                 snippet = render_to_string(
                     "components/suggestion_state_changed.html",
                     {
@@ -684,7 +702,7 @@ class SuggestionListView(ListView):
                         "title": cached_suggestion.payload["title"],
                         "status": suggestion.status,
                         "old_status": self.status_filter,
-                        "changed_suggestion_link": f"{self.status_route_dict[suggestion.status]}#suggestion-{suggestion.pk}",
+                        "changed_suggestion_link": changed_suggestion_link,
                         "gh_issue_link": gh_issue_link,
                         "csrf_token": get_token(request),
                     },

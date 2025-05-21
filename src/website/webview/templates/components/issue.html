@@ -1,0 +1,57 @@
+{% load viewutils %}
+
+<article class="issue" id="issue-{{ issue.code }}">
+
+  <div class="top-row">
+    <div class="status condensed status-{{ issue.status_string }}">{{ issue.status_string }}</div>
+    <div class="creation-date">created {{ issue.created }}</div>
+  </div>
+
+  <details class="description">
+    <summary>
+      {{ issue.code }}
+    </summary>
+    <p class="description-long as-details">{{ issue.description.value }}</p>
+  </details>
+
+
+  {% if issue.cve.all %}
+  <details class="vulnerabilities">
+    <summary>Vulnerabilities</summary>
+    <ul>
+      {% for cve in issue.cve.all %}
+      <li>
+        <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ cve.cve_id | urlencode }}">
+          {{ cve.cve_id }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+
+  {% if issue.derivations_with_cves %}
+  <details class="related-derivations">
+    <summary>Related derivations</summary>
+    <div class="derivation-list">
+      {% for drv in issue.derivations_with_cves %}
+        <div class="derivation">
+          <div class="derivation-name">{{ drv.name }}</div>
+          {% if drv.metadata.maintainers.all %}
+            <div class="maintainers">
+              (TODO maintainers)
+            </div>
+            <!-- TODO Reuse overhauled maintainer_list because for now it takes packages instead of maintainers -->
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+
+  {% if show_permalink %}
+    <a href="/issues/{{ issue.code }}" class="permalink">Permalink</a>
+  {% endif %}
+
+</article>
+
