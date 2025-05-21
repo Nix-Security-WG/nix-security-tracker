@@ -746,7 +746,8 @@ article .nixpkgs-packages {
   display: none;
 }
 
-.nixpkgs-package {
+.nixpkgs-package,
+.nixpkg {
   flex-grow: 1;
   border: 1px solid var(--grey);
   border-radius: 5px;
@@ -830,9 +831,8 @@ article .nixpkgs-packages {
   margin-top: 1em;
 }
 
-.maintainers ul {
+.maintainers article {
   margin: 0;
-  list-style: none;
   padding-left: 1em;
 }
 
@@ -848,6 +848,56 @@ article .nixpkgs-packages {
 .maintainer a:hover,
 a:focus {
   text-decoration: underline;
+}
+
+.maintainers-list {
+  display: flex;
+  flex-direction: column;
+  margin-left: 1em;
+}
+
+.maintainer-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 2em;
+}
+
+.maintainer-container input {
+  margin: 0;
+  appearance: none;
+  width: 2em;
+  height: 2em;
+  cursor: pointer;
+}
+
+.maintainer-container input::after {
+  position: relative;
+  top: -0.2em;
+  content: "↺";
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.5em;
+  color: var(--grey);
+}
+
+.maintainer-container input:checked::after {
+  position: relative;
+  top: 0.2em;
+  content: "🗑";
+  text-align: center;
+  font-size: 1.2em;
+  color: var(--dark-grey);
+}
+
+.maintainer-container input ~ article {
+  margin: 0;
+  padding: 0;
+}
+
+.maintainer-container input:not(:checked) ~ article {
+  color: var(--grey);
+  text-decoration: line-through;
 }
 
 .suggestion .change-issue-state {

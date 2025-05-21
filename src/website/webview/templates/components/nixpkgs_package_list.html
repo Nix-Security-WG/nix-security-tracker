@@ -1,9 +1,20 @@
 {% load viewutils %}
 
 <div class="nixpkgs-packages">
-  {% for attribute_name, pdata in packages.items %}
+  {% for attribute, pdata in packages.items %}
     <div class="nixpkgs-package-container">
-      {% nixpkgs_package attribute_name pdata %}
+      {% if selectable %}
+      <input
+        type="checkbox"
+        name="derivation_ids"
+        value="{{ pdata.derivation_ids|join:","}}"
+        checked
+        hx-post=""
+        hx-swap="none"
+        hx-indicator="this .state-change-indicator"
+      />
+      {% endif %}
+      {% nixpkgs_package attribute pdata %}
     </div>
   {% endfor %}
 </div>
