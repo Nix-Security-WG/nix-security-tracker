@@ -1,5 +1,4 @@
 import datetime
-import json
 from typing import Any, TypedDict
 
 from django import template
@@ -113,11 +112,9 @@ def last_entry(log: list) -> Any | None:
 
 
 @register.filter
-def versioned_package_name(package_entry: str) -> str:
-    fields: DerivationFields = json.loads(package_entry)
-
-    _, version = parse_drv_name(fields["name"])
-    return f"pkgs.{fields['attribute']} {version}"
+def versioned_package_name(package_entry: dict[str, Any]) -> str:
+    _, version = parse_drv_name(package_entry["name"])
+    return f"pkgs.{package_entry["attribute"]} {version}"
 
 
 def is_admin(user: Any) -> bool:
