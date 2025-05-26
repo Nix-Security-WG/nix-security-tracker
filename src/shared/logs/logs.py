@@ -1,6 +1,5 @@
-import datetime
-import typing
-from typing import Any, TypedDict
+import logging
+from typing import Any
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -8,14 +7,13 @@ from django.db.models import (
     BigIntegerField,
     Case,
     Count,
-    F,
     OuterRef,
     Q,
     Subquery,
     Value,
     When,
 )
-from django.db.models.functions import Cast, Coalesce
+from django.db.models.functions import Cast, Coalesce, Concat, JSONObject, Replace
 from pghistory.models import EventQuerySet
 
 from shared.models import (
@@ -23,53 +21,26 @@ from shared.models import (
     DerivationClusterProposalLinkEvent,  # type: ignore
 )
 
-if typing.TYPE_CHECKING:
-    from django.db.models.query import ValuesQuerySet
-
-from django.db.models.functions import Concat, JSONObject, Replace
-
-
-class ActivityLogEntry(TypedDict):
-    action: str
-    package_count: int
-    package_name: list[str]
-    status_value: str
-    suggestion_id: str | None
-    timestamp: datetime.datetime
-    username: str
+logger = logging.getLogger(__name__)
 
 
 class SuggestionActivityLog:
     """
-    Example of queryset output:
-    ```
-    [{'action': 'derivations.remove',
-      'package_count': 6,
-      'package_names': ['{"name": "onnxruntime-1.15.1", "attribute": "onnxruntime"}',
-                        '{"name": "python3.10-onnx-1.14.1", "attribute": "python310Packages.onnx"}',
-                        '{"name": "python3.10-onnxconverter-common-1.14.0", "attribute": "python310Packages.onnxconverter-common"}',
-                        '{"name": "python3.10-onnxmltools-1.11.2", "attribute": "python310Packages.onnxmltools"}',
-                        '{"name": "python3.10-onnxruntime-1.15.1", "attribute": "python310Packages.onnxruntime"}',
-                        '{"name": "python3.10-onnxruntime-tools-1.7.0", "attribute": "python310Packages.onnxruntime-tools"}'],
-      'status_value': 'NOT_A_STATUS_CHANGE',
-      'suggestion_id': 121,
-      'timestamp': datetime.datetime(2024, 12, 6, 11, 59, 6, 668316, tzinfo=datetime.timezone.utc),
-      'username': 'ANONYMOUS'},
-     {'action': 'derivations.remove',
-      'package_count': 1,
-      'package_names': ['{"name": "perl5.36.3-GSSAPI-0.28", "attribute": "perl536Packages.GSSAPI"}'],
-      'status_value': 'NOT_A_STATUS_CHANGE',
-      'suggestion_id': 11,
-      'timestamp': datetime.datetime(2024, 12, 5, 16, 15, 7, 899037, tzinfo=datetime.timezone.utc),
-      'username': 'ANONYMOUS'},
-     {'action': 'update',
-      'package_count': 0,
-      'package_names': [],
-      'status_value': 'accepted',
-      'suggestion_id': 11,
-      'timestamp': datetime.datetime(2024, 12, 5, 16, 14, 19, 520312, tzinfo=datetime.timezone.utc),
-      'username': 'ANONYMOUS'}]
-    ```
+    This class provides a unified view for the activity log entires of a
+    suggestion, convertible to a simple dict that can be used on the front-end.
+
+    Under the hood, there are different types of log entries with shapes:
+
+    - insertion or status change
+    - package edits (addition or removal)
+    - maintainer edits (addition or removal)
+
+    Those three correspond to different models in the base.
+    SuggestionActivityLog provides facilities to aggregate those logs in one
+    unified list of dicts.
+
+    The precise schema and example outputs are described in the documentation of
+    the `get_dict` method.
     """
 
     def _annotate_username(self, query: EventQuerySet) -> EventQuerySet:
@@ -101,95 +72,155 @@ class SuggestionActivityLog:
             )
         )
 
-    def get_queryset(
-        self, suggestion_ids: list[str | None]
-    ) -> "ValuesQuerySet[Any, dict[str, Any]]":
-        fields = [
-            "suggestion_id",
-            "timestamp",
-            "username",
-            "action",
-            "status_value",
-            "package_names",
-            "package_count",
-        ]
+    def get_raw_events(self, suggestion_ids: list[str | None]) -> list[dict[str, Any]]:
+        """
+        Combine the different types of events related to a list of suggestions
+        in a single list and order them by timestamp. Multiple log entries
+        constituting one logical edit from the user aren't aggregated in this
+        method. This is left to `get_dict`.
 
-        status_qs = (
-            self._annotate_username(
-                CVEDerivationClusterProposalStatusEvent.objects.prefetch_related(
-                    "pgh_context",
-                )
-                .exclude(
-                    # Ignore insertion entry
-                    pgh_label="insert",
-                )
-                .filter(pgh_obj_id__in=suggestion_ids)
+        See `get_dict` for the schema of the output.
+        """
+
+        raw_events = []
+
+        status_qs = self._annotate_username(
+            CVEDerivationClusterProposalStatusEvent.objects.prefetch_related(
+                "pgh_context",
             )
-            .annotate(
-                suggestion_id=Cast(F("pgh_obj_id"), BigIntegerField()),
-                timestamp=F("pgh_created_at"),
-                action=F("pgh_label"),
-                status_value=F("status"),
-                package_names=Value("{}"),
-                package_count=Value(0),
+            .exclude(
+                # Ignore insertion entry
+                pgh_label="insert",
             )
-            .values(*fields)
+            .filter(pgh_obj_id__in=suggestion_ids)
         )
 
-        package_qs = (
-            self._annotate_username(
-                DerivationClusterProposalLinkEvent.objects.prefetch_related(
-                    "pgh_context", "derivation"
-                )
-                .exclude(
-                    # Ignore insertion entry
-                    pgh_created_at=Subquery(
-                        DerivationClusterProposalLinkEvent.objects.filter(
-                            proposal_id=OuterRef("proposal_id")
-                        )
-                        .order_by("pgh_created_at")
-                        .values("pgh_created_at")[:1]
+        for status_event in status_qs.all().iterator():
+            raw_events.append(
+                {
+                    "suggestion_id": status_event.pgh_obj_id,
+                    "timestamp": status_event.pgh_created_at,
+                    "username": status_event.username,
+                    "action": status_event.pgh_label,
+                    "status_value": status_event.status,
+                }
+            )
+
+        package_qs = self._annotate_username(
+            DerivationClusterProposalLinkEvent.objects.prefetch_related(
+                "pgh_context", "derivation"
+            )
+            .exclude(
+                # Ignore insertion entry
+                pgh_created_at=Subquery(
+                    DerivationClusterProposalLinkEvent.objects.filter(
+                        proposal_id=OuterRef("proposal_id")
                     )
+                    .order_by("pgh_created_at")
+                    .values("pgh_created_at")[:1]
                 )
-                .filter(proposal_id__in=suggestion_ids)
-                .annotate(dummy_group_by_value=Value(1))
-                .values("dummy_group_by_value")
-                # NOTE(alejandrosame): Doing annotate "dummy_group_by_value" is a hack shared in
-                # the Django forum. Another user there complains about Django's decision to add the
-                # primary key by default when doing automated groupings. We hit here the same problem.
-                # Reference: https://forum.djangoproject.com/t/excess-group-by-columns-causing-problems-with-window-functions/26865/1
             )
-            .annotate(
-                suggestion_id=Cast(F("proposal_id"), BigIntegerField()),
-                timestamp=F("pgh_created_at"),
-                action=F("pgh_label"),
-                status_value=Value("NOT_A_STATUS_CHANGE"),
-                package_names=ArrayAgg(
-                    JSONObject(
-                        name="derivation__name",
-                        attribute=Replace(
-                            "derivation__attribute",  # type: ignore
-                            Concat(Value("."), "derivation__system"),  # type: ignore
-                            Value(""),
-                        ),
+            .filter(proposal_id__in=suggestion_ids)
+        ).annotate(
+            package_names=ArrayAgg(
+                JSONObject(
+                    name="derivation__name",
+                    attribute=Replace(
+                        "derivation__attribute",  # type: ignore
+                        Concat(Value("."), "derivation__system"),  # type: ignore
+                        Value(""),
                     ),
-                    distinct=True,
                 ),
-                package_count=Count("derivation__name", distinct=True),
-            )
-            .values(*fields)
+                distinct=True,
+            ),
+            package_count=Count("derivation__name", distinct=True),
         )
 
-        return status_qs.union(package_qs).order_by("timestamp")
+        for package_event in package_qs.all().iterator():
+            raw_events.append(
+                {
+                    "suggestion_id": package_event.proposal_id,
+                    "timestamp": package_event.pgh_created_at,
+                    "username": package_event.username,
+                    "action": package_event.pgh_label,
+                    "package_names": package_event.package_names,
+                    "package_count": package_event.package_count,
+                }
+            )
+
+        return sorted(raw_events, key=lambda event: event["timestamp"])
 
     def get_dict(
         self, suggestion_ids: list[str | None]
-    ) -> dict[str | None, ActivityLogEntry]:
-        qs = self.get_queryset(suggestion_ids)
+    ) -> dict[str | None, dict[str, Any]]:
+        """
+        Aggregate the different types of events related to a given suggestion in
+        a unified list of dicts, ordered by timestamp and with bulk actions
+        grouped together.
+
+        ## Example of dict output
+
+        ```
+        [{'action': 'derivations.remove',
+          'package_count': 6,
+          'package_names': ['{"name": "onnxruntime-1.15.1", "attribute": "onnxruntime"}',
+                            '{"name": "python3.10-onnx-1.14.1", "attribute": "python310Packages.onnx"}',
+                            '{"name": "python3.10-onnxconverter-common-1.14.0", "attribute": "python310Packages.onnxconverter-common"}',
+                            '{"name": "python3.10-onnxmltools-1.11.2", "attribute": "python310Packages.onnxmltools"}',
+                            '{"name": "python3.10-onnxruntime-1.15.1", "attribute": "python310Packages.onnxruntime"}',
+                            '{"name": "python3.10-onnxruntime-tools-1.7.0", "attribute": "python310Packages.onnxruntime-tools"}'],
+          'suggestion_id': 121,
+          'timestamp': datetime.datetime(2024, 12, 6, 11, 59, 6, 668316, tzinfo=datetime.timezone.utc),
+          'username': 'ANONYMOUS'},
+         {'action': 'derivations.remove',
+          'package_count': 1,
+          'package_names': ['{"name": "perl5.36.3-GSSAPI-0.28", "attribute": "perl536Packages.GSSAPI"}'],
+          'suggestion_id': 11,
+          'timestamp': datetime.datetime(2024, 12, 5, 16, 15, 7, 899037, tzinfo=datetime.timezone.utc),
+          'username': 'ANONYMOUS'},
+         {'action': 'update',
+          'status_value': 'accepted',
+          'suggestion_id': 11,
+          'timestamp': datetime.datetime(2024, 12, 5, 16, 14, 19, 520312, tzinfo=datetime.timezone.utc),
+          'username': 'ANONYMOUS'}]
+        ```
+
+        ## Schema
+
+        Here is the schema of the dict returned by this method.
+
+        All events have the following fields defined:
+
+        ```
+        suggestion_id: int
+        timestamp: datetime
+        action: str
+        username: str
+        ```
+
+        If `action` is `insert` or `update`, the dict will have the additional
+        fields:
+
+        ```
+        status_value: str
+        ```
+
+        If `action` is `derivations.*`, the dict will have the additional
+        fields:
+
+        ```
+        package_names: list[dict[str, str]] # a package name is {"name": str, "attribute": str}
+        package_count: int
+        ```
+
+        TODO: add maintainer edits to the schema once they're logged.
+        """
+
+        raw_events = self.get_raw_events(suggestion_ids)
 
         grouped_activity_log = {}
 
-        for event in qs.all().iterator():
+        for event in raw_events:
             suggestion_id = event.get("suggestion_id")
 
             if suggestion_id in grouped_activity_log:
@@ -205,12 +236,10 @@ class SuggestionActivityLog:
 
             accumulator = None
             for event in events:
-                if not event["action"].startswith("derivations"):
-                    if accumulator:
-                        suggestion_log.append(accumulator)
-                        accumulator = None
-                    suggestion_log.append(event)
-                else:
+                # Bulk events that are subject to folding are currently
+                # - package editions
+                # - maintainers editions (soon to be logged)
+                if event["action"].startswith("derivations"):
                     if not accumulator:
                         accumulator = event
                     else:
@@ -218,18 +247,29 @@ class SuggestionActivityLog:
                             event["action"] == accumulator["action"]
                             and event["username"] == accumulator["username"]
                         ):
-                            accumulator["package_names"] = (
-                                accumulator["package_names"] + event["package_names"]
-                            )
-                            accumulator["package_count"] = (
-                                accumulator["package_count"] + event["package_count"]
-                            )
+                            # For now, this is the only remaining possibility,
+                            # but we'll add maintainer edits soon.
+                            if event["action"].startswith("derivations"):
+                                accumulator["package_names"] = (
+                                    accumulator["package_names"]
+                                    + event["package_names"]
+                                )
+                                accumulator["package_count"] = (
+                                    accumulator["package_count"]
+                                    + event["package_count"]
+                                )
+
                             accumulator["timestamp"] = event[
                                 "timestamp"
                             ]  # Keep latest timestamp
                         else:
                             suggestion_log.append(accumulator)
                             accumulator = event
+                else:
+                    if accumulator:
+                        suggestion_log.append(accumulator)
+                        accumulator = None
+                    suggestion_log.append(event)
 
             if accumulator:
                 suggestion_log.append(accumulator)
