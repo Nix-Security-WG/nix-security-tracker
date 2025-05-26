@@ -901,7 +901,8 @@ a:focus {
   padding: 0;
 }
 
-.maintainer-container .maintainer-edit-add article {
+.maintainer-container .maintainer-edit-add article,
+.maintainer-container .maintainer-edit-add a {
   color: var(--grey);
   text-decoration: line-through;
 }
