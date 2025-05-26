@@ -317,10 +317,12 @@ def maintainers_list(packages: dict, edits: list[MaintainersEdit]) -> list[dict]
     to_skip_or_seen: set[int] = {
         m.maintainer.github_id
         for m in edits
-        if m.type == MaintainersEdit.EditType.REMOVE
+        if m.edit_type == MaintainersEdit.EditType.REMOVE
     }
     to_add: list[dict] = [
-        to_dict(m.maintainer) for m in edits if m.type == MaintainersEdit.EditType.ADD
+        to_dict(m.maintainer)
+        for m in edits
+        if m.edit_type == MaintainersEdit.EditType.ADD
     ]
 
     maintainers: list[dict] = list()

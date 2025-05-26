@@ -9,6 +9,7 @@ from django.core.validators import RegexValidator
 from django.db import transaction
 from django.urls import reverse
 from shared.github import create_gh_issue
+from shared.listeners.cache_suggestions import maintainers_list
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
 
@@ -39,6 +40,7 @@ from django.http import (
     HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
+    HttpResponseNotAllowed,
     HttpResponseRedirect,
 )
 from django.middleware.csrf import get_token
@@ -54,11 +56,10 @@ from shared.models import (
     IssueStatus,
     NixChannel,
     NixDerivation,
+    NixMaintainer,
     NixpkgsIssue,
 )
-from shared.models.linkage import (
-    CVEDerivationClusterProposal,
-)
+from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
 
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
@@ -696,3 +697,117 @@ class SuggestionListView(ListView):
         else:
             # Just reload the page
             return redirect(f"{request.path}?page={current_page}")
+
+
+class SelectableMaintainerView(TemplateView):
+    template_name = "components/selectable_maintainer.html"
+
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        # Only allow POST requests
+        if request.method != "POST":
+            return HttpResponseNotAllowed(["POST"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not request.user or not (
+            isadmin(request.user) or ismaintainer(request.user)
+        ):
+            return HttpResponseForbidden()
+
+        suggestion_id = request.POST.get("suggestion_id")
+        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        cached_suggestion = get_object_or_404(
+            CachedSuggestions, proposal_id=suggestion_id
+        )
+        edit_maintainer_id = request.POST.get("edit_maintainer_id")
+        # Which states allow for maintainer editing
+        editable = (
+            suggestion.status == CVEDerivationClusterProposal.Status.ACCEPTED
+            or suggestion.status == CVEDerivationClusterProposal.Status.PENDING
+        )
+
+        if not editable:
+            logger.error(
+                f"Tried to edit maintainers on a suggestion whose status doesn't allow for maintainer edition (status: {suggestion.status})"
+            )
+            return HttpResponseForbidden()
+
+        if not edit_maintainer_id:
+            # Unprocessable Entity seems to be the more appropriate status code
+            # for missing parameters (the request is well-formed at the protocol
+            # level but some semantic precondition failed)
+            logger.error("Missing edit_maintainer_id in request for maintainer edition")
+            return HttpResponse(status=422)
+
+        # When clicking the button to the left of a maintainer, there are two
+        # cases:
+        #
+        # 1. The maintainer is currently in the list of maintainers: the button
+        #    was a remove button, and we should remove the maintainer from the
+        #    list.
+        # 2. The maintainer is not in the list of maintainers: the button was
+        #    an add button, and we should add the maintainer to the list.
+        #
+        # The button basically works as a toggle. Both cases have themselves two
+        # sub-cases, depending on the existence of a prior edit:
+        #
+        # 1. Removal
+        #    a) there was no prior edit, in which case we add a new "remove" edit
+        #    b) there was a prior "add" edit, in which case we remove the "add" edit from the list (meaning
+        #    the maintainer wasn't part of the list originally)
+        # 2. Addition
+        #    a) there was no prior edit, in which case we add a new "add" edit
+        #    b) there was a prior "remove" edit (undo/add back case), in which case we remove the edit from the
+        #    list
+        #
+        # Note that in both cases, if there was a prior edit, we always remove
+        # it from the list (1b and 2b).
+        #
+        # Also note that for now add edits are unimplemented on the front-end
+        # (but addition as undoing a removal is).
+        with transaction.atomic():
+            edit = suggestion.maintainers_edits.filter(
+                maintainer__github_id=edit_maintainer_id
+            )
+            # case 1b and 2b
+            if edit.exists():
+                edit_object = edit.first()
+                maintainer = edit_object.maintainer
+                deleted = edit_object.edit_type == MaintainersEdit.EditType.ADD
+                edit.delete()
+                suggestion.save()
+            # case 1a and 2a
+            else:
+                maintainer = get_object_or_404(
+                    NixMaintainer, github_id=edit_maintainer_id
+                )
+                was_there = any(
+                    str(m["github_id"]) == edit_maintainer_id
+                    for m in cached_suggestion.payload["maintainers"]
+                )
+                edit_type = (
+                    MaintainersEdit.EditType.REMOVE
+                    if was_there
+                    else MaintainersEdit.EditType.ADD
+                )
+                deleted = was_there
+                edit = MaintainersEdit(
+                    edit_type=edit_type,
+                    maintainer=maintainer,
+                    suggestion=suggestion,
+                )
+                edit.save()
+
+            # Recompute the maintainer list for the cached suggestion
+            cached_suggestion.payload["maintainers"] = maintainers_list(
+                cached_suggestion.payload["packages"],
+                suggestion.maintainers_edits.all(),
+            )
+            cached_suggestion.save()
+
+            return self.render_to_response(
+                {
+                    "maintainer": maintainer,
+                    "deleted": deleted,
+                }
+            )

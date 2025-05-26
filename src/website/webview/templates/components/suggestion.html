@@ -49,7 +49,11 @@
       {% nixpkgs_package_list cached_suggestion.packages %}
     {% endif %}
 
-    {% maintainers_list cached_suggestion.maintainers %}
+    {% if status_filter == "pending" or status_filter == "accepted" %}
+      {% selectable_maintainers_list cached_suggestion.maintainers %}
+    {% else %}
+      {% maintainers_list cached_suggestion.maintainers %}
+    {% endif %}
 
     {% if user|is_maintainer_or_admin %}
     <div class="change-issue-state">
