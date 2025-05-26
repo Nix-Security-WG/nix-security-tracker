@@ -720,12 +720,15 @@ class SelectableMaintainerView(TemplateView):
             CachedSuggestions, proposal_id=suggestion_id
         )
         edit_maintainer_id = request.POST.get("edit_maintainer_id")
+        # Which states allow for maintainer editing
+        editable = (
+            suggestion.status == CVEDerivationClusterProposal.Status.ACCEPTED
+            or suggestion.status == CVEDerivationClusterProposal.Status.PENDING
+        )
 
-        # Currently the view only allow for maintainer edition if the status is
-        # accepted. If that changes, update this check.
-        if suggestion.status != CVEDerivationClusterProposal.Status.ACCEPTED:
+        if not editable:
             logger.error(
-                "Tried to edit maintainers on a suggestion with a status other than accepted"
+                f"Tried to edit maintainers on a suggestion whose status doesn't allow for maintainer edition (status: {suggestion.status})"
             )
             return HttpResponseForbidden()
 

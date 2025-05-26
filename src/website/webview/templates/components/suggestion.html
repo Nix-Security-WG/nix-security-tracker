@@ -49,7 +49,7 @@
       {% nixpkgs_package_list cached_suggestion.packages %}
     {% endif %}
 
-    {% if status_filter == "accepted" %}
+    {% if status_filter == "pending" or status_filter == "accepted" %}
       {% selectable_maintainers_list cached_suggestion.maintainers %}
     {% else %}
       {% maintainers_list cached_suggestion.maintainers %}
