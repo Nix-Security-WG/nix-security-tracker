@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from typing import Any, Literal, TypedDict
 
@@ -16,13 +15,14 @@ from django.db.models import (
 )
 from django.db.models.functions import Cast, Coalesce, Concat, JSONObject, Replace
 from pghistory.models import EventQuerySet
+from webview.templatetags.viewutils import Maintainer
 
+from shared.listeners.cache_suggestions import to_dict
 from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
     DerivationClusterProposalLinkEvent,  # type: ignore
+    MaintainersEditEvent,  # type: ignore
 )
-
-logger = logging.getLogger(__name__)
 
 
 class ChangeEvent(TypedDict):
@@ -67,6 +67,15 @@ class PackageChangeEvent(ChangeEvent):
     action: Literal["derivations.add", "derivations.remove"]
     package_count: int
     package_names: list[PackageData]
+
+
+class MaintainerChangeEvent(ChangeEvent):
+    """
+    A maintainer change event for a suggestion.
+    """
+
+    action: Literal["maintainers.add", "maintainers.remove"]
+    maintainer: Maintainer
 
 
 class SuggestionActivityLog:
@@ -189,6 +198,23 @@ class SuggestionActivityLog:
                     "action": package_event.pgh_label,
                     "package_names": package_event.package_names,
                     "package_count": package_event.package_count,
+                }
+            )
+
+        maintainer_qs = self._annotate_username(
+            MaintainersEditEvent.objects.prefetch_related(
+                "pgh_context", "maintainer"
+            ).filter(suggestion__in=suggestion_ids)
+        )
+
+        for maintainer_event in maintainer_qs.all().iterator():
+            raw_events.append(
+                {
+                    "suggestion_id": maintainer_event.suggestion.id,
+                    "timestamp": maintainer_event.pgh_created_at,
+                    "username": maintainer_event.username,
+                    "action": maintainer_event.pgh_label,
+                    "maintainer": to_dict(maintainer_event.maintainer),
                 }
             )
 
