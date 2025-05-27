@@ -136,6 +136,18 @@ in
           query = "select extract(EPOCH from created_at) AS unix_timestamp from shared_cvederivationclusterproposal order by created_at desc limit 1;";
           values = [ "unix_timestamp" ];
         };
+        cves = {
+          query = "select count(*) from shared_cverecord where state='PUBLISHED';";
+          values = [ "count" ];
+        };
+        derivations = {
+          query = "select count(*) from shared_nixderivation;";
+          values = [ "count" ];
+        };
+        evaluations = {
+          query = "select count(*) from shared_nixevaluation;";
+          values = [ "count" ];
+        };
       };
       connections = [ "postgres://postgres@/web-security-tracker?host=/run/postgresql" ];
       interval = "1h";
