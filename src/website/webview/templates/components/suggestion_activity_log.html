@@ -51,8 +51,17 @@
               </ul>
             </details>
           {% endif %}
+        {% elif "maintainers." in log_entry.action %}
+        {# Maintainers edit entry #}
+          {% if ".add" in log_entry.action %}
+            added
+          {% else %}
+            removed
+          {% endif %}
+          maintainer
+          <strong>@{{ log_entry.maintainer.github }}</strong>
         {% else %}
-          {# Status update entries #}
+        {# Status update entries #}
           {% if "accepted" in log_entry.status_value  %}
             <span class="suggestion-status-draft">accepted as draft</span>
           {% elif "rejected" in log_entry.status_value %}

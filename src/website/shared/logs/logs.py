@@ -16,9 +16,11 @@ from django.db.models import (
 from django.db.models.functions import Cast, Coalesce, Concat, JSONObject, Replace
 from pghistory.models import EventQuerySet
 
+from shared.listeners.cache_suggestions import to_dict
 from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
     DerivationClusterProposalLinkEvent,  # type: ignore
+    MaintainersEditEvent,  # type: ignore
 )
 
 logger = logging.getLogger(__name__)
@@ -147,6 +149,24 @@ class SuggestionActivityLog:
                     "package_count": package_event.package_count,
                 }
             )
+
+        maintainer_qs = self._annotate_username(
+            MaintainersEditEvent.objects.prefetch_related(
+                "pgh_context", "maintainer"
+            ).filter(suggestion__in=suggestion_ids)
+        )
+
+        for maintainer_event in maintainer_qs.all().iterator():
+            raw_events.append(
+                {
+                    "suggestion_id": maintainer_event.suggestion.id,
+                    "timestamp": maintainer_event.pgh_created_at,
+                    "username": maintainer_event.username,
+                    "action": maintainer_event.pgh_label,
+                    "maintainer": to_dict(maintainer_event.maintainer),
+                }
+            )
+            logger.error(f"Appending maintainer event: {raw_events[-1]}")
 
         return sorted(raw_events, key=lambda event: event["timestamp"])
 
