@@ -38,10 +38,7 @@
         <div class="derivation">
           <div class="derivation-name">{{ drv.name }}</div>
           {% if drv.metadata.maintainers.all %}
-            <div class="maintainers">
-              (TODO maintainers)
-            </div>
-            <!-- TODO Reuse overhauled maintainer_list because for now it takes packages instead of maintainers -->
+            {% maintainers_list drv.metadata.maintainers.all %}
           {% endif %}
         </div>
       {% endfor %}
