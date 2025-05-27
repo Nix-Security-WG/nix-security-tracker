@@ -3,7 +3,12 @@
 {% if maintainers %}
   <details class="maintainers">
     <summary>
-      Notify package maintainers: {{ maintainers | length }}
+      {%if selectable %}
+        Notify package maintainers:
+      {% else %}
+        Package maintainers:
+      {% endif %}
+      {{ maintainers | length }}
     </summary>
 
     <div class="maintainers-list">
