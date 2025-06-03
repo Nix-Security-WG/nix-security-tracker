@@ -1,2 +1,2 @@
-web: ./src/website/manage.py runserver
-workers: ./src/website/manage.py listen -v3 --recover --processes 3
+web: ./src/manage.py runserver
+workers: ./src/manage.py listen -v3 --recover --processes 3

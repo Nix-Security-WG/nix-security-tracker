@@ -13,8 +13,8 @@ result
 *.dump
 *.jsonl
 *.log
-src/website/static
-src/website/webview/static/htmx.min.js
+src/static
+src/webview/static/htmx.min.js
 # A shallow checkout of nixpkgs
 nixpkgs/
 nixpkgs-gc-roots/
