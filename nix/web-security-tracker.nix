@@ -263,8 +263,7 @@ in
                   "-b 127.0.0.1 -p ${toString cfg.wsgi-port}";
             in
             ''
-              daphne ${networking} \
-                tracker.asgi:application
+              daphne ${networking} project.asgi:application
             '';
         };
 
