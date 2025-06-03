@@ -23,31 +23,44 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sentry_sdk.integrations.django import DjangoIntegration
 
 
-def get_secret(name: str, encoding: str = "utf-8") -> str:
-    credentials_dir = Secrets().CREDENTIALS_DIRECTORY  # type: ignore[reportCallIssue]
+class CredentialsDirectory(BaseSettings):
+    """
+    Configuration for the directory with secret values.
+    This is captured separately so we can use it in `secrets_dir`
+    to declare the types of values we expect inside.
+    """
 
-    try:
-        with open(f"{credentials_dir}/{name}", encoding=encoding) as f:
-            secret = f.read().removesuffix("\n")
-    except FileNotFoundError:
-        raise RuntimeError(f"No secret named {name} found in {credentials_dir}.")
-
-    return secret
+    # https://systemd.io/CREDENTIALS/
+    CREDENTIALS_DIRECTORY: DirectoryPath
 
 
 class Secrets(BaseSettings):
-    CREDENTIALS_DIRECTORY: DirectoryPath
+    """
+    Secret values, obtained from `CREDENTIALS_DIRECTORY`.
+    While this could be subsumed under general settings, separating it has advantages:
+    1. Secrets are configured separately and this allows checking immediately if all values are set.
+    2. We can construct default values in regular configuration that depend on secrets.
+    """
+
+    model_config = SettingsConfigDict(
+        # https://docs.pydantic.dev/latest/concepts/pydantic_settings/#secrets
+        secrets_dir=CredentialsDirectory().CREDENTIALS_DIRECTORY,  # type: ignore[reportCallIssue]
+    )
+
+    SECRET_KEY: str
+    GH_CLIENT_ID: str
+    GH_SECRET: str
+    GH_WEBHOOK_SECRET: str
+    GH_APP_INSTALLATION_ID: int
+    GH_APP_PRIVATE_KEY: str
+
+
+secrets = Secrets()  # type: ignore[reportCallIssue]
+get_secret = secrets.model_dump().get
 
 
 class Settings(BaseSettings):
     # https://docs.pydantic.dev/latest/concepts/pydantic_settings/
-
-    model_config = SettingsConfigDict(
-        # https://docs.pydantic.dev/latest/concepts/pydantic_settings/#secrets
-        # https://systemd.io/CREDENTIALS/
-        secrets_dir=Secrets().CREDENTIALS_DIRECTORY,  # type: ignore[reportCallIssue]
-    )
-
     class DjangoSettings(BaseModel):
         # SECURITY WARNING: don't run with debug turned on in production!
         DEBUG: bool = False
@@ -133,7 +146,17 @@ class Settings(BaseSettings):
             ),
         )
 
-    DJANGO_SETTINGS: DjangoSettings
+    DJANGO_SETTINGS: DjangoSettings = Field(
+        description="""
+        Application settings are configured from a separate environment variable:
+        1. To make them distinct from secrets, which have their own configuration mechanism
+        2. To avoid collisions with environment variables that may be needed by other processes.
+        """,
+    )
+
+
+for key, value in Secrets().model_dump().items():  # type: ignore[reportCallIssue]
+    setattr(sys.modules[__name__], key, value)
 
 
 for key, value in Settings().model_dump()["DJANGO_SETTINGS"].items():  # type: ignore[reportCallIssue]

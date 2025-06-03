@@ -24,12 +24,19 @@ let
         GH_COMMITTERS_TEAM = "dummy-committers";
         GH_SECURITY_TEAM = "dummy-security";
       };
-      secrets = {
-        SECRET_KEY = pkgs.writeText "SECRET_KEY" "secret";
-        GH_CLIENT_ID = pkgs.writeText "gh_client" "bonjour";
-        GH_SECRET = pkgs.writeText "gh_secret" "secret";
-        GH_WEBHOOK_SECRET = pkgs.writeText "gh_secret" "webhook-secret";
-      };
+      secrets =
+        let
+          dummy-str = pkgs.writeText "dummy" "hello";
+          dummy-int = pkgs.writeText "dummy" "123";
+        in
+        {
+          SECRET_KEY = dummy-str;
+          GH_CLIENT_ID = dummy-str;
+          GH_SECRET = dummy-str;
+          GH_WEBHOOK_SECRET = dummy-str;
+          GH_APP_INSTALLATION_ID = dummy-int;
+          GH_APP_PRIVATE_KEY = dummy-str;
+        };
     };
   };
 in
