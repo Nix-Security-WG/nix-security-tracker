@@ -35,24 +35,7 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
       It will correspond to [`nixpkgs`](https://github.com/nixos/nixpkgs).
       In the **Settings** tab on that repository, in the **Features** section, ensure that _Issues_ are enabled.
 
-2.  For your GitHub user, in **Developer Settings**, generate a new [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
-
-    This is not strictly necessary just to run the service, but allows for more API calls and is therefore important for a production deployment.
-
-    - Generate new token
-
-      - In **Resource owner** select the GitHub organisation associated with the Nixpkgs security tracker
-      - In **Repository access** choose **Only select repositories** and select the target repository.
-
-        We're using <https://github.com/Nix-Security-WG/sectracker-testing> for development.
-
-      - In **Organization permissions**, set **Members** permissions to **Read-only**
-      - In **Repository permissions**, set **Issues** permissions to **Read and write**
-      - No other permissions are required
-
-    - Store the value in `.credentials/GH_TOKEN`
-
-3.  In the GitHub organisation settings configure the GitHub App
+2.  In the GitHub organisation settings configure the GitHub App
 
     We're using <https://github.com/apps/sectracker-testing> for local development and <https://github.com/apps/sectracker-demo> for the public demo deployment.
     [Register a new GitHub application](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) if needed.

@@ -1,16 +1,9 @@
 import logging
-from os import environ as env
 from urllib.parse import quote
 
+from django.conf import settings
 from github import Auth, Github
 from github.Issue import Issue as GithubIssue
-from tracker.settings import (
-    GH_ISSUES_LABELS,
-    GH_ISSUES_PING_MAINTAINERS,
-    GH_ISSUES_REPO,
-    GH_ORGANIZATION,
-    get_secret,
-)
 from webview.templatetags.viewutils import severity_badge
 
 from shared.models import CachedSuggestions
@@ -20,37 +13,13 @@ logger = logging.getLogger(__name__)
 
 def get_gh(per_page: int = 30) -> Github:
     """
-    Initialize a GitHub API connection, using credentials when available.
+    Initialize a GitHub API connection
     """
 
-    credentials_dir = env.get("CREDENTIALS_DIRECTORY")
-
-    gh_auth: Auth.Auth | None = None
-
-    if credentials_dir is None:
-        logger.warning("No credentials directory available, using unauthenticated API.")
-    else:
-        logger.info(f"Using credentials directory: {credentials_dir}")
-
-        try:
-            with open(f"{credentials_dir}/GH_TOKEN", encoding="utf-8") as f:
-                gh_auth = Auth.Token(f.read().rstrip("\n"))
-                logger.info("Using GitHub Token to connect to the API.")
-        except FileNotFoundError:
-            logger.debug(
-                "No specific token was found, trying the GitHub application JWT generation method..."
-            )
-
-        try:
-            with open(f"{credentials_dir}/GH_APP_PRIVATE_KEY", encoding="utf-8") as f:
-                gh_auth = Auth.AppAuth(
-                    get_secret("GH_CLIENT_ID"), f.read()
-                ).get_installation_auth(int(get_secret("GH_APP_INSTALLATION_ID")))
-        except FileNotFoundError:
-            logger.warning(
-                "No token available in the credentials directory, "
-                "using unauthenticated API."
-            )
+    gh_auth = Auth.AppAuth(
+        settings.GH_CLIENT_ID, settings.GH_APP_PRIVATE_KEY
+    ).get_installation_auth(settings.GH_APP_INSTALLATION_ID)
+    logger.info("Successfully authenticated with GitHub.")
 
     return Github(auth=gh_auth, per_page=per_page)
 
@@ -75,7 +44,7 @@ def create_gh_issue(
         setting GH_ISSUES_PING_MAINTAINERS is set to False, this mention is
         escaped with backticks to prevent actually pinging the maintainers.
         """
-        if GH_ISSUES_PING_MAINTAINERS:
+        if settings.GH_ISSUES_PING_MAINTAINERS:
             return f"@{maintainer}"
         else:
             return f"`@{maintainer}`"
@@ -136,7 +105,7 @@ def create_gh_issue(
 { "\n".join(packages) }
 </details>"""
 
-    repo = github.get_repo(f"{GH_ORGANIZATION}/{GH_ISSUES_REPO}")
+    repo = github.get_repo(f"{settings.GH_ORGANIZATION}/{settings.GH_ISSUES_REPO}")
     title = cached_suggestion.payload["title"]
 
     body = f"""\
@@ -149,7 +118,7 @@ def create_gh_issue(
 {cvss_details()}
 {affected_nix_packages()}"""
 
-    return repo.create_issue(title=title, body=body, labels=GH_ISSUES_LABELS)
+    return repo.create_issue(title=title, body=body, labels=settings.GH_ISSUES_LABELS)
 
 
 def get_maintainer_username(maintainer: dict, github: Github = get_gh()) -> str:
