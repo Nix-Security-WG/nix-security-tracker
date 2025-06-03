@@ -150,7 +150,7 @@ rec {
         };
       };
 
-      # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
+      # `./src/website/project/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
       # in the root of the repo. Make it the default here for local development.
       LOCAL_NIXPKGS_CHECKOUT = toString ./. + "/nixpkgs";
 
