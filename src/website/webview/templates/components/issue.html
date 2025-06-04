@@ -3,26 +3,26 @@
 <article class="issue" id="issue-{{ issue.code }}">
 
   <div class="top-row">
-    <div class="status condensed status-{{ issue.status_string }}">{{ issue.status_string }}</div>
-    <div class="creation-date">created {{ issue.created }}</div>
+    <div class="status condensed status-{{ issue.cached_payload.status }}">{{ issue.cached_payload.status }}</div>
+    <div class="creation-date">created {{ issue.cached_payload.created_at }}</div>
   </div>
 
   <details class="description">
     <summary>
       {{ issue.code }}
     </summary>
-    <p class="description-long as-details">{{ issue.description.value }}</p>
+    <p class="description-long as-details">{{ issue.cached_payload.description }}</p>
   </details>
 
 
-  {% if issue.cve.all %}
+  {% if issue.cached_payload.vulnerabilities %}
   <details class="vulnerabilities">
     <summary>Vulnerabilities</summary>
     <ul>
-      {% for cve in issue.cve.all %}
+      {% for vulnerability in issue.cached_payload.vulnerabilities %}
       <li>
-        <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ cve.cve_id | urlencode }}">
-          {{ cve.cve_id }}
+        <a class="cve-id" href="https://nvd.nist.gov/vuln/detail/{{ vulnerability.cve_id | urlencode }}">
+          {{ vulnerability.cve_id }}
         </a>
       </li>
       {% endfor %}
@@ -30,15 +30,15 @@
   </details>
   {% endif %}
 
-  {% if issue.derivations_with_cves %}
+  {% if issue.cached_payload.related_derivations %}
   <details class="related-derivations">
     <summary>Related derivations</summary>
     <div class="derivation-list">
-      {% for drv in issue.derivations_with_cves %}
+      {% for drv in issue.cached_payload.related_derivations %}
         <div class="derivation">
           <div class="derivation-name">{{ drv.name }}</div>
-          {% if drv.metadata.maintainers.all %}
-            {% maintainers_list drv.metadata.maintainers.all %}
+          {% if drv.maintainers %}
+            {% maintainers_list drv.maintainers %}
           {% endif %}
         </div>
       {% endfor %}
