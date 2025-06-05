@@ -1,5 +1,6 @@
 import logging
-from typing import Any
+from datetime import datetime
+from typing import Any, Literal, TypedDict
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -24,12 +25,56 @@ from shared.models import (
 logger = logging.getLogger(__name__)
 
 
+class ChangeEvent(TypedDict):
+    """
+    The common structure of a suggestion change event (except the `action`
+    field, which is omitted here because of a Pydantic limitation: we want to
+    make `action` more precise in the child classes using `Literal`, but
+    Pydantic doesn't allow to override typed field dicts with more precise
+    types).
+    """
+
+    suggestion_id: int
+    timestamp: datetime
+    # Might be "ANONYMOUS" in some special cases (deleted user for example) or
+    # "ADMIN"
+    username: str
+
+
+class PackageData(TypedDict):
+    """
+    A package in a package change event.
+    """
+
+    name: str
+    attribute: str
+
+
+class SuggestionChangeEvent(ChangeEvent):
+    """
+    A general change event for a suggestion.
+    """
+
+    action: Literal["insert", "update"]
+    status_value: str
+
+
+class PackageChangeEvent(ChangeEvent):
+    """
+    A package list change event for a suggestion.
+    """
+
+    action: Literal["derivations.add", "derivations.remove"]
+    package_count: int
+    package_names: list[PackageData]
+
+
 class SuggestionActivityLog:
     """
-    This class provides a unified view for the activity log entires of a
+    This class provides a unified view for the activity log entries of a
     suggestion, convertible to a simple dict that can be used on the front-end.
 
-    Under the hood, there are different types of log entries with shapes:
+    Under the hood, there are different types of log entries with different shapes:
 
     - insertion or status change
     - package edits (addition or removal)
@@ -38,9 +83,6 @@ class SuggestionActivityLog:
     Those three correspond to different models in the base.
     SuggestionActivityLog provides facilities to aggregate those logs in one
     unified list of dicts.
-
-    The precise schema and example outputs are described in the documentation of
-    the `get_dict` method.
     """
 
     def _annotate_username(self, query: EventQuerySet) -> EventQuerySet:
@@ -72,7 +114,9 @@ class SuggestionActivityLog:
             )
         )
 
-    def get_raw_events(self, suggestion_ids: list[str | None]) -> list[dict[str, Any]]:
+    def get_raw_events(
+        self, suggestion_ids: list[str | None]
+    ) -> list[PackageChangeEvent | SuggestionChangeEvent]:
         """
         Combine the different types of events related to a list of suggestions
         in a single list and order them by timestamp. Multiple log entries
@@ -157,63 +201,6 @@ class SuggestionActivityLog:
         Aggregate the different types of events related to a given suggestion in
         a unified list of dicts, ordered by timestamp and with bulk actions
         grouped together.
-
-        ## Example of dict output
-
-        ```
-        [{'action': 'derivations.remove',
-          'package_count': 6,
-          'package_names': ['{"name": "onnxruntime-1.15.1", "attribute": "onnxruntime"}',
-                            '{"name": "python3.10-onnx-1.14.1", "attribute": "python310Packages.onnx"}',
-                            '{"name": "python3.10-onnxconverter-common-1.14.0", "attribute": "python310Packages.onnxconverter-common"}',
-                            '{"name": "python3.10-onnxmltools-1.11.2", "attribute": "python310Packages.onnxmltools"}',
-                            '{"name": "python3.10-onnxruntime-1.15.1", "attribute": "python310Packages.onnxruntime"}',
-                            '{"name": "python3.10-onnxruntime-tools-1.7.0", "attribute": "python310Packages.onnxruntime-tools"}'],
-          'suggestion_id': 121,
-          'timestamp': datetime.datetime(2024, 12, 6, 11, 59, 6, 668316, tzinfo=datetime.timezone.utc),
-          'username': 'ANONYMOUS'},
-         {'action': 'derivations.remove',
-          'package_count': 1,
-          'package_names': ['{"name": "perl5.36.3-GSSAPI-0.28", "attribute": "perl536Packages.GSSAPI"}'],
-          'suggestion_id': 11,
-          'timestamp': datetime.datetime(2024, 12, 5, 16, 15, 7, 899037, tzinfo=datetime.timezone.utc),
-          'username': 'ANONYMOUS'},
-         {'action': 'update',
-          'status_value': 'accepted',
-          'suggestion_id': 11,
-          'timestamp': datetime.datetime(2024, 12, 5, 16, 14, 19, 520312, tzinfo=datetime.timezone.utc),
-          'username': 'ANONYMOUS'}]
-        ```
-
-        ## Schema
-
-        Here is the schema of the dict returned by this method.
-
-        All events have the following fields defined:
-
-        ```
-        suggestion_id: int
-        timestamp: datetime
-        action: str
-        username: str
-        ```
-
-        If `action` is `insert` or `update`, the dict will have the additional
-        fields:
-
-        ```
-        status_value: str
-        ```
-
-        If `action` is `derivations.*`, the dict will have the additional
-        fields:
-
-        ```
-        package_names: list[dict[str, str]] # a package name is {"name": str, "attribute": str}
-        package_count: int
-        ```
-
-        TODO: add maintainer edits to the schema once they're logged.
         """
 
         raw_events = self.get_raw_events(suggestion_ids)
