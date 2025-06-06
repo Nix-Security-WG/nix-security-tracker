@@ -3,7 +3,7 @@
 <article class="issue" id="issue-{{ issue.code }}">
 
   <div class="top-row">
-    <div class="status condensed status-{{ issue.cached_payload.status }}">{{ issue.cached_payload.status }}</div>
+    <div class="status condensed status-{{ issue.cached_payload.status.label }}">{{ issue.cached_payload.status.label }}</div>
     <div class="creation-date">created {{ issue.cached_payload.created_at }}</div>
   </div>
 

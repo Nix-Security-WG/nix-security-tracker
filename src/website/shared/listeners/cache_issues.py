@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from shared.channels import NixpkgsIssueChannel
 from shared.models.cached import CachedNixpkgsIssue
-from shared.models.cve import NixpkgsIssue
+from shared.models.cve import IssueStatus, NixpkgsIssue
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class CachedNixpkgsIssuePayload(BaseModel):
         name: str
         maintainers: list[Maintainer]
 
-    status: str
+    status: IssueStatus
     created_at: date
     description: str
     vulnerabilities: list[Vulnerability]
@@ -33,7 +33,7 @@ class CachedNixpkgsIssuePayload(BaseModel):
 
 
 def cache_new_issue(issue: NixpkgsIssue) -> None:
-    status = issue.get_status_display()  # type: ignore
+    status = IssueStatus(issue.status)
     created_at = issue.created
     description = issue.description.value
     vulnerabilities = [
