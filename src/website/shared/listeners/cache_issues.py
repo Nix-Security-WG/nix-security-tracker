@@ -1,35 +1,12 @@
 import logging
-from datetime import date
 
 import pgpubsub
-from pydantic import BaseModel
 
 from shared.channels import NixpkgsIssueChannel
-from shared.models.cached import CachedNixpkgsIssue
+from shared.models.cached import CachedNixpkgsIssue, CachedNixpkgsIssuePayload
 from shared.models.cve import IssueStatus, NixpkgsIssue
 
 logger = logging.getLogger(__name__)
-
-
-class CachedNixpkgsIssuePayload(BaseModel):
-    class Vulnerability(BaseModel):
-        cve_id: str
-
-    class RelatedDerivation(BaseModel):
-        class Maintainer(BaseModel):
-            github: str
-            name: str
-            email: str
-            # email: EmailStr
-
-        name: str
-        maintainers: list[Maintainer]
-
-    status: IssueStatus
-    created_at: date
-    description: str
-    vulnerabilities: list[Vulnerability]
-    related_derivations: list[RelatedDerivation]
 
 
 def cache_new_issue(issue: NixpkgsIssue) -> None:
