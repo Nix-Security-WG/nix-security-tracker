@@ -420,6 +420,7 @@ class NixpkgsIssueListView(ListView):
     model = NixpkgsIssue
     paginate_by = 10
 
+    # TODO Because of how issue codes and cached issues are generated (post save / post insert), it is not trivial to ensure new issues get their code filled up in the cached issue (unless `manage regenerate_cached_issues` is run by hand). Since the view needs the issue code, for now, the cached issue is passed as an additional field instead of being the returned object.
     def get_queryset(self) -> BaseManager[NixpkgsIssue]:
         issues = NixpkgsIssue.objects.all().order_by("-created")
         for issue in issues:
