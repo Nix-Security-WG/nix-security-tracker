@@ -271,9 +271,7 @@ Not passing `--subset N` will take about an hour and produce ~500 MB of data.
 
 ### Caching suggestions and issues
 
-Fetching information about individual suggestions or published issues is very frequent when browsing through the security tracker. For each view requested, this would typically involve database queries that would take way too long to execute.
-
-Therefore, we pre-execute these queries and cache the results on every suggestion and published issue. The cached information is used when navigating in the tracker. A django hook on inserting or updating suggestions or published issues ensures caching for new elements but the operation needs to be performed once for pre-existing elements in the database.
+Suggestion and issue contents are displayed from a cache to avoid latency from complex database queries.
 
 To compute or re-compute the cached information from scratch:
 
