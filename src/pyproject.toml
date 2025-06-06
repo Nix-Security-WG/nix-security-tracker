@@ -3,5 +3,5 @@ name = "web-security-tracker"
 version = "0.0.1"
 
 [tool.setuptools]
-packages = [ "shared", "tracker", "webview" ]
+packages = [ "project", "shared", "webview" ]
 include-package-data = true

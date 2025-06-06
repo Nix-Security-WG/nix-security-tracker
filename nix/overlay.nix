@@ -27,7 +27,7 @@ in
     version = "0.0.1";
     pyproject = true;
 
-    src = final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src/website;
+    src = final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src;
 
     propagatedBuildInputs = with python3.pkgs; [
       # Nix python packages

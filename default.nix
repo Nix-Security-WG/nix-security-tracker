@@ -117,7 +117,7 @@ rec {
   shell =
     let
       manage = pkgs.writeScriptBin "manage" ''
-        exec ${python3}/bin/python ${toString ./src/website/manage.py} $@
+        exec ${python3}/bin/python ${toString ./src/manage.py} $@
       '';
       deploymentSources = import ./infra/npins;
     in
@@ -137,11 +137,11 @@ rec {
           GH_ISSUES_REPO = "sectracker-testing";
           GH_SECURITY_TEAM = "setracker-testing-security";
           GH_COMMITTERS_TEAM = "sectracker-testing-committers";
-          STATIC_ROOT = "${toString ./src/website/static}";
+          STATIC_ROOT = "${toString ./src/static}";
         };
       };
 
-      # `./src/website/tracker/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
+      # `./src/project/settings.py` by default looks for LOCAL_NIXPKGS_CHECKOUT
       # in the root of the repo. Make it the default here for local development.
       LOCAL_NIXPKGS_CHECKOUT = toString ./. + "/nixpkgs";
 
@@ -158,7 +158,7 @@ rec {
       shellHook = ''
         ${pre-commit-check.shellHook}
 
-        ln -sf ${sources.htmx}/dist/htmx.js src/website/webview/static/htmx.min.js
+        ln -sf ${sources.htmx}/dist/htmx.js src/webview/static/htmx.min.js
 
         mkdir -p $CREDENTIALS_DIRECTORY
         # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings

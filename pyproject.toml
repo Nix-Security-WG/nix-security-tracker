@@ -7,7 +7,7 @@ lint.ignore = [
   "ANN101", # Missing type annotation for `self` in method
   "ANN401" # Dynamically typed expressions (typing.Any) are disallowed
 ]
-exclude = ["src/website/shared/migrations/*.py"] # auto-generated code
+exclude = ["src/shared/migrations/*.py"] # auto-generated code
 
 [tool.commitizen]
 name = "cz_conventional_commits"
