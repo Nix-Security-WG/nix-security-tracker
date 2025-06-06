@@ -10,6 +10,8 @@ from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from pgtrigger import UpdateSearchVector
 
+import shared.models.cached
+
 from .nix_evaluation import NixDerivation
 
 
@@ -524,6 +526,8 @@ class NixpkgsIssue(models.Model):
 
     created = models.DateField(auto_now_add=True)
     code = models.CharField(max_length=len("NIXPKGS-YYYY-") + 19)
+
+    cached: "shared.models.cached.CachedNixpkgsIssue"
 
     cve = models.ManyToManyField(CveRecord)
     description = models.ForeignKey(Description, on_delete=models.PROTECT)
