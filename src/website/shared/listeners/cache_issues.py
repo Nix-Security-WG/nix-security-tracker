@@ -48,7 +48,5 @@ def cache_new_issue(issue: NixpkgsIssue) -> None:
 
 
 @pgpubsub.post_insert_listener(NixpkgsIssueChannel)
-def cache_new_suggestions_following_new_container(
-    old: NixpkgsIssue, new: NixpkgsIssue
-) -> None:
+def cache_new_issue_following_insert(old: NixpkgsIssue, new: NixpkgsIssue) -> None:
     cache_new_issue(new)
