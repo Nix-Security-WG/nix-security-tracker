@@ -33,9 +33,6 @@ class CachedNixpkgsIssuePayload(BaseModel):
 
 
 def cache_new_issue(issue: NixpkgsIssue) -> None:
-    status = IssueStatus(issue.status)
-    created_at = issue.created
-    description = issue.description.value
     vulnerabilities = [
         CachedNixpkgsIssuePayload.Vulnerability(cve_id=cve.cve_id)
         for cve in issue.cve.all()
@@ -57,9 +54,9 @@ def cache_new_issue(issue: NixpkgsIssue) -> None:
         for drv in issue.derivations.all()
     ]
     payload = CachedNixpkgsIssuePayload(
-        status=status,
-        created_at=created_at,
-        description=description,
+        status=IssueStatus(issue.status),
+        created_at=issue.created,
+        description=issue.description.value,
         vulnerabilities=vulnerabilities,
         related_derivations=related_derivations,
     )
