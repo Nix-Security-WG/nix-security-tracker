@@ -276,7 +276,7 @@ SECRET_KEY = get_secret("SECRET_KEY")
 ALLOWED_HOSTS = []
 
 # Application definition
-ASGI_APPLICATION = "tracker.asgi.application"
+ASGI_APPLICATION = "project.asgi.application"
 INSTALLED_APPS = [
     "daphne",
     "django.contrib.admin",
@@ -317,7 +317,7 @@ MIDDLEWARE = [
     "pghistory.middleware.HistoryMiddleware",
 ]
 
-ROOT_URLCONF = "tracker.urls"
+ROOT_URLCONF = "project.urls"
 
 TEMPLATES = [
     {
@@ -335,7 +335,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "tracker.wsgi.application"
+WSGI_APPLICATION = "project.wsgi.application"
 
 ## Realtime events configuration
 
@@ -411,7 +411,7 @@ DB_SECURITY_TEAM = "security_team"
 
 GH_WEBHOOK_SECRET = get_secret("GH_WEBHOOK_SECRET")
 
-TEST_RUNNER = "tracker.test_runner.CustomTestRunner"
+TEST_RUNNER = "project.test_runner.CustomTestRunner"
 
 # Make history log immutable by default
 PGHISTORY_APPEND_ONLY = True
