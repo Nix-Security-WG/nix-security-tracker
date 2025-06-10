@@ -9,6 +9,7 @@ from django.core.validators import RegexValidator
 from django.db import transaction
 from django.urls import reverse
 from shared.github import create_gh_issue
+from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import maintainers_list
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
@@ -60,6 +61,7 @@ from shared.models import (
     NixpkgsIssue,
 )
 from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
+
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 
@@ -409,22 +411,8 @@ class NixpkgsIssueView(DetailView):
         issue = cast(
             NixpkgsIssue, get_object_or_404(self.model, code=self.kwargs.get("code"))
         )
-        derivations = issue.derivations.all()  # type: ignore
-        for drv in derivations:
-            result = self.get_cves_for_derivation(drv)
-            drv.known_cves = result
-
-        issue.derivations_with_cves = derivations  # type: ignore
-
+        issue.cached_payload = CachedNixpkgsIssuePayload(**issue.cached.payload)  # type: ignore
         return issue
-
-    def get_cves_for_derivation(self, drv: Any) -> QuerySet | None:
-        known_vulnerabilities = drv.metadata.known_vulnerabilities
-        if not known_vulnerabilities:
-            return None
-        cves = [s for s in known_vulnerabilities if self.pattern.match(s)]
-        existing_cves = Container.objects.filter(cve__cve_id__in=cves)
-        return existing_cves or None
 
 
 class NixpkgsIssueListView(ListView):
@@ -432,8 +420,12 @@ class NixpkgsIssueListView(ListView):
     model = NixpkgsIssue
     paginate_by = 10
 
+    # TODO Because of how issue codes and cached issues are generated (post save / post insert), it is not trivial to ensure new issues get their code filled up in the cached issue (unless `manage regenerate_cached_issues` is run by hand). Since the view needs the issue code, for now, the cached issue is passed as an additional field instead of being the returned object.
     def get_queryset(self) -> BaseManager[NixpkgsIssue]:
-        return NixpkgsIssue.objects.all().order_by("-created")
+        issues = NixpkgsIssue.objects.all().order_by("-created")
+        for issue in issues:
+            issue.cached_payload = CachedNixpkgsIssuePayload(**issue.cached.payload)  # type: ignore
+        return issues
 
     def get_context_data(self, **kwargs: Any) -> Any:
         context = super().get_context_data(**kwargs)

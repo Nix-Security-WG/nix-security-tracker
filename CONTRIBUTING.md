@@ -252,6 +252,17 @@ manage ingest_bulk_cve --subset 100
 This will take a few minutes on an average machine.
 Not passing `--subset N` will take about an hour and produce ~500 MB of data.
 
+### Caching suggestions and issues
+
+Suggestion and issue contents are displayed from a cache to avoid latency from complex database queries.
+
+To compute or re-compute the cached information from scratch:
+
+```console
+manage regenerate_cached_suggestions
+manage regenerate_cached_issues
+```
+
 ## Staging deployment
 
 If you have your SSH keys set up on the staging environment (and can connect through IPv6), you can deploy the service with:
