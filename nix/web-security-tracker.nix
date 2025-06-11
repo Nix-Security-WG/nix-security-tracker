@@ -60,6 +60,10 @@ let
   credentials = mapAttrsToList (name: secretPath: "${name}:${secretPath}") cfg.secrets;
   databaseUrl = "postgres:///web-security-tracker";
 
+  gitRevisionFile = pkgs.runCommand "git-revision" { buildInputs = [ pkgs.git ]; } ''
+    git -C ${toString ./.} rev-parse HEAD > $out
+  '';
+
   environment = {
     DATABASE_URL = databaseUrl;
     USER_SETTINGS_FILE = "${configFile}";
@@ -115,6 +119,7 @@ in
       type = types.attrsOf types.anything;
       default = {
         STATIC_ROOT = "/var/lib/web-security-tracker/static/"; # trailing slash is required!
+        REVISION = builtins.readFile gitRevisionFile;
       };
       # only override defaults with explicit values
       apply = lib.recursiveUpdate default;

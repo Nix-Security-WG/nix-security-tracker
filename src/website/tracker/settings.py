@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     class DjangoSettings(BaseModel):
         # SECURITY WARNING: don't run with debug turned on in production!
         DEBUG: bool = False
+        REVISION: str = Field(
+            description="""
+            Git revision of the deployed security tracker.
+            """
+        )
         STATIC_ROOT: Path = Field(
             description="""
             Writeable directory for compilimg static files, such as stylesheets, when running `manage collectstatic`.
