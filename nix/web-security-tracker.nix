@@ -118,7 +118,7 @@ in
         STATIC_ROOT = "/var/lib/web-security-tracker/static/"; # trailing slash is required!
         REVISION =
           (builtins.fetchGit {
-            url = ./.;
+            url = ../.;
             shallow = true;
           }).rev;
       };
