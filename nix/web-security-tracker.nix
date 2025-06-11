@@ -114,11 +114,18 @@ in
       '';
       type = types.attrsOf types.anything;
       default = {
+        PRODUCTION = cfg.production;
         STATIC_ROOT = "/var/lib/web-security-tracker/static/"; # trailing slash is required!
+        REVISION =
+          (builtins.fetchGit {
+            url = ../.;
+            shallow = true;
+          }).rev;
       };
       # only override defaults with explicit values
       apply = lib.recursiveUpdate default;
     };
+    # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings and rename `env` to `settings`
     settings = mkOption {
       type = types.attrsOf types.anything;
       default = { };
@@ -159,7 +166,6 @@ in
     services = {
       # TODO(@fricklerhandwerk): move all configuration over to pydantic-settings
       web-security-tracker.settings = {
-        DEBUG = mkDefault false;
         ALLOWED_HOSTS = mkDefault [
           (with cfg; if production then domain else "*")
           "localhost"

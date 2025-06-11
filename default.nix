@@ -131,6 +131,7 @@ rec {
         CREDENTIALS_DIRECTORY = toString ./.credentials;
         DJANGO_SETTINGS = builtins.toJSON {
           DEBUG = true;
+          PRODUCTION = false;
           SYNC_GITHUB_STATE_AT_STARTUP = false;
           GH_ISSUES_PING_MAINTAINERS = false;
           GH_ORGANIZATION = "Nix-Security-WG";
@@ -138,6 +139,14 @@ rec {
           GH_SECURITY_TEAM = "setracker-testing-security";
           GH_COMMITTERS_TEAM = "sectracker-testing-committers";
           STATIC_ROOT = "${toString ./src/website/static}";
+          REVISION =
+            let
+              git = builtins.fetchGit {
+                url = ./.;
+                shallow = true;
+              };
+            in
+            if git ? dirtyRev then git.dirtyShortRev else git.shortRev;
         };
       };
 
