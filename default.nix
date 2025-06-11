@@ -138,7 +138,12 @@ rec {
           GH_SECURITY_TEAM = "setracker-testing-security";
           GH_COMMITTERS_TEAM = "sectracker-testing-committers";
           STATIC_ROOT = "${toString ./src/website/static}";
-          REVISION = "Development - ${builtins.readFile (toString ./. + "/.git/HEAD")}";
+          REVISION = "Development - ${
+            (builtins.fetchGit {
+              url = ./.;
+              shallow = true;
+            }).rev
+          }";
         };
       };
 
