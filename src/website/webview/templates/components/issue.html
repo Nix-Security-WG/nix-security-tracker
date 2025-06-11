@@ -32,16 +32,9 @@
 
   {% if issue.cached_payload.related_derivations %}
   <details class="related-derivations">
-    <summary>Related derivations</summary>
+    <summary>Related packages</summary>
     <div class="derivation-list">
-      {% for drv in issue.cached_payload.related_derivations %}
-        <div class="derivation">
-          <div class="derivation-name">{{ drv.name }}</div>
-          {% if drv.maintainers %}
-            {% maintainers_list drv.maintainers %}
-          {% endif %}
-        </div>
-      {% endfor %}
+      {% nixpkgs_package_list issue.cached_payload.packages %}
     </div>
   </details>
   {% endif %}
