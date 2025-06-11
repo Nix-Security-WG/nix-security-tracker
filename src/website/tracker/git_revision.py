@@ -3,4 +3,7 @@ from django.http import HttpRequest
 
 
 def git_revision(request: HttpRequest) -> dict[str, str]:
-    return {"git_revision": settings.REVISION}
+    return {
+        "production": settings.PRODUCTION,
+        "git_revision": settings.REVISION,
+    }

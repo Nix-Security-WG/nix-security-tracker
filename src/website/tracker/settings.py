@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     class DjangoSettings(BaseModel):
         # SECURITY WARNING: don't run with debug turned on in production!
         DEBUG: bool = False
+        # TODO(@fricklerhandwerk): once we go live, remove this and use only `DEBUG` as the toggle for development mode
+        PRODUCTION: bool = True
         REVISION: str = Field(
             description="""
             Git revision of the deployed security tracker.
