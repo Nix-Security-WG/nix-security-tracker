@@ -51,6 +51,7 @@ class CachedNixpkgsIssuePayload(BaseModel):
     description: str
     vulnerabilities: list[Vulnerability]
     related_derivations: list[RelatedDerivation]
+    packages: dict
 
 
 class CachedNixpkgsIssue(models.Model):
