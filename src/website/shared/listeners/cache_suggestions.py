@@ -209,6 +209,8 @@ def get_src_position(derivation: NixDerivation) -> str | None:
     return None
 
 
+# TODO This is also used when caching issues. This definition may be moved to
+# another module that would be imported by both this and cache_issues.py
 def channel_structure(
     version_constraints: list[Version], derivations: list[NixDerivation]
 ) -> dict:
