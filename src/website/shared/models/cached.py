@@ -41,6 +41,7 @@ class CachedNixpkgsIssuePayload(BaseModel):
     created_at: date
     description: str
     vulnerabilities: list[Vulnerability]
+    # TODO Improve the type definition (linked to the return type of channel_strucutre)
     packages: dict
 
 

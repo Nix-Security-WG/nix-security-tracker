@@ -213,7 +213,7 @@ def get_src_position(derivation: NixDerivation) -> str | None:
 # another module that would be imported by both this and cache_issues.py
 def channel_structure(
     version_constraints: list[Version], derivations: list[NixDerivation]
-) -> dict:
+) -> dict:  # TODO Refine the return type
     """
     For a list of derivations, massage the data so that in can rendered easily in the suggestions view
     """
