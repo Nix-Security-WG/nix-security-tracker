@@ -17,22 +17,6 @@ def cache_new_issue(issue: NixpkgsIssue) -> None:
         CachedNixpkgsIssuePayload.Vulnerability(cve_id=cve.cve_id)
         for cve in issue.cve.all()
     ]
-    related_derivations = [
-        CachedNixpkgsIssuePayload.RelatedDerivation(
-            name=drv.name,
-            maintainers=[
-                CachedNixpkgsIssuePayload.RelatedDerivation.Maintainer(
-                    github=maint.github,
-                    name=maint.name,
-                    email=maint.email or "",
-                )
-                for maint in drv.metadata.maintainers.all()
-            ]
-            if drv.metadata
-            else [],
-        )
-        for drv in issue.derivations.all()
-    ]
     derivations = list(
         issue.derivations.select_related("metadata", "parent_evaluation")
         .prefetch_related(
@@ -60,7 +44,6 @@ def cache_new_issue(issue: NixpkgsIssue) -> None:
         description=issue.description.value,
         packages=packages,
         vulnerabilities=vulnerabilities,
-        related_derivations=related_derivations,
     )
     _, created = CachedNixpkgsIssue.objects.update_or_create(
         issue=issue, payload=payload.model_dump(mode="json")

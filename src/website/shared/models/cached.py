@@ -32,25 +32,15 @@ class CachedNixpkgsIssuePayload(BaseModel):
     # pydantic model, BUMP THIS VERSION NUMBER! This way, we will be able to
     # keep track of older representations of cached issues in the db and
     # automate how to process them.
-    VERSION: ClassVar[int] = 1
+    VERSION: ClassVar[int] = 2
 
     class Vulnerability(BaseModel):
         cve_id: str
-
-    class RelatedDerivation(BaseModel):
-        class Maintainer(BaseModel):
-            github: str
-            name: str
-            email: str
-
-        name: str
-        maintainers: list[Maintainer]
 
     status: IssueStatus
     created_at: date
     description: str
     vulnerabilities: list[Vulnerability]
-    related_derivations: list[RelatedDerivation]
     packages: dict
 
 
