@@ -54,6 +54,13 @@ async def perform_evaluation(
         settings.EVALUATION_GC_ROOTS_DIRECTORY,
         "--expr",
         evaluation_wrapper,
+        # write drv files to memory.
+        # it's a lot faster and there's no harm in losing them since we currently don't use them for anything
+        "--eval-store",
+        # TODO: create the setting and wire it up with the service module and deployment config.
+        # please document what the operator has to do and why
+        # should default to /nix/store since not every system will have the right stuff set up
+        settings.EVALUATION_STORE_DIR,
         "--include",
         f"nixpkgs={working_tree}",
     ]
