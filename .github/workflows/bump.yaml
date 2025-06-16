@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v29
       - run: |
-          nix-shell default.nix -A ci --run "npins -d ./infra/npins update"
+          nix-shell default.nix -A ci --run "npins update"
       - uses: actions/create-github-app-token@v1
         id: generate-token
         with:

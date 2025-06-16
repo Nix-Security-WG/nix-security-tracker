@@ -1,10 +1,6 @@
 { pkgs, lib, ... }:
 let
-  # Note: this might be surprising not to reuse the parent npins/ directory.
-  # The rationale is that the staging environment's sources are decorrelated from the development's sources.
-  # Sources here are managed on a different lifecycle and have different acceptance tests than the development.
-  # Also, the focus in the staging environment is a secure deployment, which trumps over dirty hacks.
-  sources = import ./npins;
+  sources = import ../npins;
 in
 {
   imports = [
