@@ -1,5 +1,17 @@
 {
   "pins": {
+    "agenix": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "ryantm",
+        "repo": "agenix"
+      },
+      "branch": "main",
+      "revision": "4835b1dc898959d8547a871ef484930675cb47f1",
+      "url": "https://github.com/ryantm/agenix/archive/4835b1dc898959d8547a871ef484930675cb47f1.tar.gz",
+      "hash": "0ngkhf7qamibhbl9z1dryzscd36y4fz1m1h6fb2z6fylw0b8029p"
+    },
     "gitignore": {
       "type": "Git",
       "repository": {
@@ -21,16 +33,16 @@
       "pre_releases": false,
       "version_upper_bound": null,
       "release_prefix": null,
-      "version": "v2.0.3",
-      "revision": "d6e17abb13729d8ace72f312a4b82130d8355233",
+      "version": "v2.0.4",
+      "revision": "b82cf843e47e575dd8c2ad8fee547d8e2c3bb87f",
       "url": null,
-      "hash": "1dni9xpijx6risc0pfidqy3i9a898lnf357rypddd1rvkjan40a7"
+      "hash": "1c4zm3b7ym01ijydiss4amd14mv5fbgp1n71vqjk4alc35jlnqy2"
     },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
-      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-24.11pre683804.a1d92660c6b3/nixexprs.tar.xz",
-      "hash": "0lzd1g9x7ihscdajc2g9f0jyykymw6r1lq2ir5g0shjzjf0jc5la"
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-25.11pre814815.41da1e3ea8e2/nixexprs.tar.xz",
+      "hash": "1hpd50fg4s7mg7a7rqs7j1a659qnf27f9j5s1fgi0dj7zhac002n"
     },
     "pre-commit-hooks": {
       "type": "Git",
@@ -40,9 +52,9 @@
         "repo": "pre-commit-hooks.nix"
       },
       "branch": "master",
-      "revision": "4e743a6920eab45e8ba0fbe49dc459f1423a4b74",
-      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/4e743a6920eab45e8ba0fbe49dc459f1423a4b74.tar.gz",
-      "hash": "0fc69dsn5rhv2zb16c2bfgx84ja8cmn7d7j2mrw3n4m8y611x40g"
+      "revision": "623c56286de5a3193aa38891a6991b28f9bab056",
+      "url": "https://github.com/cachix/git-hooks.nix/archive/623c56286de5a3193aa38891a6991b28f9bab056.tar.gz",
+      "hash": "1vlx0gshjlj45inn8w67m8dn43i4jvxfvpnnrzh26bsgx6a8hijr"
     }
   },
   "version": 3

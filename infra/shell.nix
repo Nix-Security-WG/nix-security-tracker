@@ -1,5 +1,5 @@
 {
-  sources ? import ../../npins,
+  sources ? import ../npins,
   system ? builtins.currentSystem,
   pkgs ? import sources.nixpkgs {
     config = { };

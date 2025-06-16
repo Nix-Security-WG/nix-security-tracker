@@ -119,7 +119,6 @@ rec {
       manage = pkgs.writeScriptBin "manage" ''
         exec ${python3}/bin/python ${toString ./src/manage.py} $@
       '';
-      deploymentSources = import ./infra/npins;
     in
     pkgs.mkShellNoCC {
       env = {
@@ -161,7 +160,7 @@ rec {
         pkgs.npins
         pkgs.hivemind
         pkgs.awscli
-        (import deploymentSources.agenix { inherit pkgs; }).agenix
+        (import sources.agenix { inherit pkgs; }).agenix
       ] ++ pre-commit-check.enabledPackages;
 
       shellHook = ''
