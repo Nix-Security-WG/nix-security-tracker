@@ -1,0 +1,31 @@
+name: Actionlint
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  push:
+    branches: main
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+# Restrict permissions for GITHUB_TOKEN to minimum required
+permissions:
+  contents: read
+  # All other permissions are implicitly none
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Discard `GITHUB_TOKEN` after this step, as we don't need it
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31
+      - name: Check workflow files
+        run: |
+          NIXPKGS=$(nix-instantiate --eval -A pkgs.path)
+          nix-shell -I nixpkgs="$NIXPKGS" -p actionlint --run actionlint
