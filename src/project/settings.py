@@ -219,6 +219,11 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
+        "console_production": {
+            "level": "ERROR",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
         "mail_admins": {
             "level": "ERROR",
             "class": "django.utils.log.AdminEmailHandler",
@@ -230,7 +235,7 @@ LOGGING = {
             "propagate": True,
         },
         "django.request": {
-            "handlers": ["mail_admins"],
+            "handlers": ["console_production", "mail_admins"],
             "level": "ERROR",
             "propagate": False,
         },
@@ -239,7 +244,7 @@ LOGGING = {
             "handlers": ["console"],
         },
         "shared": {
-            "handlers": ["console", "mail_admins"],
+            "handlers": ["console", "console_production", "mail_admins"],
             "level": "DEBUG" if DEBUG else "INFO",  # type: ignore # noqa: F821
             "filters": [],
         },
