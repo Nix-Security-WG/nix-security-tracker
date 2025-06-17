@@ -35,7 +35,7 @@ class GithubState:
     ) -> None:
         self.github = github
         self.organization: Organization = self.github.get_organization(
-            login=settings.GH_ORGANIZATION
+            org=settings.GH_ORGANIZATION
         )
         self.security_team: Team = self.organization.get_team_by_slug(
             slug=settings.GH_SECURITY_TEAM
