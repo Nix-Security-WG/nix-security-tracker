@@ -41,3 +41,19 @@ resource "hcloud_server" "stfmaster" {
   delete_protection  = true
   rebuild_protection = true
 }
+
+resource "hcloud_server" "straging_tracker" {
+  name        = "staging-security-tracker"
+  image       = "debian-12"
+  server_type = "cpx41"
+  public_net {
+    ipv4_enabled = true
+    ipv6_enabled = true
+  }
+  datacenter = "nbg1-dc3"
+  labels = {
+    "Managed-by" : "Terraform"
+  }
+  delete_protection  = true
+  rebuild_protection = true
+}
