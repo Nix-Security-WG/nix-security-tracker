@@ -10,6 +10,14 @@ let
       cores = 2;
     };
 
+    services.postgresql.ensureUsers = [
+      {
+        name = application;
+        ensureDBOwnership = true;
+        ensureClauses.createdb = true;
+      }
+    ];
+
     services.${application} = {
       enable = true;
       production = false;
