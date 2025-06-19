@@ -16,7 +16,7 @@ class Login(TestCase):
         # location to start navigation
         self.entry_point = reverse("webview:suggestions_view")
 
-    def test_foo(self) -> None:
+    def test_redirect_after_login(self) -> None:
         response = self.client.get(self.entry_point)
         # expect the correct login URL in the response,
         # which will redirect back to the same page on success
