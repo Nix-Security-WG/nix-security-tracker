@@ -46,7 +46,7 @@
         {% else %}
 
         <li>
-          <a href="{% provider_login_url 'github' %}">
+          <a href="{% provider_login_url 'github' next=request.get_full_path %}">
             Login with GitHub
           </a>
         </li>
