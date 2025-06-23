@@ -10,6 +10,16 @@ This file contains general contribution information, but the other directories i
 
 The service is implemented in Python using [Django](https://www.djangoproject.com/).
 
+## Formatting
+
+A formatter is run on each pull request and as a pre-push Git hook.
+
+Run the formatter manually with:
+
+```console
+nix-shell --run format
+```
+
 ## Setting up credentials
 
 The service connects to GitHub on startup, in order to manage permissions according to GitHub team membership in the configured organisation.
