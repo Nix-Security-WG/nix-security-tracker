@@ -1,10 +1,9 @@
 [tool.ruff]
-target-version = "py311"
+target-version = "py313"
 lint.select = ["E", "F", "I", "N", "U", "ANN"]
 lint.ignore = [
   "F403",
   "E501", # line too long
-  "ANN101", # Missing type annotation for `self` in method
   "ANN401" # Dynamically typed expressions (typing.Any) are disallowed
 ]
 exclude = ["src/shared/migrations/*.py"] # auto-generated code

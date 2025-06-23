@@ -7,7 +7,6 @@
     overlays = [ overlay ];
     inherit system;
   },
-  lib ? import "${sources.nixpkgs}/lib",
 }:
 rec {
   inherit pkgs;
@@ -21,66 +20,17 @@ rec {
   dev-container = import ./infra/container.nix;
   dev-setup = import ./nix/dev-setup.nix;
 
-  pre-commit-check = pkgs.pre-commit-hooks {
+  git-hooks = pkgs.pre-commit-hooks {
     src = ./.;
-    # Do not run at pre-commit time, it prevent the workflow where
-    # we just absorb things up.
-    default_stages = [
-      "pre-push"
-    ];
+    imports = [ ./nix/git-hooks.nix ];
+  };
 
-    hooks =
-      let
-        excludes = [
-          "\\.min.css$"
-          "\\.html$"
-          "npins"
-          "migrations"
-        ];
-      in
-      lib.mapAttrs (_: v: v // { inherit excludes; }) {
-        # Nix setup
-        nixfmt-rfc-style.enable = true;
-        statix.enable = true;
-        deadnix.enable = true;
-
-        # Python setup
-        ruff.enable = true;
-        ruff-format = {
-          enable = true;
-          name = "Format python code with ruff";
-          types = [
-            "text"
-            "python"
-          ];
-          entry = "${pkgs.lib.getExe pkgs.ruff} format";
-        };
-
-        pyright =
-          let
-            pyEnv = pkgs.python3.withPackages (_: pkgs.web-security-tracker.propagatedBuildInputs);
-            wrappedPyright = pkgs.runCommand "pyright" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
-              makeWrapper ${pkgs.pyright}/bin/pyright $out \
-                --set PYTHONPATH ${pyEnv}/${pyEnv.sitePackages} \
-                --prefix PATH : ${pyEnv}/bin \
-                --set PYTHONHOME ${pyEnv}
-            '';
-          in
-          {
-            enable = true;
-            entry = lib.mkForce (builtins.toString wrappedPyright);
-          };
-
-        # Global setup
-        prettier = {
-          enable = true;
-        };
-        commitizen = {
-          enable = true;
-          # This should check the commit message, so better warn early.
-          stages = [ "commit-msg" ];
-        };
-      };
+  format = pkgs.writeShellApplication {
+    name = "format";
+    runtimeInputs = git-hooks.enabledPackages ++ [ git-hooks.config.package ];
+    text = ''
+      pre-commit run --all-files --hook-stage manual
+    '';
   };
 
   # shell environment for continuous integration runs
@@ -151,10 +101,19 @@ rec {
         pkgs.hivemind
         pkgs.awscli
         (import sources.agenix { inherit pkgs; }).agenix
-      ] ++ pre-commit-check.enabledPackages;
+        format
+      ] ++ git-hooks.enabledPackages;
 
       shellHook = ''
-        ${pre-commit-check.shellHook}
+        ${(pkgs.pre-commit-hooks {
+          src = ./.;
+          imports = [ ./nix/git-hooks.nix ];
+          hooks.commitizen = {
+            enable = true;
+            stages = [ "commit-msg" ];
+          };
+        }).shellHook
+        }
 
         ln -sf ${sources.htmx}/dist/htmx.js src/webview/static/htmx.min.js
 
