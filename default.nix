@@ -31,24 +31,21 @@ rec {
 
     hooks =
       let
-        pythonExcludes = [
-          "/migrations/" # auto-generated code
+        excludes = [
+          "\\.min.css$"
+          "\\.html$"
+          "npins"
+          "migrations"
         ];
       in
-      {
+      lib.mapAttrs (_: v: v // { inherit excludes; }) {
         # Nix setup
         nixfmt-rfc-style.enable = true;
-        statix = {
-          enable = true;
-          settings.ignore = [ "staging" ];
-        };
+        statix.enable = true;
         deadnix.enable = true;
 
         # Python setup
-        ruff = {
-          enable = true;
-          excludes = pythonExcludes;
-        };
+        ruff.enable = true;
         ruff-format = {
           enable = true;
           name = "Format python code with ruff";
@@ -57,7 +54,6 @@ rec {
             "python"
           ];
           entry = "${pkgs.lib.getExe pkgs.ruff} format";
-          excludes = pythonExcludes;
         };
 
         pyright =
@@ -73,17 +69,11 @@ rec {
           {
             enable = true;
             entry = lib.mkForce (builtins.toString wrappedPyright);
-            excludes = pythonExcludes;
           };
 
         # Global setup
         prettier = {
           enable = true;
-          excludes = [
-            "\\.min.css$"
-            "\\.html$"
-            "npins/sources\\.json$"
-          ] ++ pythonExcludes;
         };
         commitizen = {
           enable = true;
