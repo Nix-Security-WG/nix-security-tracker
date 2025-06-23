@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from github import UnknownObjectException
 from github.Repository import Repository
+
 from shared import models
 from shared.fetchers import make_cve
 from shared.github import get_gh

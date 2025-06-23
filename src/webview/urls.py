@@ -1,10 +1,10 @@
 from django.urls import path, re_path
 from django.views.generic.base import RedirectView
+
 from shared.auth.github_webhook import handle_github_hook
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
-
 from webview.views import (
     HomeView,
     NixderivationPerChannelView,

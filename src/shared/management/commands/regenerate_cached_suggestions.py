@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from django.core.management.base import BaseCommand
+
 from shared.listeners.cache_suggestions import cache_new_suggestions
 from shared.models.cached import CachedSuggestions
 from shared.models.linkage import CVEDerivationClusterProposal

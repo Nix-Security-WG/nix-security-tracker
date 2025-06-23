@@ -8,6 +8,7 @@ from typing import Any, cast
 from django.core.validators import RegexValidator
 from django.db import transaction
 from django.urls import reverse
+
 from shared.github import create_gh_issue
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import maintainers_list
@@ -49,6 +50,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
+
 from shared.auth import isadmin, ismaintainer
 from shared.models import (
     AffectedProduct,
@@ -61,7 +63,6 @@ from shared.models import (
     NixpkgsIssue,
 )
 from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
-
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 

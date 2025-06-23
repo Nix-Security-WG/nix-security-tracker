@@ -4,6 +4,7 @@ from typing import Any, TypedDict
 
 from django import template
 from django.template.context import Context
+
 from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import parse_drv_name
@@ -116,7 +117,7 @@ def versioned_package_name(package_entry: str) -> str:
     fields: DerivationFields = json.loads(package_entry)
 
     _, version = parse_drv_name(fields["name"])
-    return f"pkgs.{fields["attribute"]} {version}"
+    return f"pkgs.{fields['attribute']} {version}"
 
 
 def is_admin(user: Any) -> bool:
