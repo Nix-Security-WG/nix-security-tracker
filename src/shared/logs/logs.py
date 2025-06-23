@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -16,6 +16,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Cast, Coalesce, Concat, JSONObject, Replace
 from pghistory.models import EventQuerySet
+from pydantic import BaseModel
 
 from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
@@ -25,7 +26,7 @@ from shared.models import (
 logger = logging.getLogger(__name__)
 
 
-class ChangeEvent(TypedDict):
+class ChangeEvent(BaseModel):
     """
     The common structure of a suggestion change event (except the `action`
     field, which is omitted here because of a Pydantic limitation: we want to
@@ -41,7 +42,7 @@ class ChangeEvent(TypedDict):
     username: str
 
 
-class PackageData(TypedDict):
+class PackageData(BaseModel):
     """
     A package in a package change event.
     """
@@ -115,15 +116,13 @@ class SuggestionActivityLog:
         )
 
     def get_raw_events(
-        self, suggestion_ids: list[str | None]
+        self, suggestion_ids: list[int | None]
     ) -> list[PackageChangeEvent | SuggestionChangeEvent]:
         """
         Combine the different types of events related to a list of suggestions
         in a single list and order them by timestamp. Multiple log entries
         constituting one logical edit from the user aren't aggregated in this
         method. This is left to `get_dict`.
-
-        See `get_dict` for the schema of the output.
         """
 
         raw_events = []
@@ -141,13 +140,13 @@ class SuggestionActivityLog:
 
         for status_event in status_qs.all().iterator():
             raw_events.append(
-                {
-                    "suggestion_id": status_event.pgh_obj_id,
-                    "timestamp": status_event.pgh_created_at,
-                    "username": status_event.username,
-                    "action": status_event.pgh_label,
-                    "status_value": status_event.status,
-                }
+                SuggestionChangeEvent(
+                    suggestion_id=status_event.pgh_obj_id,
+                    timestamp=status_event.pgh_created_at,
+                    username=status_event.username,
+                    action=status_event.pgh_label,
+                    status_value=status_event.status,
+                )
             )
 
         package_qs = self._annotate_username(
@@ -182,21 +181,21 @@ class SuggestionActivityLog:
 
         for package_event in package_qs.all().iterator():
             raw_events.append(
-                {
-                    "suggestion_id": package_event.proposal_id,
-                    "timestamp": package_event.pgh_created_at,
-                    "username": package_event.username,
-                    "action": package_event.pgh_label,
-                    "package_names": package_event.package_names,
-                    "package_count": package_event.package_count,
-                }
+                PackageChangeEvent(
+                    suggestion_id=package_event.proposal_id,
+                    timestamp=package_event.pgh_created_at,
+                    username=package_event.username,
+                    action=package_event.pgh_label,
+                    package_names=package_event.package_names,
+                    package_count=package_event.package_count,
+                )
             )
 
-        return sorted(raw_events, key=lambda event: event["timestamp"])
+        return sorted(raw_events, key=lambda event: event.timestamp)
 
     def get_dict(
-        self, suggestion_ids: list[str | None]
-    ) -> dict[str | None, dict[str, Any]]:
+        self, suggestion_ids: list[int | None]
+    ) -> dict[int, list[dict[str, Any]]]:
         """
         Aggregate the different types of events related to a given suggestion in
         a unified list of dicts, ordered by timestamp and with bulk actions
@@ -205,10 +204,12 @@ class SuggestionActivityLog:
 
         raw_events = self.get_raw_events(suggestion_ids)
 
-        grouped_activity_log = {}
+        grouped_activity_log: dict[
+            int, list[PackageChangeEvent | SuggestionChangeEvent]
+        ] = {}
 
         for event in raw_events:
-            suggestion_id = event.get("suggestion_id")
+            suggestion_id = event.suggestion_id
 
             if suggestion_id in grouped_activity_log:
                 grouped_activity_log[suggestion_id].append(event)
@@ -217,38 +218,35 @@ class SuggestionActivityLog:
 
         # Second pass to fold repeated package actions by user,
         # needed because with htmx we're sending item-wise changes that we still want to display in bulk
-        folded_activity_log = {}
+        folded_activity_log: dict[int, list[dict[str, Any]]] = {}
+
         for suggestion_id, events in grouped_activity_log.items():
-            suggestion_log = []
+            suggestion_log: list[PackageChangeEvent | SuggestionChangeEvent] = []
 
             accumulator = None
             for event in events:
                 # Bulk events that are subject to folding are currently
                 # - package editions
                 # - maintainers editions (soon to be logged)
-                if event["action"].startswith("derivations"):
+                if event.action.startswith("derivations"):
                     if not accumulator:
                         accumulator = event
                     else:
                         if (
-                            event["action"] == accumulator["action"]
-                            and event["username"] == accumulator["username"]
+                            event.action == accumulator.action
+                            and event.username == accumulator.username
                         ):
                             # For now, this is the only remaining possibility,
                             # but we'll add maintainer edits soon.
-                            if event["action"].startswith("derivations"):
-                                accumulator["package_names"] = (
-                                    accumulator["package_names"]
-                                    + event["package_names"]
+                            if event.action.startswith("derivations"):
+                                accumulator.package_names = (
+                                    accumulator.package_names + event.package_names
                                 )
-                                accumulator["package_count"] = (
-                                    accumulator["package_count"]
-                                    + event["package_count"]
+                                accumulator.package_count = (
+                                    accumulator.package_count + event.package_count
                                 )
-
-                            accumulator["timestamp"] = event[
-                                "timestamp"
-                            ]  # Keep latest timestamp
+                            # Keep latest timestamp
+                            accumulator.timestamp = event.timestamp
                         else:
                             suggestion_log.append(accumulator)
                             accumulator = event
@@ -261,6 +259,8 @@ class SuggestionActivityLog:
             if accumulator:
                 suggestion_log.append(accumulator)
 
-            folded_activity_log[suggestion_id] = suggestion_log
+            folded_activity_log[suggestion_id] = [
+                event.model_dump() for event in suggestion_log
+            ]
 
         return folded_activity_log

@@ -114,7 +114,7 @@ def last_entry(log: list) -> Any | None:
 @register.filter
 def versioned_package_name(package_entry: dict[str, Any]) -> str:
     _, version = parse_drv_name(package_entry["name"])
-    return f"pkgs.{package_entry["attribute"]} {version}"
+    return f"pkgs.{package_entry['attribute']} {version}"
 
 
 def is_admin(user: Any) -> bool:
