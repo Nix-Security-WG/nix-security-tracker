@@ -116,7 +116,7 @@ async def realtime_batch_process_attributes(
 
 async def drain_lines(
     stream: asyncio.StreamReader, timeout: float = 0.25, max_batch_window: int = 10_000
-) -> AsyncGenerator[list[bytes], None]:
+) -> AsyncGenerator[list[bytes]]:
     """
     This utility will perform an opportunistic line draining
     operation on a StreamReader, the timeout will be reset
@@ -133,9 +133,9 @@ async def drain_lines(
             async with asyncio.timeout(timeout) as cm:
                 lines.append(await stream.readline())
                 old_deadline = cm.when()
-                assert (
-                    old_deadline is not None
-                ), "Timeout context does not have timeout!"
+                assert old_deadline is not None, (
+                    "Timeout context does not have timeout!"
+                )
                 new_deadline = old_deadline + timeout
                 cm.reschedule(new_deadline)
 
@@ -199,9 +199,9 @@ async def evaluation_entrypoint(
                 eval_process = await perform_evaluation(
                     working_tree.path, eval_log.fileno()
                 )
-                assert (
-                    eval_process.stdout is not None
-                ), "Expected a valid `stdout` pipe for the asynchronous evaluation process"
+                assert eval_process.stdout is not None, (
+                    "Expected a valid `stdout` pipe for the asynchronous evaluation process"
+                )
 
                 # The idea here is that we want to match as close as possible
                 # our evaluation speed. So, we read as much lines as possible

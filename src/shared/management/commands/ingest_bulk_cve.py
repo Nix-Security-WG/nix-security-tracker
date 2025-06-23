@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from github.GitRelease import GitRelease
+
 from shared.fetchers import make_cve
 from shared.github import get_gh
 from shared.models import CveIngestion

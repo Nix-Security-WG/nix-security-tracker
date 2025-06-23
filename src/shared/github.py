@@ -4,9 +4,9 @@ from urllib.parse import quote
 from django.conf import settings
 from github import Auth, Github
 from github.Issue import Issue as GithubIssue
-from webview.templatetags.viewutils import severity_badge
 
 from shared.models import CachedSuggestions
+from webview.templatetags.viewutils import severity_badge
 
 logger = logging.getLogger(__name__)
 
@@ -55,17 +55,17 @@ def create_gh_issue(
             metric = severity["metric"]
             return f"""
 <details>
-<summary>CVSS {metric['vectorString']}</summary>
+<summary>CVSS {metric["vectorString"]}</summary>
 
-- CVSS version: {metric['version']}
-- Attack vector (AV): {metric['attackVector']}
-- Attack complexity (AC): {metric['attackComplexity']}
-- Privileges required (PR): {metric['privilegesRequired']}
-- User interaction (UI): {metric['userInteraction']}
-- Scope (S): {metric['scope']}
-- Confidentiality impact (C): {metric['confidentialityImpact']}
-- Integrity impact (I): {metric['integrityImpact']}
-- Availability impact (A): {metric['availabilityImpact']}
+- CVSS version: {metric["version"]}
+- Attack vector (AV): {metric["attackVector"]}
+- Attack complexity (AC): {metric["attackComplexity"]}
+- Privileges required (PR): {metric["privilegesRequired"]}
+- User interaction (UI): {metric["userInteraction"]}
+- Scope (S): {metric["scope"]}
+- Confidentiality impact (C): {metric["confidentialityImpact"]}
+- Integrity impact (I): {metric["integrityImpact"]}
+- Availability impact (A): {metric["availabilityImpact"]}
 </details>"""
         else:
             return ""
@@ -95,26 +95,26 @@ def create_gh_issue(
                 if version_data["major_version"]:
                     versions.append(f"{version_data['major_version']}@{major_channel}")
 
-            versions_details = f" ({", ".join(versions)})" if versions else ""
+            versions_details = f" ({', '.join(versions)})" if versions else ""
             packages.append(f"- `{attribute_name}`{versions_details}")
 
         return f"""
 <details>
 <summary>Affected packages</summary>
 
-{ "\n".join(packages) }
+{"\n".join(packages)}
 </details>"""
 
     repo = github.get_repo(f"{settings.GH_ORGANIZATION}/{settings.GH_ISSUES_REPO}")
     title = cached_suggestion.payload["title"]
 
     body = f"""\
-- [{cached_suggestion.payload['cve_id']}](https://nvd.nist.gov/vuln/detail/{quote(cached_suggestion.payload['cve_id'])})
+- [{cached_suggestion.payload["cve_id"]}](https://nvd.nist.gov/vuln/detail/{quote(cached_suggestion.payload["cve_id"])})
 - [Nixpkgs security tracker issue]({tracker_issue_uri})
 {maintainers()}
 ## Description
 
-{cached_suggestion.payload['description']}
+{cached_suggestion.payload["description"]}
 {cvss_details()}
 {affected_nix_packages()}"""
 
@@ -133,6 +133,6 @@ def get_maintainer_username(maintainer: dict, github: Github = get_gh()) -> str:
         return github.get_user_by_id(maintainer["github_id"]).login
     except Exception as e:
         logger.error(
-            f"Couldn't retrieve the GitHub username for maintainer {maintainer["github_id"]}, fallback to {maintainer["github"]}: {e}"
+            f"Couldn't retrieve the GitHub username for maintainer {maintainer['github_id']}, fallback to {maintainer['github']}: {e}"
         )
         return maintainer["github"]

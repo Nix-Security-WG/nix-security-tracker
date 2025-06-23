@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from django.core.management.base import BaseCommand
+
 from shared.listeners.cache_issues import cache_new_issue
 from shared.models.cached import CachedNixpkgsIssue
 from shared.models.cve import NixpkgsIssue

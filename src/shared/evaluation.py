@@ -153,14 +153,14 @@ def parse_evaluation_result(line: str) -> PartialEvaluatedAttribute:
 
 def parse_evaluation_results(
     lines: Iterable[str],
-) -> Generator[PartialEvaluatedAttribute, None, None]:
+) -> Generator[PartialEvaluatedAttribute]:
     for line in lines:
         yield parse_evaluation_result(line)
 
 
-def bulkify(
-    gen: Generator[tuple[EvaluatedAttribute, list[T]], None, None],
-) -> Generator[tuple[str, list[T]], None, None]:
+def bulkify[T](
+    gen: Generator[tuple[EvaluatedAttribute, list[T]]],
+) -> Generator[tuple[str, list[T]]]:
     for origin, elements in gen:
         yield (origin.drv_path, elements)
 
@@ -245,9 +245,9 @@ class SyncBatchAttributeIngester:
         DeferredThrough[NixLicense],
     ]:
         metadata = evaluation.meta
-        assert (
-            metadata is not None
-        ), "invalid ingest_meta call to an invalid metadata attribute"
+        assert metadata is not None, (
+            "invalid ingest_meta call to an invalid metadata attribute"
+        )
 
         maintainers = self.ingest_maintainers(metadata.maintainers)
         if isinstance(metadata.license, list):
@@ -455,9 +455,9 @@ class SyncBatchAttributeIngester:
         deps_throughs = []
         outputs_throughs = []
         for drvpath, eval_dependencies in dependencies.items():
-            assert all(
-                dep.pk is not None for dep in eval_dependencies
-            ), "One dependency has no PK"
+            assert all(dep.pk is not None for dep in eval_dependencies), (
+                "One dependency has no PK"
+            )
             deps_throughs.extend(
                 [
                     NixDerivation.dependencies.through(

@@ -74,7 +74,7 @@ def create_users_with_sociallogin(
 
     for i in range(amount):
         uid: str = str(uid_offset + i)  # GitHub has numeric user IDs
-        user = User.objects.create_user(username=f"{name}-{i+1}")
+        user = User.objects.create_user(username=f"{name}-{i + 1}")
         account = SocialAccount.objects.create(
             user=user,
             provider="github",

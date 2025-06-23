@@ -188,7 +188,7 @@ class GitRepo:
     @asynccontextmanager
     async def extract_working_tree(
         self, commit_sha1: str, target_path: str
-    ) -> AsyncGenerator[Worktree, None]:
+    ) -> AsyncGenerator[Worktree]:
         """
         This will extract the working tree represented at the reference
         induced by the object's commit SHA1 into the `target_path`.

@@ -5,6 +5,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+
 from shared.git import GitRepo
 from shared.models.nix_evaluation import NixChannel
 
