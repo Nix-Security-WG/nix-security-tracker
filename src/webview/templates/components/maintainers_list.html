@@ -21,6 +21,9 @@
           {% endif %}
         </div>
       {% endfor %}
+      {% if selectable %}
+      {% add_maintainer %}
+      {% endif %}
     </div>
   </details>
 {% endif %}

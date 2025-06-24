@@ -11,6 +11,7 @@ from webview.views import (
     NixpkgsIssueListView,
     NixpkgsIssueView,
     SelectableMaintainerView,
+    AddMaintainerView,
     SuggestionListView,
     TriageView,
 )
@@ -56,6 +57,11 @@ urlpatterns = [
         "edit_maintainers/",
         SelectableMaintainerView.as_view(),
         name="edit_maintainers",
+    ),
+    path(
+        "add_maintainer/",
+        AddMaintainerView.as_view(),
+        name="add_maintainer",
     ),
     path(
         "dismissed/",

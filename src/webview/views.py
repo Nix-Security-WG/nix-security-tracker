@@ -1,3 +1,4 @@
+import time
 import logging
 import re
 import typing
@@ -821,3 +822,54 @@ class SelectableMaintainerView(TemplateView):
                     "deleted": deleted,
                 }
             )
+
+class AddMaintainerView(TemplateView):
+    template_name = "components/add_maintainer.html"
+
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        # Only allow POST requests
+        if request.method != "POST":
+            return HttpResponseNotAllowed(["POST"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not request.user or not (
+            isadmin(request.user) or ismaintainer(request.user)
+        ):
+            return HttpResponseForbidden()
+
+        suggestion_id = request.POST.get("suggestion_id")
+        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        cached_suggestion = get_object_or_404(
+            CachedSuggestions, proposal_id=suggestion_id
+        )
+        new_maintainer_github_handle = request.POST.get("new_maintainer_github_handle")
+
+        # Which states allow for maintainer editing
+        editable = (
+            suggestion.status == CVEDerivationClusterProposal.Status.ACCEPTED
+            or suggestion.status == CVEDerivationClusterProposal.Status.PENDING
+        )
+
+        if not editable:
+            logger.error(
+                f"Tried to add maintainers on a suggestion whose status doesn't allow for maintainer edition (status: {suggestion.status})"
+            )
+            return HttpResponseForbidden()
+
+
+        time.sleep(2)
+
+        if not new_maintainer_github_handle:
+            logger.error("Missing new maintainer github handle in request for maintainer addition")
+            return self.render_to_response(
+                        {
+                            "error_msg": "Missing GitHub handle for new maintainer",
+                        }
+                    )
+
+        return self.render_to_response(
+            {
+                "error_msg": "todo",
+            }
+        )

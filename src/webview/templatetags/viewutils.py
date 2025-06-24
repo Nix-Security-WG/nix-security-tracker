@@ -70,6 +70,9 @@ class SelectableMaintainerContext(TypedDict):
     maintainer: Maintainer
     deleted: bool
 
+class AddMaintainerContext(TypedDict):
+    error_msg: str | None
+
 
 class MaintainersListContext(TypedDict):
     maintainers: list[Maintainer]
@@ -259,3 +262,9 @@ def selectable_maintainer(
     deleted: bool = False,
 ) -> SelectableMaintainerContext:
     return {"maintainer": maintainer, "deleted": deleted}
+
+@register.inclusion_tag("components/add_maintainer.html")
+def add_maintainer(
+    error_msg: str | None = None,
+) -> AddMaintainerContext:
+    return { "error_msg": error_msg }
