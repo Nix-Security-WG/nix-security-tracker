@@ -858,8 +858,6 @@ class AddMaintainerView(TemplateView):
             return HttpResponseForbidden()
 
 
-        time.sleep(2)
-
         if not new_maintainer_github_handle:
             logger.error("Missing new maintainer github handle in request for maintainer addition")
             return self.render_to_response(
@@ -868,8 +866,71 @@ class AddMaintainerView(TemplateView):
                         }
                     )
 
+        # Check if the maintainer is already part of the suggestion
+        if any(
+            str(m["github_id"]) == new_maintainer_github_handle
+            for m in cached_suggestion.payload["maintainers"]
+        ):
+            return self.render_to_response(
+                {
+                    "error_msg": "Already a maintainer",
+                }
+            )
+
+        maintainer = NixMaintainer.objects.filter(github=new_maintainer_github_handle).first()
+        if not maintainer:
+            # TODO Implement fetching information via the GitHub API
+            return self.render_to_response(
+                        {
+                            "error_msg": "Maintainer not found",
+                        }
+                    )
+
+        with transaction.atomic():
+            edit = suggestion.maintainers_edits.filter(
+                maintainer__github_id=new_maintainer_github_handle
+            )
+            if edit.exists():
+                # NOTE We assume there is at most one edit for a given maintainer
+                edit_object = edit.first()
+                maintainer = edit_object.maintainer
+                if edit_object.edit_type == MaintainersEdit.EditType.ADD:
+                    # The maintainer is already an extra maintainer, we return an error message for the user.
+                    return self.render_to_response(
+                                {
+                                    "error_msg": "Already added as an extra maintainer",
+                                }
+                            )
+                elif edit_object.edit_type == MaintainersEdit.EditType.REMOVE:
+                    # TODO The maintainer was removed in an edit, normally this means it is displayed on the web UI with a restore button next to it. Should we restore it as if clicked on the button or return an error?
+                    # NOTE An else would have sufficed but this is in case someday we have more than ADD and REMOVE edit types
+                    return self.render_to_response(
+                                {
+                                    "error_msg": "This maintainer may be restored via the undo delete button",
+                                }
+                            )
+                else:
+                    logger.error("Unexpected maintainer edit status")
+                    return HttpResponse(status=422)
+            else:
+                edit = MaintainersEdit(
+                    edit_type= MaintainersEdit.EditType.ADD,
+                    maintainer=maintainer,
+                    suggestion=suggestion,
+                )
+                edit.save()
+
+            # Recompute the maintainer list for the cached suggestion
+            cached_suggestion.payload["maintainers"] = maintainers_list(
+                cached_suggestion.payload["packages"],
+                suggestion.maintainers_edits.all(),
+            )
+            cached_suggestion.save()
+
+
+
+
         return self.render_to_response(
             {
-                "error_msg": "todo",
             }
         )
