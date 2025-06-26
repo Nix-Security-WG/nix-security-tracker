@@ -1,0 +1,29 @@
+{% load viewutils %}
+
+<div class="maintainer-add-container">
+  <div class="subform {%if error_msg %}error{% endif %}">
+    <input
+      type="text"
+      name="new_maintainer_github_handle"
+      placeholder="GitHub username"
+      autocomplete="off"
+    />
+    <div class="spinner-container">
+      <img class="state-change-indicator htmx-indicator" src="/static/spinner.svg">
+    </div>
+    <button
+      type="submit"
+      hx-post="{% url 'webview:add_maintainer' %}"
+      hx-swap="outerHTML"
+      hx-target="closest .maintainer-add-container"
+      hx-indicator=".state-change-indicator"
+    >
+      Add
+    </button>
+  </div>
+  {% if error_msg %}
+  <div class="error-message">
+    {{ error_msg }}
+  </div>
+  {% endif %}
+</div>

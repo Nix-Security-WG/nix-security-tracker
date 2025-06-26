@@ -6,6 +6,7 @@ from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
 from webview.views import (
+    AddMaintainerView,
     HomeView,
     NixderivationPerChannelView,
     NixpkgsIssueListView,
@@ -56,6 +57,11 @@ urlpatterns = [
         "edit_maintainers/",
         SelectableMaintainerView.as_view(),
         name="edit_maintainers",
+    ),
+    path(
+        "add_maintainer/",
+        AddMaintainerView.as_view(),
+        name="add_maintainer",
     ),
     path(
         "dismissed/",

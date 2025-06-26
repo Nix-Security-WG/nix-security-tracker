@@ -9,7 +9,7 @@ from django.core.validators import RegexValidator
 from django.db import transaction
 from django.urls import reverse
 
-from shared.github import create_gh_issue
+from shared.github import create_gh_issue, fetch_user_info
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import maintainers_list
 from shared.logs import SuggestionActivityLog
@@ -821,3 +821,133 @@ class SelectableMaintainerView(TemplateView):
                     "deleted": deleted,
                 }
             )
+
+
+class AddMaintainerView(TemplateView):
+    template_name = "components/add_maintainer.html"
+
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        # Only allow POST requests
+        if request.method != "POST":
+            return HttpResponseNotAllowed(["POST"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not request.user or not (
+            isadmin(request.user) or ismaintainer(request.user)
+        ):
+            return HttpResponseForbidden()
+
+        suggestion_id = request.POST.get("suggestion_id")
+        suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
+        cached_suggestion = get_object_or_404(
+            CachedSuggestions, proposal_id=suggestion_id
+        )
+        new_maintainer_github_handle = request.POST.get("new_maintainer_github_handle")
+
+        # Which states allow for maintainer editing
+        editable = (
+            suggestion.status == CVEDerivationClusterProposal.Status.ACCEPTED
+            or suggestion.status == CVEDerivationClusterProposal.Status.PENDING
+        )
+
+        if not editable:
+            logger.error(
+                f"Tried to add maintainers on a suggestion whose status doesn't allow for maintainer edition (status: {suggestion.status})"
+            )
+            return HttpResponseForbidden()
+
+        if not new_maintainer_github_handle:
+            logger.error(
+                "Missing new maintainer github handle in request for maintainer addition"
+            )
+            return self.render_to_response(
+                {
+                    "error_msg": "Missing GitHub handle for new maintainer",
+                }
+            )
+
+        # Check if the maintainer is already part of the suggestion
+        if any(
+            str(m["github"]) == new_maintainer_github_handle
+            for m in cached_suggestion.payload["maintainers"]
+        ):
+            return self.render_to_response(
+                {
+                    "error_msg": "Already a maintainer",
+                }
+            )
+
+        maintainer = NixMaintainer.objects.filter(
+            github=new_maintainer_github_handle
+        ).first()
+
+        if not maintainer:
+            # Try to fetch maintainer info from GitHub API and create if found
+            gh_user = fetch_user_info(new_maintainer_github_handle)
+            if gh_user:
+                maintainer = NixMaintainer.objects.create(
+                    github_id=gh_user["id"],
+                    github=gh_user["login"],
+                    name=gh_user.get("name"),
+                    email=gh_user.get("email"),
+                )
+            else:
+                return self.render_to_response(
+                    {
+                        "error_msg": "Could not fetch maintainer from GitHub",
+                    }
+                )
+
+        with transaction.atomic():
+            edit = suggestion.maintainers_edits.filter(
+                maintainer__github=new_maintainer_github_handle
+            )
+            if edit.exists():
+                # NOTE We assume there is at most one edit for a given maintainer
+                edit_object = edit.first()
+                if edit_object.edit_type == MaintainersEdit.EditType.ADD:
+                    # The maintainer is already an extra maintainer, we return an error message for the user.
+                    return self.render_to_response(
+                        {
+                            "error_msg": "Already added as an extra maintainer",
+                        }
+                    )
+                elif edit_object.edit_type == MaintainersEdit.EditType.REMOVE:
+                    # TODO The maintainer was removed in an edit, normally this means it is displayed on the web UI with a restore button next to it. Should we restore it as if clicked on the button or return an error?
+                    # NOTE An else would have sufficed but this is in case someday we have more than ADD and REMOVE edit types
+                    return self.render_to_response(
+                        {
+                            "error_msg": "This maintainer may be restored via the undo delete button",
+                        }
+                    )
+                else:
+                    logger.error("Unexpected maintainer edit status")
+                    return HttpResponse(status=422)
+            else:
+                edit = MaintainersEdit(
+                    edit_type=MaintainersEdit.EditType.ADD,
+                    maintainer=maintainer,
+                    suggestion=suggestion,
+                )
+                edit.save()
+
+            # Recompute the maintainer list for the cached suggestion
+            maintainers = maintainers_list(
+                cached_suggestion.payload["packages"],
+                suggestion.maintainers_edits.all(),
+            )
+            cached_suggestion.payload["maintainers"] = maintainers
+            cached_suggestion.save()
+
+            maintainer_add_html = render_to_string("components/add_maintainer.html", {})
+            maintainers_list_html = render_to_string(
+                "components/maintainers_list.html",
+                {
+                    "maintainers": maintainers,
+                    "selectable": True,
+                    "suggestion_id": cached_suggestion.pk,
+                    "oob_update": True,
+                },
+            )
+            return HttpResponse(maintainers_list_html + maintainer_add_html)

@@ -50,7 +50,7 @@
     {% endif %}
 
     {% if status_filter == "pending" or status_filter == "accepted" %}
-      {% selectable_maintainers_list cached_suggestion.maintainers %}
+      {% selectable_maintainers_list maintainers=cached_suggestion.maintainers suggestion_id=cached_suggestion.pk %}
     {% else %}
       {% maintainers_list cached_suggestion.maintainers %}
     {% endif %}
