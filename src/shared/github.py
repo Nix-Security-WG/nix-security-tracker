@@ -136,3 +136,20 @@ def get_maintainer_username(maintainer: dict, github: Github = get_gh()) -> str:
             f"Couldn't retrieve the GitHub username for maintainer {maintainer['github_id']}, fallback to {maintainer['github']}: {e}"
         )
         return maintainer["github"]
+
+
+def fetch_user_info(github_handle: str, github: Github = get_gh()) -> dict | None:
+    """
+    Fetch GitHub user info by handle.
+    """
+    try:
+        user = github.get_user(github_handle)
+        return {
+            "id": user.id,
+            "login": user.login,
+            "name": user.name,
+            "email": user.email,
+        }
+    except Exception as e:
+        logger.error(f"Could not fetch GitHub user '{github_handle}': {e}")
+        return None

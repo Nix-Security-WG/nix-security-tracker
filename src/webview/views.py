@@ -9,7 +9,7 @@ from django.core.validators import RegexValidator
 from django.db import transaction
 from django.urls import reverse
 
-from shared.github import create_gh_issue
+from shared.github import create_gh_issue, fetch_user_info
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import maintainers_list
 from shared.logs import SuggestionActivityLog
@@ -881,13 +881,23 @@ class AddMaintainerView(TemplateView):
         maintainer = NixMaintainer.objects.filter(
             github=new_maintainer_github_handle
         ).first()
+
         if not maintainer:
-            # TODO Implement fetching information via the GitHub API
-            return self.render_to_response(
-                {
-                    "error_msg": "Maintainer not found",
-                }
-            )
+            # Try to fetch maintainer info from GitHub API and create if found
+            gh_user = fetch_user_info(new_maintainer_github_handle)
+            if gh_user:
+                maintainer = NixMaintainer.objects.create(
+                    github_id=gh_user["id"],
+                    github=gh_user["login"],
+                    name=gh_user.get("name"),
+                    email=gh_user.get("email"),
+                )
+            else:
+                return self.render_to_response(
+                    {
+                        "error_msg": "Could not fetch maintainer from GitHub",
+                    }
+                )
 
         with transaction.atomic():
             edit = suggestion.maintainers_edits.filter(
