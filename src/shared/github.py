@@ -150,6 +150,6 @@ def fetch_user_info(github_handle: str, github: Github = get_gh()) -> dict | Non
             "name": user.name,
             "email": user.email,
         }
-    except Exception as e:
-        logger.error(f"Could not fetch GitHub user '{github_handle}': {e}")
+    except Exception:
+        logger.error("Could not fetch GitHub user")
         return None

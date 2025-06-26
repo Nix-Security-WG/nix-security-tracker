@@ -987,43 +987,43 @@ a:focus {
 }
 
 .maintainer-add-container {
-  margin-top: .4em;
+  margin-top: 0.4em;
   display: flex;
   align-items: center;
   gap: 1em;
 }
 
-.maintainer-add-container>.subform {
+.maintainer-add-container > .subform {
   display: flex;
   align-items: stretch;
 }
 
-.maintainer-add-container>.subform>.spinner-container {
-  padding: 0 .2em;
+.maintainer-add-container > .subform > .spinner-container {
+  padding: 0 0.2em;
   border: 1px solid var(--maintainer-add);
   border-left: none;
   border-right: none;
 }
 
-.maintainer-add-container>.subform.error>.spinner-container {
+.maintainer-add-container > .subform.error > .spinner-container {
   border-color: var(--maintainer-error);
 }
 
-.maintainer-add-container>.subform>input {
-  padding: .2em .5em;
+.maintainer-add-container > .subform > input {
+  padding: 0.2em 0.5em;
   border: 1px solid var(--maintainer-add);
   border-right: none;
-  border-radius: .3em 0 0 .3em;
+  border-radius: 0.3em 0 0 0.3em;
 }
 
-.maintainer-add-container>.subform.error>input {
+.maintainer-add-container > .subform.error > input {
   border-color: var(--maintainer-error);
 }
 
-.maintainer-add-container>.subform>button {
-  padding: .5em;
+.maintainer-add-container > .subform > button {
+  padding: 0.5em;
   border: none;
-  border-radius: 0 .3em .3em 0;
+  border-radius: 0 0.3em 0.3em 0;
   color: white;
   text-align: center;
   border: 1px solid var(--maintainer-add);
@@ -1031,7 +1031,7 @@ a:focus {
   cursor: pointer;
 }
 
-.maintainer-add-container>.subform.error>button {
+.maintainer-add-container > .subform.error > button {
   border-color: var(--maintainer-error);
   background: var(--maintainer-error);
 }

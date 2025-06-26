@@ -906,7 +906,6 @@ class AddMaintainerView(TemplateView):
             if edit.exists():
                 # NOTE We assume there is at most one edit for a given maintainer
                 edit_object = edit.first()
-                maintainer = edit_object.maintainer
                 if edit_object.edit_type == MaintainersEdit.EditType.ADD:
                     # The maintainer is already an extra maintainer, we return an error message for the user.
                     return self.render_to_response(
@@ -952,5 +951,3 @@ class AddMaintainerView(TemplateView):
                 },
             )
             return HttpResponse(maintainers_list_html + maintainer_add_html)
-
-        return self.render_to_response({"error_msg": "Unexpected error"})
