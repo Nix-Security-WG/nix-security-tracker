@@ -868,7 +868,7 @@ class AddMaintainerView(TemplateView):
 
         # Check if the maintainer is already part of the suggestion
         if any(
-            str(m["github_id"]) == new_maintainer_github_handle
+            str(m["github"]) == new_maintainer_github_handle
             for m in cached_suggestion.payload["maintainers"]
         ):
             return self.render_to_response(
@@ -888,7 +888,7 @@ class AddMaintainerView(TemplateView):
 
         with transaction.atomic():
             edit = suggestion.maintainers_edits.filter(
-                maintainer__github_id=new_maintainer_github_handle
+                maintainer__github=new_maintainer_github_handle
             )
             if edit.exists():
                 # NOTE We assume there is at most one edit for a given maintainer
