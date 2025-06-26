@@ -6,12 +6,12 @@ from shared.models.linkage import (
     CVEDerivationClusterProposal,
 )
 from webview.views import (
+    AddMaintainerView,
     HomeView,
     NixderivationPerChannelView,
     NixpkgsIssueListView,
     NixpkgsIssueView,
     SelectableMaintainerView,
-    AddMaintainerView,
     SuggestionListView,
     TriageView,
 )

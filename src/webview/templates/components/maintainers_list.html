@@ -1,7 +1,11 @@
 {% load viewutils %}
 
 {% if maintainers %}
-  <details class="maintainers">
+  <details
+    class="maintainers"
+    id="maintainers-list-{{ suggestion_id }}"
+    {% if oob_update %}hx-swap-oob="true" open{% endif %}
+  >
     <summary>
       {%if selectable %}
         Notify package maintainers:
