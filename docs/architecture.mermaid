@@ -1,0 +1,67 @@
+graph TB
+    Users["**👥 Users**"]
+
+    subgraph External["**External Services**"]
+        GitHub["**GitHub API**"]
+        GitHubNixos["**GitHub Repository**<br/>*nixos/nixpkgs*"]
+        GitHubCVEs["**GitHub Repository**<br/>*CVEProject/cvelistV5*"]
+        NixMonitoring["**NixOS Monitoring**<br/>*Channel Status*"]
+    end
+
+    subgraph SecurityTracker ["**Security Tracker Host**"]
+	  subgraph Web["**Web**"]
+		  Nginx["**Nginx HTTP**"]
+		  WSGI["**WSGI Django**<br/>*Django Views*"]
+	  end
+
+	  subgraph ManageCommands["**Management Commands**"]
+		  FetchAllChannels["**fetch_all_channels**"]
+		  IngestCVEs["**ingest_delta_cve**"]
+	  end
+
+	  subgraph Background["**Background Tasks**"]
+		  SystemdTimerChannels["**Systemd Timer Fetch Channels**"]
+		  SystemdTimerCVEs["**Systemd Timer Ingest CVEs**"]
+          NixEval["**Evaluate Nix**"]
+          DjangoWorker["**Django worker**"]
+	  end
+
+	  subgraph Storage["**Storage**"]
+		  PostgreSQL["**PostgreSQL**<br/>*CVE Records<br/>Channels<br/>Users<br/>Issues*"]
+		  LocalGitCheckout["**Local Git Repo**<br/>*nixpkgs clone /var/lib/web-security-tracker/nixpkgs-repo*"]
+		  NixStore["**Nix store**"]
+	  end
+
+    end
+
+	%% User interactions
+	Users -->|HTTP Request| Nginx -->|Forward| WSGI -->|Queries| PostgreSQL
+    WSGI --> GitHub
+
+    %% Timers
+    SystemdTimerChannels -.->|**Triggers Daily**| FetchAllChannels
+    FetchAllChannels -->|1 Fetch Channels| NixMonitoring
+    FetchAllChannels -->|2 Git pull| GitHubNixos
+    FetchAllChannels -->|3 Update Repo| LocalGitCheckout
+    FetchAllChannels -->|4 Evaluate Nix| NixEval --> NixStore
+
+    SystemdTimerCVEs -.->|**Triggers Daily**| IngestCVEs
+    IngestCVEs -->|1 Fetch CVEs| GitHubCVEs
+    IngestCVEs -->|2 Update Database| PostgreSQL
+    IngestCVEs -->|3 PgTrigger Suggestions| DjangoWorker
+
+  classDef userClass fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#000
+    classDef externalClass fill:#f3e5f5,stroke:#4a148c,stroke-width:3px,color:#000
+    classDef webClass fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    classDef commandClass fill:#fff3e0,stroke:#e65100,stroke-width:3px,color:#000
+    classDef backgroundClass fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
+    classDef storageClass fill:#f1f8e9,stroke:#33691e,stroke-width:3px,color:#000
+    classDef subgraphClass fill:#fafafa,stroke:#424242,stroke-width:3px
+
+    class Users userClass
+    class GitHub,GitHubNixos,GitHubCVEs,NixMonitoring externalClass
+    class Nginx,WSGI webClass
+    class FetchAllChannels,IngestCVEs commandClass
+    class SystemdTimerChannels,SystemdTimerCVEs,NixEval,DjangoWorker backgroundClass
+    class PostgreSQL,LocalGitCheckout,NixStore storageClass
+    class Storage,Background,ManageCommands,Web subgraphClass
