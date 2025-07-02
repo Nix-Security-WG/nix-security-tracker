@@ -23,6 +23,7 @@ from shared.models.cve import (
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
     DerivationClusterProposalLink,
+    MaintainersEdit,
     ProvenanceFlags,
 )
 from shared.models.nix_evaluation import (
@@ -214,6 +215,27 @@ class AddMaintainerViewTests(TestCase):
         maintainers = self.suggestion.cached.payload["maintainers"]
         github_handles = [m["github"] for m in maintainers]
         self.assertIn("dbuser", github_handles)
+
+    def test_new_maintainter_edit_in_db(self) -> None:
+        url = reverse("webview:add_maintainer")
+        # Create a maintainer in the DB who is not yet in the suggestion
+        NixMaintainer.objects.create(
+            github_id=456, github="dbuser", name="DB User", email="db@example.com"
+        )
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "new_maintainer_github_handle": "dbuser",
+            },
+        )
+        self.assertTrue(
+            MaintainersEdit.objects.filter(
+                suggestion=self.suggestion,
+                maintainer__github="dbuser",
+                edit_type=MaintainersEdit.EditType.ADD,
+            ).exists()
+        )
 
     def test_add_maintainer_invalid_github_handle(self) -> None:
         url = reverse("webview:add_maintainer")
