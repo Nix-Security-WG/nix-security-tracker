@@ -11,10 +11,27 @@ from django.shortcuts import redirect
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from shared.models.cached import CachedSuggestions
-from shared.models.cve import CveRecord, Organization
-from shared.models.linkage import CVEDerivationClusterProposal
-from shared.models.nix_evaluation import NixMaintainer
+from shared.listeners.cache_suggestions import cache_new_suggestions
+from shared.models.cve import (
+    AffectedProduct,
+    CveRecord,
+    Description,
+    Metric,
+    Organization,
+    Version,
+)
+from shared.models.linkage import (
+    CVEDerivationClusterProposal,
+    DerivationClusterProposalLink,
+    ProvenanceFlags,
+)
+from shared.models.nix_evaluation import (
+    NixChannel,
+    NixDerivation,
+    NixDerivationMeta,
+    NixEvaluation,
+    NixMaintainer,
+)
 
 
 class Login(TestCase):
@@ -68,39 +85,81 @@ class AddMaintainerViewTests(TestCase):
         self.client = Client()
         self.client.login(username="admin", password="pw")
 
-        # Create a maintainer
+        # Create relevant mock data including a maintainer, CVE, and suggestion
+
+        self.assigner = Organization.objects.create(uuid=1, short_name="foo")
+        self.cve_record = CveRecord.objects.create(
+            cve_id="CVE-2025-0001",
+            assigner=self.assigner,
+        )
+        # Create a container with affected product, description, and metric to satisfy cache_new_suggestions preconditions
+        self.description = Description.objects.create(value="Test description")
+        self.metric = Metric.objects.create(format="cvssV3_1", raw_cvss_json={})
+        self.affected_product = AffectedProduct.objects.create(
+            package_name="dummy-package"
+        )
+        self.affected_product.versions.add(
+            Version.objects.create(status=Version.Status.AFFECTED, version="1.0")
+        )
+        self.cve_container = self.cve_record.container.create(
+            provider=self.assigner,
+            title="Dummy Title",
+        )
+        self.cve_container.affected.add(self.affected_product)
+        self.cve_container.descriptions.add(self.description)
+        self.cve_container.metrics.add(self.metric)
+
+        # Create the maintainer and link to a derivation
         self.maintainer = NixMaintainer.objects.create(
             github_id=123,
             github="existinguser",
             name="Existing User",
             email="existing@example.com",
         )
+        self.meta = NixDerivationMeta.objects.create(
+            description="Dummy derivation",
+            insecure=False,
+            available=True,
+            broken=False,
+            unfree=False,
+            unsupported=False,
+        )
+        self.meta.maintainers.add(self.maintainer)
 
-        # Create a suggestion and cached suggestion with the maintainer
-        self.assigner = Organization.objects.create(uuid=1, short_name="foo")
-        self.cve_record = CveRecord.objects.create(
-            cve_id="CVE-2025-0001",
-            assigner=self.assigner,
+        # Create a NixEvaluation and NixDerivation, link meta and suggestion
+        self.evaluation = NixEvaluation.objects.create(
+            channel=NixChannel.objects.create(
+                staging_branch="release-24.05",
+                channel_branch="nixos-24.05",
+                head_sha1_commit="deadbeef",
+                state=NixChannel.ChannelState.STABLE,
+                release_version="24.05",
+                repository="https://github.com/NixOS/nixpkgs",
+            ),
+            commit_sha1="deadbeef",
+            state=NixEvaluation.EvaluationState.COMPLETED,
+        )
+        self.derivation = NixDerivation.objects.create(
+            attribute="dummyAttr",
+            derivation_path="/nix/store/dummy.drv",
+            name="dummy-package-1.0",
+            metadata=self.meta,
+            system="x86_64-linux",
+            parent_evaluation=self.evaluation,
         )
         self.suggestion = CVEDerivationClusterProposal.objects.create(
             status=CVEDerivationClusterProposal.Status.PENDING,
-            cve_id=self.cve_record.id,
+            cve_id=self.cve_record.pk,
         )
-        self.cached = CachedSuggestions.objects.create(
+        DerivationClusterProposalLink.objects.create(
             proposal=self.suggestion,
-            payload={
-                "maintainers": [
-                    {
-                        "github_id": 123,
-                        "github": "existinguser",
-                        "name": "Existing User",
-                        "email": "existing@example.com",
-                    }
-                ],
-                "packages": {},
-                "title": "Test Suggestion",
-            },
+            derivation=self.derivation,
+            provenance_flags=ProvenanceFlags.PACKAGE_NAME_MATCH,
         )
+
+        # Cache the suggestion
+        cache_new_suggestions(self.suggestion)
+        self.suggestion.refresh_from_db()
 
     def test_add_existing_maintainer_returns_error(self) -> None:
         url = reverse("webview:add_maintainer")
@@ -132,8 +191,8 @@ class AddMaintainerViewTests(TestCase):
             )
         self.assertEqual(response.status_code, 200)
         # Reload cached suggestion and check maintainers
-        self.cached.refresh_from_db()
-        maintainers = self.cached.payload["maintainers"]
+        self.suggestion.refresh_from_db()
+        maintainers = self.suggestion.cached.payload["maintainers"]
         github_handles = [m["github"] for m in maintainers]
         self.assertIn("newuser", github_handles)
 
@@ -151,8 +210,8 @@ class AddMaintainerViewTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.cached.refresh_from_db()
-        maintainers = self.cached.payload["maintainers"]
+        self.suggestion.refresh_from_db()
+        maintainers = self.suggestion.cached.payload["maintainers"]
         github_handles = [m["github"] for m in maintainers]
         self.assertIn("dbuser", github_handles)
 
