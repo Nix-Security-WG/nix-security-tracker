@@ -998,13 +998,6 @@ a:focus {
   align-items: stretch;
 }
 
-.maintainer-add-container > .subform > .spinner-container {
-  padding: 0 0.2em;
-  border: 1px solid var(--maintainer-add);
-  border-left: none;
-  border-right: none;
-}
-
 .maintainer-add-container > .subform.error > .spinner-container {
   border-color: var(--maintainer-error);
 }
@@ -1012,7 +1005,6 @@ a:focus {
 .maintainer-add-container > .subform > input {
   padding: 0.2em 0.5em;
   border: 1px solid var(--maintainer-add);
-  border-right: none;
   border-radius: 0.3em 0 0 0.3em;
 }
 
@@ -1021,7 +1013,9 @@ a:focus {
 }
 
 .maintainer-add-container > .subform > button {
-  padding: 0.5em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
   border: none;
   border-radius: 0 0.3em 0.3em 0;
   color: white;
@@ -1029,6 +1023,13 @@ a:focus {
   border: 1px solid var(--maintainer-add);
   background: var(--maintainer-add);
   cursor: pointer;
+}
+
+.maintainer-add-spinner {
+  background: white;
+  border-radius: 0.3em;
+  margin: 0.1em;
+  padding: 0.1em;
 }
 
 .maintainer-add-container > .subform.error > button {
