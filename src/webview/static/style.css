@@ -990,7 +990,7 @@ a:focus {
   margin-top: 0.4em;
   display: flex;
   align-items: center;
-  gap: 1em;
+  gap: 0.2em;
 }
 
 .maintainer-add-container > .subform {
@@ -1003,7 +1003,7 @@ a:focus {
 }
 
 .maintainer-add-container > .subform > input {
-  padding: 0.2em 0.5em;
+  padding: 0.3em 0.5em;
   border: 1px solid var(--maintainer-add);
   border-radius: 0.3em 0 0 0.3em;
 }
@@ -1013,9 +1013,6 @@ a:focus {
 }
 
 .maintainer-add-container > .subform > button {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
   border: none;
   border-radius: 0 0.3em 0.3em 0;
   color: white;

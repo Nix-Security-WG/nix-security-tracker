@@ -15,10 +15,10 @@
       hx-target="closest .maintainer-add-container"
       hx-indicator=".maintainer-add-spinner"
     >
-      <div>Add</div>
-      <img class="maintainer-add-spinner htmx-indicator" src="/static/spinner.svg">
+      Add
     </button>
   </div>
+  <img class="maintainer-add-spinner htmx-indicator" src="/static/spinner.svg">
   {% if error_msg %}
   <div class="error-message">
     {{ error_msg }}
