@@ -70,9 +70,20 @@ class SelectableMaintainerContext(TypedDict):
     deleted: bool
 
 
+class AddMaintainerContext(TypedDict):
+    error_msg: str | None
+
+
 class MaintainersListContext(TypedDict):
     maintainers: list[Maintainer]
     selectable: bool
+
+
+class EditableMaintainersListContext(TypedDict):
+    maintainers: list[Maintainer]
+    selectable: bool
+    suggestion_id: int
+    oob_update: bool
 
 
 @register.filter
@@ -236,10 +247,14 @@ def maintainers_list(
 @register.inclusion_tag("components/maintainers_list.html")
 def selectable_maintainers_list(
     maintainers: list[Maintainer],
-) -> MaintainersListContext:
+    suggestion_id: int,
+    oob_update: bool = False,
+) -> EditableMaintainersListContext:
     return {
         "maintainers": maintainers,
         "selectable": True,
+        "suggestion_id": suggestion_id,
+        "oob_update": oob_update,
     }
 
 
@@ -256,3 +271,10 @@ def selectable_maintainer(
     deleted: bool = False,
 ) -> SelectableMaintainerContext:
     return {"maintainer": maintainer, "deleted": deleted}
+
+
+@register.inclusion_tag("components/add_maintainer.html")
+def add_maintainer(
+    error_msg: str | None = None,
+) -> AddMaintainerContext:
+    return {"error_msg": error_msg}

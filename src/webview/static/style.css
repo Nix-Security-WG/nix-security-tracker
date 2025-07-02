@@ -359,6 +359,8 @@
   --dismissed-suggestion: #acb3c8;
   --draft-suggestion: #7bca7b;
   --error-suggestion: #ffabab;
+  --maintainer-error: red;
+  --maintainer-add: #76b0e2;
   --affected: #ffabab;
   --unaffected: #bfb;
   --highlighted: #fcf9c4;
@@ -982,6 +984,61 @@ a:focus {
 .maintainer-container .maintainer-edit-add a {
   color: var(--grey);
   text-decoration: line-through;
+}
+
+.maintainer-add-container {
+  margin-top: 0.4em;
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+}
+
+.maintainer-add-container > .subform {
+  display: flex;
+  align-items: stretch;
+}
+
+.maintainer-add-container > .subform.error > .spinner-container {
+  border-color: var(--maintainer-error);
+}
+
+.maintainer-add-container > .subform > input {
+  padding: 0.3em 0.5em;
+  border: 1px solid var(--maintainer-add);
+  border-radius: 0.3em 0 0 0.3em;
+}
+
+.maintainer-add-container > .subform.error > input {
+  border-color: var(--maintainer-error);
+}
+
+.maintainer-add-container > .subform > button {
+  border: none;
+  border-radius: 0 0.3em 0.3em 0;
+  color: white;
+  text-align: center;
+  border: 1px solid var(--maintainer-add);
+  background: var(--maintainer-add);
+  cursor: pointer;
+}
+
+.maintainer-add-spinner {
+  background: white;
+  border-radius: 0.3em;
+  margin: 0.1em;
+  padding: 0.1em;
+}
+
+.maintainer-add-container > .subform.error > button {
+  border-color: var(--maintainer-error);
+  background: var(--maintainer-error);
+}
+
+.maintainer-add-container .error-message {
+  display: flex;
+  align-items: center;
+  color: var(--maintainer-error);
+  flex-grow: 1;
 }
 
 .suggestion .change-issue-state {
