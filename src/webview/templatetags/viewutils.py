@@ -244,15 +244,18 @@ def maintainers_list(
     }
 
 
-@register.inclusion_tag("components/maintainers_list.html")
+@register.inclusion_tag("components/maintainers_list.html", takes_context=True)
 def selectable_maintainers_list(
+    context: Context,
     maintainers: list[Maintainer],
     suggestion_id: int,
     oob_update: bool = False,
 ) -> EditableMaintainersListContext:
+    user = context.get("user")
+    selectable = is_maintainer_or_admin(user)
     return {
         "maintainers": maintainers,
-        "selectable": True,
+        "selectable": selectable,
         "suggestion_id": suggestion_id,
         "oob_update": oob_update,
     }
