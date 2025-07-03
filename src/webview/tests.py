@@ -2,6 +2,7 @@ from typing import Any
 from unittest.mock import patch
 
 from allauth.account.utils import get_login_redirect_url
+from allauth.socialaccount.models import SocialAccount
 from allauth.socialaccount.providers.oauth2.views import OAuth2LoginView
 from allauth.socialaccount.templatetags.socialaccount import provider_login_url
 from django.contrib.auth import get_user_model, login
@@ -83,6 +84,15 @@ class AddMaintainerViewTests(TestCase):
         self.user = User.objects.create_user(username="admin", password="pw")
         self.user.is_staff = True
         self.user.save()
+
+        # Create a GitHub social account for the user
+        SocialAccount.objects.get_or_create(
+            user=self.user,
+            provider="github",
+            uid="123456",
+            extra_data={"login": "admin"},
+        )
+
         self.client = Client()
         self.client.login(username="admin", password="pw")
 
@@ -149,7 +159,7 @@ class AddMaintainerViewTests(TestCase):
             parent_evaluation=self.evaluation,
         )
         self.suggestion = CVEDerivationClusterProposal.objects.create(
-            status=CVEDerivationClusterProposal.Status.PENDING,
+            status=CVEDerivationClusterProposal.Status.ACCEPTED,
             cve_id=self.cve_record.pk,
         )
         DerivationClusterProposalLink.objects.create(
@@ -252,3 +262,16 @@ class AddMaintainerViewTests(TestCase):
         self.assertEqual(
             response.context["error_msg"], "Could not fetch maintainer from GitHub"
         )
+
+    def test_add_maintainer_widget_visible_when_admin(self) -> None:
+        url = reverse("webview:drafts_view")
+        response = self.client.get(url)
+        response_content = response.content.decode("utf-8")
+        self.assertIn("maintainer-add-container", response_content)
+
+    def test_add_maintainer_widget_not_visible_when_logged_out(self) -> None:
+        self.client.logout()
+        url = reverse("webview:drafts_view")
+        response = self.client.get(url)
+        response_content = response.content.decode("utf-8")
+        self.assertNotIn("maintainer-add-container", response_content)
