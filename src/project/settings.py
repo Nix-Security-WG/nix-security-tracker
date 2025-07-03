@@ -384,6 +384,9 @@ REST_FRAMEWORK = {
 
 SITE_ID = 1
 
+# Disable regular signup but allow GitHub auth
+SOCIALACCOUNT_ONLY = True
+ACCOUNT_ALLOW_REGISTRATION = False
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
 # TODO: make configurable so one can log in locally
