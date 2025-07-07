@@ -89,4 +89,6 @@ in
     gh-app-private-key.file = ./secrets/nixpkgs-security-tracker.2024-12-09.private-key.pem.age;
     gh-app-installation-id.file = ./secrets/gh-app-installation-id.age;
   };
+
+  nix.optimise.automatic = true;
 }
