@@ -56,6 +56,7 @@ in
     production = true;
     domain = "tracker.security.nixos.org";
     env = {
+      SHOW_DEMO_DISCLAIMER = true;
       SYNC_GITHUB_STATE_AT_STARTUP = true;
       # set to `true` when going live
       GH_ISSUES_PING_MAINTAINERS = false;
