@@ -156,6 +156,50 @@ class PackageRemovalTests(TestCase):
         cache_new_suggestions(self.suggestion)
         self.suggestion.refresh_from_db()
 
+    def _test_package_removal(
+        self,
+        status: CVEDerivationClusterProposal.Status,
+        url_name: str,
+        should_remove_package: bool,
+    ) -> None:
+        """Helper method for testing package removal with different statuses"""
+        # Set suggestion status
+        self.suggestion.status = status
+        self.suggestion.save()
+
+        # Make request to keep only derivation1 (remove derivation2)
+        url = reverse(url_name)
+        response = self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "derivation_ids": [str(self.derivation1.id)],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Verify the result based on expected behavior
+        self.suggestion.refresh_from_db()
+        remaining_derivation_ids = set(
+            self.suggestion.derivations.values_list("id", flat=True)
+        )
+
+        if should_remove_package:
+            # Package should be removed
+            self.assertEqual(len(remaining_derivation_ids), 1)
+            self.assertIn(self.derivation1.id, remaining_derivation_ids)
+            self.assertNotIn(self.derivation2.id, remaining_derivation_ids)
+
+            # Verify package2 has been removed from the cached payload
+            updated_cached_packages = self.suggestion.cached.payload["packages"]
+            self.assertIn("package1", updated_cached_packages)
+            self.assertNotIn("package2", updated_cached_packages)
+        else:
+            # Package should NOT be removed (rejected suggestions are not editable)
+            self.assertEqual(len(remaining_derivation_ids), 2)
+            self.assertIn(self.derivation1.id, remaining_derivation_ids)
+            self.assertIn(self.derivation2.id, remaining_derivation_ids)
+
     def test_packages_are_initially_present(self) -> None:
         # Verify both packages are initially present
         initial_derivation_ids = set(
@@ -171,60 +215,27 @@ class PackageRemovalTests(TestCase):
 
     def test_remove_package_from_accepted_suggestion(self) -> None:
         """Test removing a package from a suggestion in accepted status (editable draft issue)"""
-        self.suggestion.status = CVEDerivationClusterProposal.Status.ACCEPTED
-        self.suggestion.save()
-
-        # Make request to drafts view to keep only derivation1 (remove derivation2)
-        url = reverse("webview:drafts_view")
-        response = self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "derivation_ids": [str(self.derivation1.id)],
-            },
+        self._test_package_removal(
+            CVEDerivationClusterProposal.Status.ACCEPTED,
+            "webview:drafts_view",
+            should_remove_package=True,
         )
-        self.assertEqual(response.status_code, 200)
-
-        # Verify derivation2 has been removed
-        self.suggestion.refresh_from_db()
-        remaining_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
-        )
-        self.assertEqual(len(remaining_derivation_ids), 1)
-        self.assertIn(self.derivation1.id, remaining_derivation_ids)
-        self.assertNotIn(self.derivation2.id, remaining_derivation_ids)
-
-        # Verify package2 has been removed from the cached payload
-        updated_cached_packages = self.suggestion.cached.payload["packages"]
-        self.assertIn("package1", updated_cached_packages)
-        self.assertNotIn("package2", updated_cached_packages)
 
     def test_remove_package_from_pending_suggestion(self) -> None:
         """Test removing a package from a suggestion in pending status (editable)"""
-
-        # Make request to keep only derivation1 (remove derivation2)
-        url = reverse("webview:suggestions_view")
-        response = self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "derivation_ids": [str(self.derivation1.id)],
-            },
+        self._test_package_removal(
+            CVEDerivationClusterProposal.Status.PENDING,
+            "webview:suggestions_view",
+            should_remove_package=True,
         )
-        self.assertEqual(response.status_code, 200)
 
-        # Verify derivation2 has been removed from the suggestion
-        self.suggestion.refresh_from_db()
-        remaining_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
+    def test_cannot_remove_package_from_rejected_suggestion(self) -> None:
+        """Test that packages cannot be removed from dismissed suggestions (not editable)"""
+        self._test_package_removal(
+            CVEDerivationClusterProposal.Status.REJECTED,
+            "webview:dismissed_view",
+            should_remove_package=False,
         )
-        self.assertIn(self.derivation1.id, remaining_derivation_ids)
-        self.assertNotIn(self.derivation2.id, remaining_derivation_ids)
-
-        # Verify package2 has been removed from the cached payload
-        updated_cached_packages = self.suggestion.cached.payload["packages"]
-        self.assertIn("package1", updated_cached_packages)
-        self.assertNotIn("package2", updated_cached_packages)
 
     def test_restore_package(self) -> None:
         """Test removing a package from a suggestion in pending status (editable)"""
@@ -266,35 +277,6 @@ class PackageRemovalTests(TestCase):
         self.assertIn(
             self.derivation2.id, final_derivation_ids
         )  # TODO This fails and should not.
-
-    def test_cannot_remove_package_from_rejected_suggestion(self) -> None:
-        """Test that packages cannot be removed from dismissed suggestions (not editable)"""
-        self.suggestion.status = CVEDerivationClusterProposal.Status.REJECTED
-        self.suggestion.save()
-
-        # Make POST request to dismissed view
-        url = reverse("webview:dismissed_view")
-        response = self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "derivation_ids": [
-                    str(self.derivation1.id)
-                ],  # Try to remove derivation2
-            },
-        )
-        # Should return success but no modifications should be made
-        # TODO Should we return another status code?
-        self.assertEqual(response.status_code, 200)
-
-        # Verify both derivations are still present (no removal occurred)
-        self.suggestion.refresh_from_db()
-        remaining_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
-        )
-        self.assertEqual(len(remaining_derivation_ids), 2)
-        self.assertIn(self.derivation1.id, remaining_derivation_ids)
-        self.assertIn(self.derivation2.id, remaining_derivation_ids)
 
 
 class Login(TestCase):
