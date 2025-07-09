@@ -127,6 +127,13 @@ class Settings(BaseSettings):
             # on the environment.
             default=[],
         )
+        SHOW_DEMO_DISCLAIMER: bool = Field(
+            description="""
+            When set to True, the application will display a disclaimer about
+            this deployment being a demo installation.
+            """,
+            default=False,
+        )
 
         class SocialAccountProviders(BaseModel):
             class GitHub(BaseModel):
