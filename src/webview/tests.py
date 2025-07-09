@@ -117,7 +117,7 @@ class PackageRemovalTests(TestCase):
             state=NixEvaluation.EvaluationState.COMPLETED,
         )
 
-        # Create two derivations for the same package
+        # Create two derivations for the same suggestion
         self.derivation1 = NixDerivation.objects.create(
             attribute="package1",
             derivation_path="/nix/store/package1.drv",
