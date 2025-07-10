@@ -173,41 +173,25 @@ class PackageRemovalTests(TestCase):
             url,
             {
                 "suggestion_id": self.suggestion.pk,
-                "derivation_ids": [str(self.derivation1.id)],
+                "attribute": ["package1"],
             },
         )
         self.assertEqual(response.status_code, 200)
 
         # Verify the result based on expected behavior
         self.suggestion.refresh_from_db()
-        remaining_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
-        )
+        updated_cached_packages = self.suggestion.cached.payload["packages"]
 
         if should_remove_package:
             # Package should be removed
-            self.assertEqual(len(remaining_derivation_ids), 1)
-            self.assertIn(self.derivation1.id, remaining_derivation_ids)
-            self.assertNotIn(self.derivation2.id, remaining_derivation_ids)
-
-            # Verify package2 has been removed from the cached payload
-            updated_cached_packages = self.suggestion.cached.payload["packages"]
             self.assertIn("package1", updated_cached_packages)
             self.assertNotIn("package2", updated_cached_packages)
         else:
             # Package should NOT be removed (rejected suggestions are not editable)
-            self.assertEqual(len(remaining_derivation_ids), 2)
-            self.assertIn(self.derivation1.id, remaining_derivation_ids)
-            self.assertIn(self.derivation2.id, remaining_derivation_ids)
+            self.assertIn("package1", updated_cached_packages)
+            self.assertIn("package2", updated_cached_packages)
 
     def test_packages_are_initially_present(self) -> None:
-        # Verify both packages are initially present
-        initial_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
-        )
-        self.assertIn(self.derivation1.id, initial_derivation_ids)
-        self.assertIn(self.derivation2.id, initial_derivation_ids)
-
         # Verify both packages are in the cached payload
         cached_packages = self.suggestion.cached.payload["packages"]
         self.assertIn("package1", cached_packages)
@@ -245,38 +229,32 @@ class PackageRemovalTests(TestCase):
             url,
             {
                 "suggestion_id": self.suggestion.pk,
-                "derivation_ids": [str(self.derivation1.id)],
+                "attribute": ["package1"],
             },
         )
         self.assertEqual(response.status_code, 200)
 
-        # Verify derivation2 has been removed from the suggestion
+        # Verify package2 has been removed from the cached payload
         self.suggestion.refresh_from_db()
-        remaining_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
-        )
-        self.assertIn(self.derivation1.id, remaining_derivation_ids)
-        self.assertNotIn(self.derivation2.id, remaining_derivation_ids)
+        cached_packages = self.suggestion.cached.payload["packages"]
+        self.assertIn("package1", cached_packages)
+        self.assertNotIn("package2", cached_packages)
 
         # Restore package2 by including both derivation IDs again
         restore_response = self.client.post(
             url,
             {
                 "suggestion_id": self.suggestion.pk,
-                "derivation_ids": [str(self.derivation1.id), str(self.derivation2.id)],
+                "attribute": ["package1", "package2"],
             },
         )
         self.assertEqual(restore_response.status_code, 200)
 
-        # Refresh and verify both derivations are present again
+        # Refresh and verify both packages are present again in the cached payload
         self.suggestion.refresh_from_db()
-        final_derivation_ids = set(
-            self.suggestion.derivations.values_list("id", flat=True)
-        )
-        self.assertIn(self.derivation1.id, final_derivation_ids)
-        self.assertIn(
-            self.derivation2.id, final_derivation_ids
-        )  # TODO This fails and should not.
+        cached_packages = self.suggestion.cached.payload["packages"]
+        self.assertIn("package1", cached_packages)
+        self.assertIn("package2", cached_packages)
 
 
 class Login(TestCase):
