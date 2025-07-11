@@ -6,8 +6,8 @@
       {% if selectable %}
       <input
         type="checkbox"
-        name="derivation_ids"
-        value="{{ pdata.derivation_ids|join:","}}"
+        name="attribute"
+        value="{{ attribute }}"
         checked
         hx-post=""
         hx-swap="none"

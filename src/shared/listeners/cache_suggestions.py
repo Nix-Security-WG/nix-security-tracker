@@ -12,10 +12,28 @@ from shared.channels import CVEDerivationClusterProposalChannel
 from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import AffectedProduct, Metric, Version
-from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
+from shared.models.linkage import (
+    CVEDerivationClusterProposal,
+    MaintainersEdit,
+    PackageEdit,
+)
 from shared.models.nix_evaluation import get_major_channel
 
 logger = logging.getLogger(__name__)
+
+
+def apply_package_edits(packages: dict, edits: list[PackageEdit]) -> dict:
+    """
+    Returns the packages dict with user-supplied package edits applied.
+    Packages marked for removal are filtered out.
+    """
+    to_skip = {
+        edit.package_attribute
+        for edit in edits
+        if edit.edit_type == PackageEdit.EditType.REMOVE
+    }
+
+    return {attr: data for attr, data in packages.items() if attr not in to_skip}
 
 
 def to_dict(instance: Any) -> dict[str, Any]:
@@ -110,10 +128,12 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
     )
 
     prefetched_metrics = Metric.objects.filter(container__cve=suggestion.cve)
-    packages = channel_structure(all_versions, derivations)
+    original_packages = channel_structure(all_versions, derivations)
     maintainers_edits = list(
         suggestion.maintainers_edits.select_related("maintainer").all()
     )
+    package_edits = list(suggestion.package_edits.all())
+    packages = apply_package_edits(original_packages, package_edits)
     maintainers = maintainers_list(packages, maintainers_edits)
 
     only_relevant_data = {
@@ -123,6 +143,7 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
         "title": relevant_piece["title"],
         "description": relevant_piece["descriptions__value"],
         "affected_products": affected_products,
+        "original_packages": packages,
         "packages": packages,
         "metrics": [to_dict(m) for m in prefetched_metrics],
         "maintainers": maintainers,

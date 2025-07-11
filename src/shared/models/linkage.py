@@ -93,6 +93,34 @@ class MaintainersEdit(models.Model):
         ]
 
 
+class PackageEdit(models.Model):
+    """
+    A single manual edit of the list of packages of a suggestion.
+    """
+
+    class EditType(models.TextChoices):
+        REMOVE = "remove", _("remove")
+        # ADD reserved for future use if needed
+
+    edit_type = models.CharField(
+        max_length=text_length(EditType), choices=EditType.choices
+    )
+    package_attribute = models.CharField(max_length=255)
+    suggestion = models.ForeignKey(
+        CVEDerivationClusterProposal,
+        related_name="package_edits",
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["suggestion", "package_attribute"],
+                name="unique_package_edit_per_suggestion",
+            )
+        ]
+
+
 class ProvenanceFlags(IntFlag, boundary=STRICT):
     PACKAGE_NAME_MATCH = auto()
     VERSION_CONSTRAINT_INRANGE = auto()

@@ -2,7 +2,6 @@ import logging
 import re
 import typing
 from collections.abc import Callable
-from itertools import chain
 from typing import Any, cast
 
 from django.core.validators import RegexValidator
@@ -11,7 +10,7 @@ from django.urls import reverse
 
 from shared.github import create_gh_issue, fetch_user_info
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
-from shared.listeners.cache_suggestions import maintainers_list
+from shared.listeners.cache_suggestions import apply_package_edits, maintainers_list
 from shared.logs import SuggestionActivityLog
 from shared.models.cached import CachedSuggestions
 
@@ -62,7 +61,11 @@ from shared.models import (
     NixMaintainer,
     NixpkgsIssue,
 )
-from shared.models.linkage import CVEDerivationClusterProposal, MaintainersEdit
+from shared.models.linkage import (
+    CVEDerivationClusterProposal,
+    MaintainersEdit,
+    PackageEdit,
+)
 from webview.forms import NixpkgsIssueForm
 from webview.paginators import CustomCountPaginator
 
@@ -597,34 +600,38 @@ class SuggestionListView(ListView):
             self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
             or undo_status_change
         ):
-            selected_derivations = [
-                str.split(",") for str in request.POST.getlist("derivation_ids")
-            ]
-            selected_derivations = set(map(int, chain(*selected_derivations)))
-            # We only allow for removal of derivations here, not for additions
-            derivation_ids_to_keep = set(
-                suggestion.derivations.filter(id__in=selected_derivations).values_list(
-                    "id", flat=True
-                )
-            )
-            suggestion.derivations.set(derivation_ids_to_keep)
+            # Handle package selection changes via PackageEdit tracking
+            original_attributes = set(cached_suggestion.payload["original_packages"])
+            selected_attributes = set(request.POST.getlist("attribute"))
 
-            # TODO: this is quite slow and bad.
-            # we are getting the JSON here and then sending it back.
-            # a more optimal way to do it is to perform the raw SQL query directly on pgsql
-            # something along the lines of:
-            # UPDATE SET payload = payload -# {an list of indices to remove contained in this list} WHERE proposal_id = proposal_id
-            # the problem is that computing the list of indices is pretty hard.
-            # this seems to encourage to move the payload format to an dict of derivation id → derivation contents
-            # this way, we already know which IDs to remove.
-            # this is left as future work.
-            new_packages = {
-                pname: v
-                for pname, v in cached_suggestion.payload["packages"].items()
-                if any(did in selected_derivations for did in v["derivation_ids"])
-            }
-            cached_suggestion.payload["packages"] = new_packages
-            cached_suggestion.save()
+            # Find packages that should be removed (no derivations selected)
+            packages_to_remove = original_attributes - selected_attributes
+            packages_to_restore = original_attributes & selected_attributes
+
+            with transaction.atomic():
+                # Apply removals
+                for package_attr in packages_to_remove:
+                    edit, created = suggestion.package_edits.get_or_create(
+                        package_attribute=package_attr,
+                        defaults={"edit_type": PackageEdit.EditType.REMOVE},
+                    )
+                    if not created and edit.edit_type != PackageEdit.EditType.REMOVE:
+                        edit.edit_type = PackageEdit.EditType.REMOVE
+                        edit.save()
+
+                # Apply restorations (remove REMOVE edits)
+                for package_attr in packages_to_restore:
+                    suggestion.package_edits.filter(
+                        package_attribute=package_attr,
+                        edit_type=PackageEdit.EditType.REMOVE,
+                    ).delete()
+
+                # Update cached suggestion's package list
+                cached_suggestion.payload["packages"] = apply_package_edits(
+                    cached_suggestion.payload["original_packages"],
+                    suggestion.package_edits.all(),
+                )
+                cached_suggestion.save()
 
         # We only update the status if one of the status change buttons or undo
         # button was clicked.
