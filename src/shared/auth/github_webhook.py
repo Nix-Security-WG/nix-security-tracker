@@ -38,7 +38,11 @@ def handle_webhook(event: str, payload: dict) -> None:
 def handle_github_hook(request: HttpRequest) -> HttpResponse:
     # Validate that the request is from GitHub
     # https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries#validating-webhook-deliveries
-    github_signature = request.META["HTTP_X_HUB_SIGNATURE"]
+    try:
+        github_signature = request.META["HTTP_X_HUB_SIGNATURE"]
+    except KeyError:
+        return HttpResponseForbidden("Missing signature header")
+
     # NOTE: Without utf-8 encoding the secret, hmac.new fails without raising any exception
     signature = hmac.new(
         settings.GH_WEBHOOK_SECRET.encode("utf-8"),
