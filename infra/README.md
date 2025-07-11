@@ -37,6 +37,6 @@ Then commit `secrets/name_of_secret.age` as usual.
 
 ## Metrics
 
-A [Prometheus Node Exporter](https://github.com/prometheus/node_exporter) is running exposing host specfic metrics. These are scraped by the nixos.org [Prometheus](https://prometheus.nixos.org/graph) and are also available under [Grafana](https://grafana.nixos.org/).
+A [Prometheus Node Exporter](https://github.com/prometheus/node_exporter) is running exposing host specfic metrics. These are scraped by the nixos.org [Prometheus](https://prometheus.nixos.org/graph) and are also available under [Grafana](https://grafana.nixos.org/d/rYdddlPWk/node-exporter-full?orgId=1&from=now-24h&to=now&timezone=browser&var-datasource=default&var-job=node&var-node=tracker.security.nixos.org:9100&var-diskdevices=%5Ba-z%5D%2B%7Cnvme%5B0-9%5D%2Bn%5B0-9%5D%2B%7Cmmcblk%5B0-9%5D%2B&refresh=1m).
 
-Moreover, a [Postgres Exporter](https://github.com/prometheus-community/postgres_exporter) and a [SQL exporter](https://github.com/justwatchcom/sql_exporter) run in the host exposing Postgres and application specific metrics.
+Moreover, a [Postgres Exporter](https://github.com/prometheus-community/postgres_exporter) and a [SQL exporter](https://github.com/justwatchcom/sql_exporter) run in the host exposing Postgres and application specific metrics. A dashboard for these metrics is [here](https://grafana.nixos.org/d/beo2uotj65lvkb/nix-security-tracker?orgId=1&from=now-6h&to=now&timezone=browser&var-Instance=tracker.security.nixos.org:9237).
