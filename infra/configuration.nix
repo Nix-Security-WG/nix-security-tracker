@@ -61,8 +61,9 @@ in
     openssh.authorizedKeys.keyFiles =
       with lib;
       map (n: ./keys/${n}) (attrNames (builtins.readDir ./keys));
-    # We're using both keys and keyFiles here in order to keep some alignment with github:nixos/infra since ssh-keys.nix is copy pasted from that repo.
-    openssh.authorizedKeys.keys = with import ./ssh-keys.nix; infra;
+    # We're using both keys and keyFiles here in order to keep some alignment
+    # with github:nixos/infra
+    openssh.authorizedKeys.keys = (import "${sources.infra}/ssh-keys.nix").infra;
   };
 
   environment.systemPackages = with pkgs; [
