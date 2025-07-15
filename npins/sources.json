@@ -41,6 +41,19 @@
       "url": null,
       "hash": "1bf635yhgldqbihvp0rm8v8myq3sv37pqxj8nq23sz2pfjrzfjlw"
     },
+    "infra": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "nixos",
+        "repo": "infra"
+      },
+      "branch": "main",
+      "submodules": false,
+      "revision": "3269b8e117c1c7696cf205cce1d0064e5034a4bd",
+      "url": "https://github.com/nixos/infra/archive/3269b8e117c1c7696cf205cce1d0064e5034a4bd.tar.gz",
+      "hash": "001implpihadxva7d121vyc80vlxqi0l8sg9kvd76zdbc6shga9b"
+    },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
