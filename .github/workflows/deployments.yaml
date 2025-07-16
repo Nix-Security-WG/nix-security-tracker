@@ -12,10 +12,6 @@ jobs:
   deploy-to-staging:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup WARP to gain IPv6
-        uses: fscarmen/warp-on-actions@v1.1
-        with:
-          stack: dual
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v29
       - uses: webfactory/ssh-agent@v0.9.0
