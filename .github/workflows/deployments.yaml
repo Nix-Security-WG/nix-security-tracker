@@ -7,10 +7,19 @@ on:
     types:
       - completed
   push:
-    branches: main
+    branches: [main, production]
 jobs:
-  deploy-to-staging:
+  deploy-environment:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - environment: staging
+            host: staging-tracker.security.nixos.org
+            branch: main
+          - environment: production
+            host: tracker.security.nixos.org
+            branch: production
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v29
@@ -19,4 +28,7 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       - name: Trust staging server public SSH host keys
         run: cat ./infra/host_keys >> ~/.ssh/known_hosts
-      - run: nix-shell default.nix -A ci --run deploy
+      - name: Deploy to ${{ matrix.environment }}
+        # Only deploy production when on production branch
+        if: github.ref_name == matrix.branch
+        run: nix-shell default.nix -A ci --run "deploy switch ${{ matrix.host }}"
