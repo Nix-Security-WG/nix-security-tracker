@@ -32,13 +32,6 @@ def enqueue_evaluation_job(channel: NixChannel) -> tuple[NixEvaluation, bool]:
     return eval_job, created
 
 
-@pgpubsub.post_insert_listener(NixChannelChannel)
-def start_evaluation_jobs_upon_new_channel(old: NixChannel, new: NixChannel) -> None:
-    logger.info("Nix channel created: %s", new.head_sha1_commit)
-    if new.state in ADMISSIBLE_CHANNEL_STATES:
-        enqueue_evaluation_job(new)
-
-
 @pgpubsub.post_update_listener(NixChannelChannel)
 def start_evaluation_jobs_upon_updates(old: NixChannel, new: NixChannel) -> None:
     if old is None:
