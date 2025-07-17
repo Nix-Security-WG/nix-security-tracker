@@ -36,6 +36,227 @@ from shared.models.nix_evaluation import (
 )
 
 
+class PackageRemovalTests(TestCase):
+    def setUp(self) -> None:
+        # Create user and log in
+        self.user = User.objects.create_user(username="admin", password="pw")
+        self.user.is_staff = True
+        self.user.save()
+
+        # Create a GitHub social account for the user
+        SocialAccount.objects.get_or_create(
+            user=self.user,
+            provider="github",
+            uid="123456",
+            extra_data={"login": "admin"},
+        )
+
+        self.client = Client()
+        self.client.login(username="admin", password="pw")
+
+        # Create CVE and related objects
+        self.assigner = Organization.objects.create(uuid=1, short_name="foo")
+        self.cve_record = CveRecord.objects.create(
+            cve_id="CVE-2025-0001",
+            assigner=self.assigner,
+        )
+        self.description = Description.objects.create(value="Test description")
+        self.metric = Metric.objects.create(format="cvssV3_1", raw_cvss_json={})
+        self.affected_product = AffectedProduct.objects.create(
+            package_name="dummy-package"
+        )
+        self.affected_product.versions.add(
+            Version.objects.create(status=Version.Status.AFFECTED, version="1.0")
+        )
+        self.cve_container = self.cve_record.container.create(
+            provider=self.assigner,
+            title="Dummy Title",
+        )
+        self.cve_container.affected.add(self.affected_product)
+        self.cve_container.descriptions.add(self.description)
+        self.cve_container.metrics.add(self.metric)
+
+        # Create maintainer and metadata
+        self.maintainer = NixMaintainer.objects.create(
+            github_id=123,
+            github="testuser",
+            name="Test User",
+            email="test@example.com",
+        )
+        self.meta1 = NixDerivationMeta.objects.create(
+            description="First dummy derivation",
+            insecure=False,
+            available=True,
+            broken=False,
+            unfree=False,
+            unsupported=False,
+        )
+        self.meta1.maintainers.add(self.maintainer)
+
+        self.meta2 = NixDerivationMeta.objects.create(
+            description="Second dummy derivation",
+            insecure=False,
+            available=True,
+            broken=False,
+            unfree=False,
+            unsupported=False,
+        )
+        self.meta2.maintainers.add(self.maintainer)
+
+        # Create evaluation and derivations
+        self.evaluation = NixEvaluation.objects.create(
+            channel=NixChannel.objects.create(
+                staging_branch="release-24.05",
+                channel_branch="nixos-24.05",
+                head_sha1_commit="deadbeef",
+                state=NixChannel.ChannelState.STABLE,
+                release_version="24.05",
+                repository="https://github.com/NixOS/nixpkgs",
+            ),
+            commit_sha1="deadbeef",
+            state=NixEvaluation.EvaluationState.COMPLETED,
+        )
+
+        # Create two derivations for the same suggestion
+        self.derivation1 = NixDerivation.objects.create(
+            attribute="package1",
+            derivation_path="/nix/store/package1.drv",
+            name="package1-1.0",
+            metadata=self.meta1,
+            system="x86_64-linux",
+            parent_evaluation=self.evaluation,
+        )
+
+        self.derivation2 = NixDerivation.objects.create(
+            attribute="package2",
+            derivation_path="/nix/store/package2.drv",
+            name="package2-1.0",
+            metadata=self.meta2,
+            system="x86_64-linux",
+            parent_evaluation=self.evaluation,
+        )
+
+        # Create suggestion and link both derivations
+        self.suggestion = CVEDerivationClusterProposal.objects.create(
+            status=CVEDerivationClusterProposal.Status.PENDING,
+            cve_id=self.cve_record.pk,
+        )
+        DerivationClusterProposalLink.objects.create(
+            proposal=self.suggestion,
+            derivation=self.derivation1,
+            provenance_flags=ProvenanceFlags.PACKAGE_NAME_MATCH,
+        )
+        DerivationClusterProposalLink.objects.create(
+            proposal=self.suggestion,
+            derivation=self.derivation2,
+            provenance_flags=ProvenanceFlags.PACKAGE_NAME_MATCH,
+        )
+
+        # Cache the suggestion to populate the packages payload
+        cache_new_suggestions(self.suggestion)
+        self.suggestion.refresh_from_db()
+
+    def _test_package_removal(
+        self,
+        status: CVEDerivationClusterProposal.Status,
+        url_name: str,
+        should_remove_package: bool,
+    ) -> None:
+        """Helper method for testing package removal with different statuses"""
+        # Set suggestion status
+        self.suggestion.status = status
+        self.suggestion.save()
+
+        # Make request to keep only derivation1 (remove derivation2)
+        url = reverse(url_name)
+        response = self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "attribute": ["package1"],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Verify the result based on expected behavior
+        self.suggestion.refresh_from_db()
+        updated_cached_packages = self.suggestion.cached.payload["packages"]
+
+        if should_remove_package:
+            # Package should be removed
+            self.assertIn("package1", updated_cached_packages)
+            self.assertNotIn("package2", updated_cached_packages)
+        else:
+            # Package should NOT be removed (rejected suggestions are not editable)
+            self.assertIn("package1", updated_cached_packages)
+            self.assertIn("package2", updated_cached_packages)
+
+    def test_packages_are_initially_present(self) -> None:
+        # Verify both packages are in the cached payload
+        cached_packages = self.suggestion.cached.payload["packages"]
+        self.assertIn("package1", cached_packages)
+        self.assertIn("package2", cached_packages)
+
+    def test_remove_package_from_accepted_suggestion(self) -> None:
+        """Test removing a package from a suggestion in accepted status (editable draft issue)"""
+        self._test_package_removal(
+            CVEDerivationClusterProposal.Status.ACCEPTED,
+            "webview:drafts_view",
+            should_remove_package=True,
+        )
+
+    def test_remove_package_from_pending_suggestion(self) -> None:
+        """Test removing a package from a suggestion in pending status (editable)"""
+        self._test_package_removal(
+            CVEDerivationClusterProposal.Status.PENDING,
+            "webview:suggestions_view",
+            should_remove_package=True,
+        )
+
+    def test_cannot_remove_package_from_rejected_suggestion(self) -> None:
+        """Test that packages cannot be removed from dismissed suggestions (not editable)"""
+        self._test_package_removal(
+            CVEDerivationClusterProposal.Status.REJECTED,
+            "webview:dismissed_view",
+            should_remove_package=False,
+        )
+
+    def test_restore_package(self) -> None:
+        """Test removing a package from a suggestion in pending status (editable)"""
+        # Request to keep only derivation1 (remove derivation2)
+        url = reverse("webview:suggestions_view")
+        response = self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "attribute": ["package1"],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Verify package2 has been removed from the cached payload
+        self.suggestion.refresh_from_db()
+        cached_packages = self.suggestion.cached.payload["packages"]
+        self.assertIn("package1", cached_packages)
+        self.assertNotIn("package2", cached_packages)
+
+        # Restore package2 by including both derivation IDs again
+        restore_response = self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "attribute": ["package1", "package2"],
+            },
+        )
+        self.assertEqual(restore_response.status_code, 200)
+
+        # Refresh and verify both packages are present again in the cached payload
+        self.suggestion.refresh_from_db()
+        cached_packages = self.suggestion.cached.payload["packages"]
+        self.assertIn("package1", cached_packages)
+        self.assertIn("package2", cached_packages)
+
+
 class Login(TestCase):
     def setUp(self) -> None:
         # location to start navigation
