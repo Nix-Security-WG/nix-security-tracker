@@ -10,8 +10,6 @@
 }:
 rec {
   inherit pkgs;
-  inherit (pkgs) python3;
-  localPythonPackages = import ./pkgs { inherit pkgs python3; };
 
   # For exports.
   overlays = [ overlay ];
@@ -57,7 +55,7 @@ rec {
   shell =
     let
       manage = pkgs.writeScriptBin "manage" ''
-        exec ${python3}/bin/python ${toString ./src/manage.py} $@
+        exec ${pkgs.python3}/bin/python ${toString ./src/manage.py} $@
       '';
     in
     pkgs.mkShellNoCC {

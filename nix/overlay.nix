@@ -1,16 +1,8 @@
-final: prev:
+final: _prev:
 let
-  inherit (final) python3;
-  extraPackages = import ../pkgs {
-    pkgs = prev;
-    inherit python3;
-  };
-  extraPython3Packages = extraPackages.python3Packages;
   sources = import ../npins;
 in
 {
-  python3 = prev.lib.attrsets.recursiveUpdate prev.python3 { pkgs = extraPython3Packages; };
-
   # go through the motions to make a flake-incompat project use the build
   # inputs we want
   pre-commit-hooks = final.callPackage "${sources.pre-commit-hooks}/nix/run.nix" {
@@ -22,14 +14,14 @@ in
     isFlakes = false;
   };
 
-  web-security-tracker = python3.pkgs.buildPythonPackage rec {
+  web-security-tracker = final.python3.pkgs.buildPythonPackage rec {
     pname = "web-security-tracker";
     version = "0.0.1";
     pyproject = true;
 
     src = final.nix-gitignore.gitignoreSourcePure [ ../.gitignore ] ../src;
 
-    propagatedBuildInputs = with python3.pkgs; [
+    propagatedBuildInputs = with final.python3.pkgs; [
       # Nix python packages
       dataclass-wizard
       dj-database-url
@@ -62,7 +54,7 @@ in
       cp -v ${src}/manage.py $out/bin/manage.py
       chmod +x $out/bin/manage.py
       wrapProgram $out/bin/manage.py --prefix PYTHONPATH : "$PYTHONPATH"
-      cp ${sources.htmx}/dist/htmx.min.js* $out/${python3.sitePackages}/webview/static/
+      cp ${sources.htmx}/dist/htmx.min.js* $out/${final.python3.sitePackages}/webview/static/
     '';
   };
 }
