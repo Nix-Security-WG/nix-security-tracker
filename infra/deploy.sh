@@ -5,6 +5,7 @@ set -eo pipefail
 
 DIR=$(git rev-parse --show-toplevel)
 VERB=${1:-switch}
+HOST=${2:-staging-tracker.security.nixos.org}  # Default to staging
 # make sure we're building with the version of Nixpkgs under our control
 export NIX_PATH=nixpkgs=$(nix-instantiate --eval -A pkgs.path)
 
@@ -19,7 +20,7 @@ export NIX_PATH=nixpkgs=$(nix-instantiate --eval -A pkgs.path)
 if [[ "$VERB" != "build" ]]; then
   # Perform a dry-activation first.
   echo "dry-activating the configuration first..."
-  nixos-rebuild dry-activate -I nixos-config=$DIR/infra/configuration.nix --target-host root@tracker.security.nixos.org
+  nixos-rebuild dry-activate -I nixos-config=$DIR/infra/configuration.nix --target-host root@$HOST
 else
   echo "skipping the dry-activation as we are using an offline verb."
 fi
@@ -27,7 +28,7 @@ fi
 
 if [[ "$VERB" != "build" ]]; then
   echo "$VERB-ing the configuration now."
-  nixos-rebuild $VERB -I nixos-config=$DIR/infra/configuration.nix --target-host root@tracker.security.nixos.org
+  nixos-rebuild $VERB -I nixos-config=$DIR/infra/configuration.nix --target-host root@$HOST
 else
   echo "building the configuration now."
   nixos-rebuild build -I nixos-config=$DIR/infra/configuration.nix
