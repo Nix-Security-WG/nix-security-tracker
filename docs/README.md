@@ -1,6 +1,7 @@
 # Architecture
 
 The Nixpkgs vulnerability tracker consists of
+
 - a server process for handling HTTP requests
 - worker processes for recurring data ingestion
 
@@ -12,8 +13,8 @@ The tracker needs to communicate with third party services, namely:
 
 - The GitHub API for user authentication, team permissions, creating issues, etc.
 - GitHub repositories:
-   - https://github.com/nixos/nixpkgs to pull the latest changes from Nixpkgs
-   - https://github.com/CVEProject/cvelistV5 to pull CVE data
+  - https://github.com/nixos/nixpkgs to pull the latest changes from Nixpkgs
+  - https://github.com/CVEProject/cvelistV5 to pull CVE data
 - https://prometheus.nixos.org/ to get information about the latest channels
 
 ## Storage space considerations
