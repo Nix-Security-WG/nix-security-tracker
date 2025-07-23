@@ -100,6 +100,10 @@ class MaintainersEdit(models.Model):
         ]
 
 
+@pghistory.track(
+    pghistory.ManualEvent("package.add"),
+    pghistory.ManualEvent("package.remove"),
+)
 class PackageEdit(models.Model):
     """
     A single manual edit of the list of packages of a suggestion.
@@ -126,6 +130,32 @@ class PackageEdit(models.Model):
                 name="unique_package_edit_per_suggestion",
             )
         ]
+
+
+@receiver(post_save, sender=PackageEdit)
+def track_package_edit_save(
+    sender: type[PackageEdit],
+    instance: PackageEdit,
+    created: bool,
+    **kwargs: Any,
+) -> None:
+    if created:
+        # TODO Adapt when PackageEdit supports more than REMOVE
+        pghistory.create_event(
+            obj=instance,
+            label="package.remove",
+        )
+
+
+@receiver(post_delete, sender=PackageEdit)
+def track_package_edit_delete(
+    sender: type[PackageEdit], instance: PackageEdit, **kwargs: Any
+) -> None:
+    # TODO Adapt when PackageEdit supports more than REMOVE
+    pghistory.create_event(
+        obj=instance,
+        label="package.add",
+    )
 
 
 @receiver(post_save, sender=MaintainersEdit)

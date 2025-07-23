@@ -2,26 +2,24 @@ from datetime import datetime
 from typing import Any, Literal, cast
 
 from django.contrib.auth.models import User
-from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
     BigIntegerField,
     Case,
-    Count,
     OuterRef,
     Q,
     Subquery,
     Value,
     When,
 )
-from django.db.models.functions import Cast, Coalesce, Concat, JSONObject, Replace
+from django.db.models.functions import Cast, Coalesce
 from django.forms.models import model_to_dict
 from pghistory.models import EventQuerySet
 from pydantic import BaseModel
 
 from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
-    DerivationClusterProposalLinkEvent,  # type: ignore
     MaintainersEditEvent,  # type: ignore
+    PackageEditEvent,  # type: ignore
 )
 from webview.templatetags.viewutils import Maintainer
 
@@ -42,15 +40,6 @@ class ChangeEvent(BaseModel):
     username: str
 
 
-class PackageData(BaseModel):
-    """
-    A package in a package change event.
-    """
-
-    name: str
-    attribute: str
-
-
 class SuggestionChangeEvent(ChangeEvent):
     """
     A general change event for a suggestion.
@@ -65,9 +54,14 @@ class PackageChangeEvent(ChangeEvent):
     A package list change event for a suggestion.
     """
 
-    action: Literal["derivations.add", "derivations.remove"]
-    package_count: int
-    package_names: list[PackageData]
+    action: Literal["package.add", "package.remove"]
+    package_attribute: str
+    # The following field is there to satisfy typechecking when collapsing
+    # similar events together in get_dict. IMO this is a bit dirty as a
+    # PackageChangeEvent is supposed to be singular.
+    # TODO Find a better solution to distinguish singular package change events
+    # and a constructed merged entry that combines several
+    package_names: list[str] | None = None
 
 
 class MaintainerChangeEvent(ChangeEvent):
@@ -158,45 +152,18 @@ class SuggestionActivityLog:
                 )
             )
 
-        package_qs = self._annotate_username(
-            DerivationClusterProposalLinkEvent.objects.prefetch_related(
-                "pgh_context", "derivation"
-            )
-            .exclude(
-                # Ignore insertion entry
-                pgh_created_at=Subquery(
-                    DerivationClusterProposalLinkEvent.objects.filter(
-                        proposal_id=OuterRef("proposal_id")
-                    )
-                    .order_by("pgh_created_at")
-                    .values("pgh_created_at")[:1]
-                )
-            )
-            .filter(proposal_id__in=suggestion_ids)
-        ).annotate(
-            package_names=ArrayAgg(
-                JSONObject(
-                    name="derivation__name",
-                    attribute=Replace(
-                        "derivation__attribute",  # type: ignore
-                        Concat(Value("."), "derivation__system"),  # type: ignore
-                        Value(""),
-                    ),
-                ),
-                distinct=True,
-            ),
-            package_count=Count("derivation__name", distinct=True),
+        package_edit_qs = self._annotate_username(
+            PackageEditEvent.objects.filter(suggestion__in=suggestion_ids)
         )
 
-        for package_event in package_qs.all().iterator():
+        for package_edit_event in package_edit_qs.all().iterator():
             raw_events.append(
                 PackageChangeEvent(
-                    suggestion_id=package_event.proposal_id,
-                    timestamp=package_event.pgh_created_at,
-                    username=package_event.username,
-                    action=package_event.pgh_label,
-                    package_names=package_event.package_names,
-                    package_count=package_event.package_count,
+                    suggestion_id=package_edit_event.suggestion.id,
+                    timestamp=package_edit_event.pgh_created_at,
+                    username=package_edit_event.username,
+                    action=package_edit_event.pgh_label,
+                    package_attribute=package_edit_event.package_attribute,
                 )
             )
 
@@ -257,29 +224,34 @@ class SuggestionActivityLog:
             for event in events:
                 # Bulk events that are subject to folding are currently
                 # - package editions
-                # - maintainers editions (soon to be logged)
-                if event.action.startswith("derivations"):
+                # - maintainers editions (soon to be logged) TODO
+                if event.action.startswith("package") and isinstance(
+                    event, PackageChangeEvent
+                ):
                     if not accumulator:
+                        # New batch
                         accumulator = event
+                        accumulator.package_names = [event.package_attribute]
                     else:
                         if (
                             event.action == accumulator.action
                             and event.username == accumulator.username
                         ):
-                            # For now, this is the only remaining possibility,
-                            # but we'll add maintainer edits soon.
-                            if event.action.startswith("derivations"):
-                                accumulator.package_names = (
-                                    accumulator.package_names + event.package_names
-                                )
-                                accumulator.package_count = (
-                                    accumulator.package_count + event.package_count
+                            # Continuing batch
+                            if accumulator.package_names is None:
+                                # Should never happen
+                                accumulator.package_names = [event.package_attribute]
+                            else:
+                                accumulator.package_names.append(
+                                    event.package_attribute
                                 )
                             # Keep latest timestamp
                             accumulator.timestamp = event.timestamp
                         else:
+                            # Ending batch
                             suggestion_log.append(accumulator)
                             accumulator = event
+                            accumulator.package_names = [event.package_attribute]
                 else:
                     if accumulator:
                         suggestion_log.append(accumulator)
