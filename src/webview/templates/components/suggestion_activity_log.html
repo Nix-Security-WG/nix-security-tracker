@@ -30,23 +30,23 @@
     {% for log_entry in activity_log %}
       <li class="activity-log-entry">
         <strong>@{{ log_entry.username }}</strong>
-        {% if "derivations." in log_entry.action %}
+        {% if "package." in log_entry.action %}
         {# Package update entries #}
           {% if ".add" in log_entry.action %}
             added
           {% else %}
             removed
           {% endif %}
-          {% if log_entry.package_count == 1 %}
-            package <strong>{{ log_entry.package_names.0|versioned_package_name }}</strong>
+          {% if log_entry.package_names|length == 1 %}
+            package <strong>{{ log_entry.package_attribute }}</strong>
           {% else %}
             <details class="package-summary">
               <summary class="package-summary-title">
-                {{ log_entry.package_count }} packages
+                {{ log_entry.package_names|length }} packages
               </summary>
               <ul class="package-summary-listing">
                 {% for packagename in log_entry.package_names %}
-                  <li>{{ packagename|versioned_package_name }}</li>
+                  <li>{{ packagename }}</li>
                 {% endfor %}
               </ul>
             </details>
