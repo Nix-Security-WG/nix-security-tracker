@@ -916,3 +916,277 @@ class PackageEditActivityLogTests(TestCase):
         context_usernames = {event["username"] for event in context_package_events}
         self.assertIn("admin", context_usernames)
         self.assertIn("other", context_usernames)
+
+
+class MaintainersEditActivityLogTests(TestCase):
+    def setUp(self) -> None:
+        # Create user and log in
+        self.user = User.objects.create_user(username="admin", password="pw")
+        self.user.is_staff = True
+        self.user.save()
+
+        # Create a GitHub social account for the user
+        SocialAccount.objects.get_or_create(
+            user=self.user,
+            provider="github",
+            uid="123456",
+            extra_data={"login": "admin"},
+        )
+
+        self.client = Client()
+        self.client.login(username="admin", password="pw")
+
+        # Create CVE and related objects
+        self.assigner = Organization.objects.create(uuid=1, short_name="foo")
+        self.cve_record = CveRecord.objects.create(
+            cve_id="CVE-2025-0001",
+            assigner=self.assigner,
+        )
+        self.description = Description.objects.create(value="Test description")
+        self.metric = Metric.objects.create(format="cvssV3_1", raw_cvss_json={})
+        self.affected_product = AffectedProduct.objects.create(
+            package_name="dummy-package"
+        )
+        self.affected_product.versions.add(
+            Version.objects.create(status=Version.Status.AFFECTED, version="1.0")
+        )
+        self.cve_container = self.cve_record.container.create(
+            provider=self.assigner,
+            title="Dummy Title",
+        )
+        self.cve_container.affected.add(self.affected_product)
+        self.cve_container.descriptions.add(self.description)
+        self.cve_container.metrics.add(self.metric)
+
+        # Create maintainers
+        self.existing_maintainer = NixMaintainer.objects.create(
+            github_id=123,
+            github="existinguser",
+            name="Existing User",
+            email="existing@example.com",
+        )
+
+        self.other_maintainer = NixMaintainer.objects.create(
+            github_id=456,
+            github="otheruser",
+            name="Other User",
+            email="other@example.com",
+        )
+
+        # Create metadata and derivation
+        self.meta = NixDerivationMeta.objects.create(
+            description="Dummy derivation",
+            insecure=False,
+            available=True,
+            broken=False,
+            unfree=False,
+            unsupported=False,
+        )
+        self.meta.maintainers.add(self.existing_maintainer)
+
+        # Create evaluation and derivation
+        self.evaluation = NixEvaluation.objects.create(
+            channel=NixChannel.objects.create(
+                staging_branch="release-24.05",
+                channel_branch="nixos-24.05",
+                head_sha1_commit="deadbeef",
+                state=NixChannel.ChannelState.STABLE,
+                release_version="24.05",
+                repository="https://github.com/NixOS/nixpkgs",
+            ),
+            commit_sha1="deadbeef",
+            state=NixEvaluation.EvaluationState.COMPLETED,
+        )
+
+        self.derivation = NixDerivation.objects.create(
+            attribute="dummypackage",
+            derivation_path="/nix/store/dummy.drv",
+            name="dummy-package-1.0",
+            metadata=self.meta,
+            system="x86_64-linux",
+            parent_evaluation=self.evaluation,
+        )
+
+        # Create suggestion and link derivation
+        self.suggestion = CVEDerivationClusterProposal.objects.create(
+            status=CVEDerivationClusterProposal.Status.ACCEPTED,
+            cve_id=self.cve_record.pk,
+        )
+        DerivationClusterProposalLink.objects.create(
+            proposal=self.suggestion,
+            derivation=self.derivation,
+            provenance_flags=ProvenanceFlags.PACKAGE_NAME_MATCH,
+        )
+
+        # Cache the suggestion
+        cache_new_suggestions(self.suggestion)
+        self.suggestion.refresh_from_db()
+
+    def test_maintainer_addition_creates_activity_log_entry(self) -> None:
+        """Test that adding a maintainer creates an activity log entry"""
+        # Add a maintainer that exists in the database but not in the suggestion
+        url = reverse("webview:add_maintainer")
+        response = self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "new_maintainer_github_handle": "otheruser",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the activity log contains the addition event
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        # Should have one event for maintainer addition
+        maintainer_events = [
+            e for e in events if e.get("action", "").startswith("maintainers.")
+        ]
+        self.assertEqual(len(maintainer_events), 1)
+
+        addition_event = maintainer_events[0]
+        self.assertEqual(addition_event["action"], "maintainers.add")
+        self.assertEqual(addition_event["maintainer"]["github"], "otheruser")
+        self.assertEqual(addition_event["maintainer"]["name"], "Other User")
+        self.assertEqual(addition_event["username"], "admin")
+
+        # Check that activity log data is properly sent to the template context
+        response = self.client.get(reverse("webview:drafts_view"))
+        self.assertEqual(response.status_code, 200)
+
+        # Find our suggestion in the context
+        suggestions = response.context["object_list"]
+        our_suggestion = next(
+            (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
+        )
+        self.assertIsNotNone(our_suggestion)
+        assert our_suggestion is not None  # Needed for type checking
+
+        # Verify activity log is attached to the suggestion object
+        self.assertTrue(hasattr(our_suggestion, "activity_log"))
+        self.assertEqual(len(our_suggestion.activity_log), 1)
+
+        # Verify the activity log entry matches what we expect
+        log_entry = our_suggestion.activity_log[0]
+        self.assertEqual(log_entry["action"], "maintainers.add")
+        self.assertEqual(log_entry["maintainer"]["github"], "otheruser")
+        self.assertEqual(log_entry["username"], "admin")
+
+    def test_maintainer_removal_creates_activity_log_entry(self) -> None:
+        """Test that removing a maintainer creates an activity log entry"""
+        # Remove the existing maintainer using SelectableMaintainerView
+        url = reverse("webview:edit_maintainers")
+        response = self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "edit_maintainer_id": str(self.existing_maintainer.github_id),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the activity log contains the removal event
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        # Should have one event for maintainer removal
+        maintainer_events = [
+            e for e in events if e.get("action", "").startswith("maintainers.")
+        ]
+        self.assertEqual(len(maintainer_events), 1)
+
+        removal_event = maintainer_events[0]
+        self.assertEqual(removal_event["action"], "maintainers.remove")
+        self.assertEqual(removal_event["maintainer"]["github"], "existinguser")
+        self.assertEqual(removal_event["maintainer"]["name"], "Existing User")
+        self.assertEqual(removal_event["username"], "admin")
+
+        # Check that activity log data is properly sent to the template context
+        response = self.client.get(reverse("webview:drafts_view"))
+        self.assertEqual(response.status_code, 200)
+
+        # Find our suggestion in the context
+        suggestions = response.context["object_list"]
+        our_suggestion = next(
+            (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
+        )
+        self.assertIsNotNone(our_suggestion)
+        assert our_suggestion is not None  # Needed for type checking
+
+        # Verify activity log is attached to the suggestion object
+        self.assertTrue(hasattr(our_suggestion, "activity_log"))
+        self.assertEqual(len(our_suggestion.activity_log), 1)
+
+        # Verify the activity log entry matches what we expect
+        log_entry = our_suggestion.activity_log[0]
+        self.assertEqual(log_entry["action"], "maintainers.remove")
+        self.assertEqual(log_entry["maintainer"]["github"], "existinguser")
+        self.assertEqual(log_entry["username"], "admin")
+
+    def test_maintainer_restoration_creates_activity_log_entry(self) -> None:
+        """Test that restoring a removed maintainer creates an activity log entry"""
+        # First remove the existing maintainer
+        url = reverse("webview:edit_maintainers")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "edit_maintainer_id": str(self.existing_maintainer.github_id),
+            },
+        )
+
+        # Then restore the maintainer by clicking the button again
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "edit_maintainer_id": str(self.existing_maintainer.github_id),
+            },
+        )
+
+        # Check activity log for both removal and restoration
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        maintainer_events = [
+            e for e in events if e.get("action", "").startswith("maintainers.")
+        ]
+        # Should have two events: removal and restoration (add)
+        self.assertEqual(len(maintainer_events), 2)
+
+        # Events should be ordered by timestamp
+        removal_event = maintainer_events[0]
+        restoration_event = maintainer_events[1]
+
+        self.assertEqual(removal_event["action"], "maintainers.remove")
+        self.assertEqual(removal_event["maintainer"]["github"], "existinguser")
+
+        self.assertEqual(restoration_event["action"], "maintainers.add")
+        self.assertEqual(restoration_event["maintainer"]["github"], "existinguser")
+
+        # Check that activity log data is properly sent to the template context
+        response = self.client.get(reverse("webview:drafts_view"))
+        self.assertEqual(response.status_code, 200)
+
+        # Find our suggestion in the context
+        suggestions = response.context["object_list"]
+        our_suggestion = next(
+            (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
+        )
+        self.assertIsNotNone(our_suggestion)
+        assert our_suggestion is not None  # Needed for type checking
+
+        # Verify activity log is attached and contains both events
+        self.assertTrue(hasattr(our_suggestion, "activity_log"))
+        self.assertEqual(len(our_suggestion.activity_log), 2)
+
+        # Verify the activity log entries match what we expect
+        log_removal = our_suggestion.activity_log[0]
+        log_restoration = our_suggestion.activity_log[1]
+
+        self.assertEqual(log_removal["action"], "maintainers.remove")
+        self.assertEqual(log_removal["maintainer"]["github"], "existinguser")
+
+        self.assertEqual(log_restoration["action"], "maintainers.add")
+        self.assertEqual(log_restoration["maintainer"]["github"], "existinguser")
