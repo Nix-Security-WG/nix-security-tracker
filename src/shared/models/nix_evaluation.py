@@ -322,7 +322,7 @@ class NixDerivation(models.Model):
 
 # Major channels are the important channels that a user wants to keep an eye on.
 # FIXME figure this out dynamically
-MAJOR_CHANNELS = ["23.11", "24.05", "24.11", "unstable"]
+MAJOR_CHANNELS = ["24.11", "25.05", "unstable"]
 
 
 # The major channel that a branch name (e.g. nixpkgs-24.05-darwin) belongs to
