@@ -57,7 +57,7 @@ class Maintainer(TypedDict):
     name: str
     email: str
     github: str
-    matrix: str
+    matrix: str | None
     github_id: int
 
 
