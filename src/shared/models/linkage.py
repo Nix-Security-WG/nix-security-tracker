@@ -1,7 +1,10 @@
 from enum import STRICT, IntFlag, auto
+from typing import Any
 
 import pghistory
 from django.db import models
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
 import shared.models.cached
@@ -63,6 +66,10 @@ class CVEDerivationClusterProposal(TimeStampMixin):
         return issue
 
 
+@pghistory.track(
+    pghistory.ManualEvent("maintainers.add"),
+    pghistory.ManualEvent("maintainers.remove"),
+)
 class MaintainersEdit(models.Model):
     """
     A single manual edit of the list of maintainers of a suggestion.
@@ -119,6 +126,40 @@ class PackageEdit(models.Model):
                 name="unique_package_edit_per_suggestion",
             )
         ]
+
+
+@receiver(post_save, sender=MaintainersEdit)
+def track_maintainers_edit_save(
+    sender: type[MaintainersEdit],
+    instance: MaintainersEdit,
+    created: bool,
+    **kwargs: Any,
+) -> None:
+    if created:
+        label = (
+            "maintainers.add"
+            if instance.edit_type == MaintainersEdit.EditType.ADD
+            else "maintainers.remove"
+        )
+        pghistory.create_event(
+            obj=instance,
+            label=label,
+        )
+
+
+@receiver(post_delete, sender=MaintainersEdit)
+def track_maintainers_edit_delete(
+    sender: type[MaintainersEdit], instance: MaintainersEdit, **kwargs: Any
+) -> None:
+    label = (
+        "maintainers.remove"
+        if instance.edit_type == MaintainersEdit.EditType.ADD
+        else "maintainers.add"
+    )
+    pghistory.create_event(
+        obj=instance,
+        label=label,
+    )
 
 
 class ProvenanceFlags(IntFlag, boundary=STRICT):
