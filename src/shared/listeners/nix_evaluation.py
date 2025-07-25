@@ -46,6 +46,7 @@ async def perform_evaluation(
     nixpkgs_config = "{ config = { allowUnfree = true; inHydra = false; allowInsecurePredicate = (_: true); scrubJobs = false; }; };"
     evaluation_wrapper = f"(import <nixpkgs/pkgs/top-level/release.nix> {{ nixpkgsArgs = {nixpkgs_config} }})"
     arguments = [
+        "--show-input-drvs",
         "--force-recurse",
         "--meta",
         "--repair",
