@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 from unittest.mock import patch
 
@@ -11,6 +12,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from shared.listeners.cache_suggestions import cache_new_suggestions
 from shared.models.cve import (
@@ -618,6 +620,31 @@ class PackageEditActivityLogTests(TestCase):
         cache_new_suggestions(self.suggestion)
         self.suggestion.refresh_from_db()
 
+    def _perform_package_removal_and_restoration(self, delay_seconds: int = 0) -> None:
+        """Helper method to perform package removal and restoration with optional delay."""
+
+        # First remove package2
+        url = reverse("webview:suggestions_view")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "attribute": ["package1"],
+            },
+        )
+
+        with patch(
+            "django.utils.timezone.now",
+            return_value=timezone.now() + timedelta(seconds=delay_seconds),
+        ):
+            self.client.post(
+                url,
+                {
+                    "suggestion_id": self.suggestion.pk,
+                    "attribute": ["package1", "package2"],
+                },
+            )
+
     def test_package_removal_creates_activity_log_entry(self) -> None:
         """Test that removing a package creates an activity log entry"""
         # Remove package2 by only selecting package1
@@ -653,32 +680,63 @@ class PackageEditActivityLogTests(TestCase):
         self.assertEqual(log_entry["package_attribute"], "package2")
         self.assertEqual(log_entry["username"], "admin")
 
-    def test_package_restoration_creates_activity_log_entry(self) -> None:
-        """Test that restoring a package creates an activity log entry"""
-        # First remove package2
-        url = reverse("webview:suggestions_view")
-        self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "attribute": ["package1"],
-            },
-        )
+    def test_package_restoration_within_time_window_cancels_events(self) -> None:
+        """Test that restoring a removed package within time window cancels both events"""
+        self._perform_package_removal_and_restoration(delay_seconds=35)
 
-        # Then restore package2 by including both packages
-        self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "attribute": ["package1", "package2"],
-            },
-        )
+        # Check activity log - events should be cancelled (0 events)
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        package_events = [
+            e for e in events if e.get("action", "").startswith("package.")
+        ]
+        self.assertEqual(len(package_events), 0)  # Events cancelled
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
         self.assertEqual(response.status_code, 200)
 
-        # Find our suggestion in the context
+        suggestions = response.context["object_list"]
+        our_suggestion = next(
+            (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
+        )
+        self.assertIsNotNone(our_suggestion)
+        assert our_suggestion is not None  # Needed for type checking
+
+        # Verify activity log is attached and contains no events
+        self.assertTrue(hasattr(our_suggestion, "activity_log"))
+        self.assertEqual(len(our_suggestion.activity_log), 0)
+
+    def test_package_restoration_outside_time_window_preserves_events(self) -> None:
+        """Test that restoring a removed package outside time window preserves both events"""
+        self._perform_package_removal_and_restoration(
+            delay_seconds=400
+        )  # > 300s threshold
+
+        # Check activity log - events should be preserved (2 events)
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        package_events = [
+            e for e in events if e.get("action", "").startswith("package.")
+        ]
+        self.assertEqual(len(package_events), 2)  # Events preserved
+
+        # Events should be ordered by timestamp
+        removal_event = package_events[0]
+        restoration_event = package_events[1]
+
+        self.assertEqual(removal_event["action"], "package.remove")
+        self.assertEqual(removal_event["package_attribute"], "package2")
+
+        self.assertEqual(restoration_event["action"], "package.add")
+        self.assertEqual(restoration_event["package_attribute"], "package2")
+
+        # Check that activity log data is properly sent to the template context
+        response = self.client.get(reverse("webview:suggestions_view"))
+        self.assertEqual(response.status_code, 200)
+
         suggestions = response.context["object_list"]
         our_suggestion = next(
             (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
@@ -933,6 +991,34 @@ class MaintainersEditActivityLogTests(TestCase):
         cache_new_suggestions(self.suggestion)
         self.suggestion.refresh_from_db()
 
+    def _perform_maintainer_removal_and_restoration(
+        self, delay_seconds: int = 0
+    ) -> None:
+        """Helper method to perform maintainer removal and restoration with optional delay."""
+
+        # First remove the existing maintainer
+        url = reverse("webview:edit_maintainers")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "edit_maintainer_id": str(self.existing_maintainer.github_id),
+            },
+        )
+
+        # Then restore the maintainer by clicking the button again
+        with patch(
+            "django.utils.timezone.now",
+            return_value=timezone.now() + timedelta(seconds=delay_seconds),
+        ):
+            self.client.post(
+                url,
+                {
+                    "suggestion_id": self.suggestion.pk,
+                    "edit_maintainer_id": str(self.existing_maintainer.github_id),
+                },
+            )
+
     def test_maintainer_addition_creates_activity_log_entry(self) -> None:
         """Test that adding a maintainer creates an activity log entry"""
         # Add a maintainer that exists in the database but not in the suggestion
@@ -1003,32 +1089,63 @@ class MaintainersEditActivityLogTests(TestCase):
         self.assertEqual(log_entry["maintainer"]["github"], "existinguser")
         self.assertEqual(log_entry["username"], "admin")
 
-    def test_maintainer_restoration_creates_activity_log_entry(self) -> None:
-        """Test that restoring a removed maintainer creates an activity log entry"""
-        # First remove the existing maintainer
-        url = reverse("webview:edit_maintainers")
-        self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "edit_maintainer_id": str(self.existing_maintainer.github_id),
-            },
-        )
+    def test_maintainer_restoration_within_time_window_cancels_events(self) -> None:
+        """Test that restoring a removed maintainer within time window cancels both events"""
+        self._perform_maintainer_removal_and_restoration(delay_seconds=35)
 
-        # Then restore the maintainer by clicking the button again
-        self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "edit_maintainer_id": str(self.existing_maintainer.github_id),
-            },
-        )
+        # Check activity log - events should be cancelled (0 events)
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        maintainer_events = [
+            e for e in events if e.get("action", "").startswith("maintainers.")
+        ]
+        self.assertEqual(len(maintainer_events), 0)  # Events cancelled
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
         self.assertEqual(response.status_code, 200)
 
-        # Find our suggestion in the context
+        suggestions = response.context["object_list"]
+        our_suggestion = next(
+            (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
+        )
+        self.assertIsNotNone(our_suggestion)
+        assert our_suggestion is not None  # Needed for type checking
+
+        # Verify activity log is attached and contains no events
+        self.assertTrue(hasattr(our_suggestion, "activity_log"))
+        self.assertEqual(len(our_suggestion.activity_log), 0)
+
+    def test_maintainer_restoration_outside_time_window_preserves_events(self) -> None:
+        """Test that restoring a removed maintainer outside time window preserves both events"""
+        self._perform_maintainer_removal_and_restoration(
+            delay_seconds=400
+        )  # > 300s threshold
+
+        # Check activity log - events should be preserved (2 events)
+        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
+        events = activity_log.get(self.suggestion.pk, [])
+
+        maintainer_events = [
+            e for e in events if e.get("action", "").startswith("maintainers.")
+        ]
+        self.assertEqual(len(maintainer_events), 2)  # Events preserved
+
+        # Events should be ordered by timestamp
+        removal_event = maintainer_events[0]
+        restoration_event = maintainer_events[1]
+
+        self.assertEqual(removal_event["action"], "maintainers.remove")
+        self.assertEqual(removal_event["maintainer"]["github"], "existinguser")
+
+        self.assertEqual(restoration_event["action"], "maintainers.add")
+        self.assertEqual(restoration_event["maintainer"]["github"], "existinguser")
+
+        # Check that activity log data is properly sent to the template context
+        response = self.client.get(reverse("webview:drafts_view"))
+        self.assertEqual(response.status_code, 200)
+
         suggestions = response.context["object_list"]
         our_suggestion = next(
             (s for s in suggestions if s.proposal_id == self.suggestion.pk), None
