@@ -55,7 +55,7 @@ class SuggestionActivityLog(TypedDict):
 
 class Maintainer(TypedDict):
     name: str
-    email: str
+    email: str | None
     github: str
     matrix: str | None
     github_id: int
