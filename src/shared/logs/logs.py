@@ -195,7 +195,7 @@ class SuggestionActivityLog:
         events: list[
             PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent
         ],
-        time_threshold_seconds: int = 300,
+        time_threshold_seconds: int = 30,
     ) -> list[PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent]:
         """Remove consecutive events that cancel each other out within a time window."""
 

@@ -682,7 +682,7 @@ class PackageEditActivityLogTests(TestCase):
 
     def test_package_restoration_within_time_window_cancels_events(self) -> None:
         """Test that restoring a removed package within time window cancels both events"""
-        self._perform_package_removal_and_restoration(delay_seconds=35)
+        self._perform_package_removal_and_restoration(delay_seconds=5)
 
         # Check activity log - events should be cancelled (0 events)
         activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
@@ -711,8 +711,8 @@ class PackageEditActivityLogTests(TestCase):
     def test_package_restoration_outside_time_window_preserves_events(self) -> None:
         """Test that restoring a removed package outside time window preserves both events"""
         self._perform_package_removal_and_restoration(
-            delay_seconds=400
-        )  # > 300s threshold
+            delay_seconds=40
+        )  # > 30s threshold
 
         # Check activity log - events should be preserved (2 events)
         activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
@@ -1091,7 +1091,7 @@ class MaintainersEditActivityLogTests(TestCase):
 
     def test_maintainer_restoration_within_time_window_cancels_events(self) -> None:
         """Test that restoring a removed maintainer within time window cancels both events"""
-        self._perform_maintainer_removal_and_restoration(delay_seconds=35)
+        self._perform_maintainer_removal_and_restoration(delay_seconds=5)
 
         # Check activity log - events should be cancelled (0 events)
         activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
@@ -1120,8 +1120,8 @@ class MaintainersEditActivityLogTests(TestCase):
     def test_maintainer_restoration_outside_time_window_preserves_events(self) -> None:
         """Test that restoring a removed maintainer outside time window preserves both events"""
         self._perform_maintainer_removal_and_restoration(
-            delay_seconds=400
-        )  # > 300s threshold
+            delay_seconds=40
+        )  # > 30s threshold
 
         # Check activity log - events should be preserved (2 events)
         activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
