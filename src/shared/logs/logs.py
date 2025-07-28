@@ -73,6 +73,9 @@ class MaintainerChangeEvent(ChangeEvent):
     maintainer: Maintainer
 
 
+ConcreteChangeEvent = PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent
+
+
 class SuggestionActivityLog:
     """
     This class provides a unified view for the activity log entries of a
@@ -120,7 +123,7 @@ class SuggestionActivityLog:
 
     def get_raw_events(
         self, suggestion_ids: list[int | None]
-    ) -> list[PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent]:
+    ) -> list[ConcreteChangeEvent]:
         """
         Combine the different types of events related to a list of suggestions
         in a single list and order them by timestamp. Multiple log entries
@@ -192,11 +195,9 @@ class SuggestionActivityLog:
 
     def _remove_canceling_events(
         self,
-        events: list[
-            PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent
-        ],
+        events: list[ConcreteChangeEvent],
         time_threshold_seconds: int = 30,
-    ) -> list[PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent]:
+    ) -> list[ConcreteChangeEvent]:
         """Remove consecutive events that cancel each other out within a time window."""
 
         filtered_events = []
@@ -217,8 +218,8 @@ class SuggestionActivityLog:
 
     def _events_cancel_each_other(
         self,
-        event1: PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent,
-        event2: PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent,
+        event1: ConcreteChangeEvent,
+        event2: ConcreteChangeEvent,
         time_threshold_seconds: int,
     ) -> bool:
         """Check if two consecutive events cancel each other."""
@@ -268,7 +269,7 @@ class SuggestionActivityLog:
 
         grouped_activity_log: dict[
             int,
-            list[PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent],
+            list[ConcreteChangeEvent],
         ] = {}
 
         for event in filtered_events:
@@ -284,9 +285,7 @@ class SuggestionActivityLog:
         folded_activity_log: dict[int, list[dict[str, Any]]] = {}
 
         for suggestion_id, events in grouped_activity_log.items():
-            suggestion_log: list[
-                PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent
-            ] = []
+            suggestion_log: list[ConcreteChangeEvent] = []
 
             accumulator = None
             for event in events:
