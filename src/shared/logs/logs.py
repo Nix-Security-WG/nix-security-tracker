@@ -1,6 +1,5 @@
-import logging
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -15,15 +14,16 @@ from django.db.models import (
     When,
 )
 from django.db.models.functions import Cast, Coalesce, Concat, JSONObject, Replace
+from django.forms.models import model_to_dict
 from pghistory.models import EventQuerySet
 from pydantic import BaseModel
 
 from shared.models import (
     CVEDerivationClusterProposalStatusEvent,  # type: ignore
     DerivationClusterProposalLinkEvent,  # type: ignore
+    MaintainersEditEvent,  # type: ignore
 )
-
-logger = logging.getLogger(__name__)
+from webview.templatetags.viewutils import Maintainer
 
 
 class ChangeEvent(BaseModel):
@@ -68,6 +68,15 @@ class PackageChangeEvent(ChangeEvent):
     action: Literal["derivations.add", "derivations.remove"]
     package_count: int
     package_names: list[PackageData]
+
+
+class MaintainerChangeEvent(ChangeEvent):
+    """
+    A maintainer change event for a suggestion.
+    """
+
+    action: Literal["maintainers.add", "maintainers.remove"]
+    maintainer: Maintainer
 
 
 class SuggestionActivityLog:
@@ -188,6 +197,27 @@ class SuggestionActivityLog:
                     action=package_event.pgh_label,
                     package_names=package_event.package_names,
                     package_count=package_event.package_count,
+                )
+            )
+
+        maintainer_qs = self._annotate_username(
+            MaintainersEditEvent.objects.prefetch_related(
+                "pgh_context", "maintainer"
+            ).filter(suggestion__in=suggestion_ids)
+        )
+
+        for maintainer_event in maintainer_qs.all().iterator():
+            raw_events.append(
+                MaintainerChangeEvent(
+                    suggestion_id=maintainer_event.suggestion.id,
+                    timestamp=maintainer_event.pgh_created_at,
+                    username=maintainer_event.username,
+                    action=maintainer_event.pgh_label,
+                    # TODO: we should use Pydantic model for maintainers and
+                    # friends as well, at some point
+                    maintainer=cast(
+                        Maintainer, model_to_dict(maintainer_event.maintainer)
+                    ),
                 )
             )
 
