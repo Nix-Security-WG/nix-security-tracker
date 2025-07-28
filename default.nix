@@ -100,7 +100,8 @@ rec {
         pkgs.awscli
         (import sources.agenix { inherit pkgs; }).agenix
         format
-      ] ++ git-hooks.enabledPackages;
+      ]
+      ++ git-hooks.enabledPackages;
 
       shellHook = ''
         ${(pkgs.pre-commit-hooks {

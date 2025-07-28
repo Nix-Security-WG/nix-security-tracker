@@ -182,17 +182,16 @@ in
 
       nginx.enable = true;
       nginx.virtualHosts = {
-        ${cfg.domain} =
-          {
-            locations = {
-              "/".proxyPass = "http://localhost:${toString cfg.wsgi-port}";
-              "/static/".alias = cfg.env.STATIC_ROOT;
-            };
-          }
-          // lib.optionalAttrs cfg.production {
-            enableACME = true;
-            forceSSL = true;
+        ${cfg.domain} = {
+          locations = {
+            "/".proxyPass = "http://localhost:${toString cfg.wsgi-port}";
+            "/static/".alias = cfg.env.STATIC_ROOT;
           };
+        }
+        // lib.optionalAttrs cfg.production {
+          enableACME = true;
+          forceSSL = true;
+        };
       };
 
       postgresql.enable = true;
