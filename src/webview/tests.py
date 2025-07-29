@@ -620,31 +620,6 @@ class PackageEditActivityLogTests(TestCase):
         cache_new_suggestions(self.suggestion)
         self.suggestion.refresh_from_db()
 
-    def _perform_package_removal_and_restoration(self, delay_seconds: int = 0) -> None:
-        """Helper method to perform package removal and restoration with optional delay."""
-
-        # First remove package2
-        url = reverse("webview:suggestions_view")
-        self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "attribute": ["package1"],
-            },
-        )
-
-        with patch(
-            "django.utils.timezone.now",
-            return_value=timezone.now() + timedelta(seconds=delay_seconds),
-        ):
-            self.client.post(
-                url,
-                {
-                    "suggestion_id": self.suggestion.pk,
-                    "attribute": ["package1", "package2"],
-                },
-            )
-
     def test_package_removal_creates_activity_log_entry(self) -> None:
         """Test that removing a package creates an activity log entry"""
         # Remove package2 by only selecting package1
@@ -682,7 +657,27 @@ class PackageEditActivityLogTests(TestCase):
 
     def test_package_restoration_within_time_window_cancels_events(self) -> None:
         """Test that restoring a removed package within time window cancels both events"""
-        self._perform_package_removal_and_restoration(delay_seconds=5)
+
+        url = reverse("webview:suggestions_view")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "attribute": ["package1"],
+            },
+        )
+
+        with patch(
+            "django.utils.timezone.now",
+            return_value=timezone.now() + timedelta(seconds=5),
+        ):
+            self.client.post(
+                url,
+                {
+                    "suggestion_id": self.suggestion.pk,
+                    "attribute": ["package1", "package2"],
+                },
+            )
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
@@ -701,9 +696,26 @@ class PackageEditActivityLogTests(TestCase):
 
     def test_package_restoration_outside_time_window_preserves_events(self) -> None:
         """Test that restoring a removed package outside time window preserves both events"""
-        self._perform_package_removal_and_restoration(
-            delay_seconds=40
-        )  # > 30s threshold
+        url = reverse("webview:suggestions_view")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "attribute": ["package1"],
+            },
+        )
+
+        with patch(
+            "django.utils.timezone.now",
+            return_value=timezone.now() + timedelta(seconds=40),
+        ):
+            self.client.post(
+                url,
+                {
+                    "suggestion_id": self.suggestion.pk,
+                    "attribute": ["package1", "package2"],
+                },
+            )
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
@@ -963,34 +975,6 @@ class MaintainersEditActivityLogTests(TestCase):
         cache_new_suggestions(self.suggestion)
         self.suggestion.refresh_from_db()
 
-    def _perform_maintainer_removal_and_restoration(
-        self, delay_seconds: int = 0
-    ) -> None:
-        """Helper method to perform maintainer removal and restoration with optional delay."""
-
-        # First remove the existing maintainer
-        url = reverse("webview:edit_maintainers")
-        self.client.post(
-            url,
-            {
-                "suggestion_id": self.suggestion.pk,
-                "edit_maintainer_id": str(self.existing_maintainer.github_id),
-            },
-        )
-
-        # Then restore the maintainer by clicking the button again
-        with patch(
-            "django.utils.timezone.now",
-            return_value=timezone.now() + timedelta(seconds=delay_seconds),
-        ):
-            self.client.post(
-                url,
-                {
-                    "suggestion_id": self.suggestion.pk,
-                    "edit_maintainer_id": str(self.existing_maintainer.github_id),
-                },
-            )
-
     def test_maintainer_addition_creates_activity_log_entry(self) -> None:
         """Test that adding a maintainer creates an activity log entry"""
         # Add a maintainer that exists in the database but not in the suggestion
@@ -1063,7 +1047,29 @@ class MaintainersEditActivityLogTests(TestCase):
 
     def test_maintainer_restoration_within_time_window_cancels_events(self) -> None:
         """Test that restoring a removed maintainer within time window cancels both events"""
-        self._perform_maintainer_removal_and_restoration(delay_seconds=5)
+
+        # First remove the existing maintainer
+        url = reverse("webview:edit_maintainers")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "edit_maintainer_id": str(self.existing_maintainer.github_id),
+            },
+        )
+
+        # Then restore the maintainer by clicking the button again
+        with patch(
+            "django.utils.timezone.now",
+            return_value=timezone.now() + timedelta(seconds=5),
+        ):
+            self.client.post(
+                url,
+                {
+                    "suggestion_id": self.suggestion.pk,
+                    "edit_maintainer_id": str(self.existing_maintainer.github_id),
+                },
+            )
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
@@ -1082,9 +1088,28 @@ class MaintainersEditActivityLogTests(TestCase):
 
     def test_maintainer_restoration_outside_time_window_preserves_events(self) -> None:
         """Test that restoring a removed maintainer outside time window preserves both events"""
-        self._perform_maintainer_removal_and_restoration(
-            delay_seconds=40
-        )  # > 30s threshold
+        # First remove the existing maintainer
+        url = reverse("webview:edit_maintainers")
+        self.client.post(
+            url,
+            {
+                "suggestion_id": self.suggestion.pk,
+                "edit_maintainer_id": str(self.existing_maintainer.github_id),
+            },
+        )
+
+        # Then restore the maintainer by clicking the button again
+        with patch(
+            "django.utils.timezone.now",
+            return_value=timezone.now() + timedelta(seconds=40),
+        ):
+            self.client.post(
+                url,
+                {
+                    "suggestion_id": self.suggestion.pk,
+                    "edit_maintainer_id": str(self.existing_maintainer.github_id),
+                },
+            )
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
