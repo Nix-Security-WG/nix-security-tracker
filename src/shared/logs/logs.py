@@ -76,6 +76,14 @@ class MaintainerChangeEvent(ChangeEvent):
 ConcreteChangeEvent = PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent
 
 
+# TODO It would be interesting to consider ActivityLog, a collection of log
+# events, rather than SuggestionActivityLog. Features such as hiding events
+# that cancel each other in a short time span, or aggregating events of the
+# same time, would work the same anyway. A hypothetical ActivityLog would be
+# constructed from the raw results of a targeted database query (for instance
+# all events, all events of a given suggestion (this), all events of a given
+# user, etc). This should be considered when we want to implement new features
+# such as user logs, or global logs.
 class SuggestionActivityLog:
     """
     This class provides a unified view for the activity log entries of a
@@ -193,6 +201,9 @@ class SuggestionActivityLog:
 
         return sorted(raw_events, key=lambda event: event.timestamp)
 
+    # NOTE This method conceptually belong to a more general ActivityLog class,
+    # not necessarily SuggestionActivityLog, see the note on the class
+    # definition
     def _remove_canceling_events(
         self,
         events: list[ConcreteChangeEvent],
@@ -216,6 +227,9 @@ class SuggestionActivityLog:
 
         return filtered_events
 
+    # NOTE This method conceptually belong to a more general ActivityLog class,
+    # not necessarily SuggestionActivityLog, see the note on the class
+    # definition
     def _events_cancel_each_other(
         self,
         event1: ConcreteChangeEvent,
