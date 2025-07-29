@@ -73,6 +73,17 @@ class MaintainerChangeEvent(ChangeEvent):
     maintainer: Maintainer
 
 
+ConcreteChangeEvent = PackageChangeEvent | SuggestionChangeEvent | MaintainerChangeEvent
+
+
+# TODO It would be interesting to consider ActivityLog, a collection of log
+# events, rather than SuggestionActivityLog. Features such as hiding events
+# that cancel each other in a short time span, or aggregating events of the
+# same time, would work the same anyway. A hypothetical ActivityLog would be
+# constructed from the raw results of a targeted database query (for instance
+# all events, all events of a given suggestion (this), all events of a given
+# user, etc). This should be considered when we want to implement new features
+# such as user logs, or global logs.
 class SuggestionActivityLog:
     """
     This class provides a unified view for the activity log entries of a
@@ -120,7 +131,7 @@ class SuggestionActivityLog:
 
     def get_raw_events(
         self, suggestion_ids: list[int | None]
-    ) -> list[PackageChangeEvent | SuggestionChangeEvent]:
+    ) -> list[ConcreteChangeEvent]:
         """
         Combine the different types of events related to a list of suggestions
         in a single list and order them by timestamp. Multiple log entries
@@ -190,6 +201,72 @@ class SuggestionActivityLog:
 
         return sorted(raw_events, key=lambda event: event.timestamp)
 
+    # NOTE This method conceptually belong to a more general ActivityLog class,
+    # not necessarily SuggestionActivityLog, see the note on the class
+    # definition
+    def _remove_canceling_events(
+        self,
+        events: list[ConcreteChangeEvent],
+        time_threshold_seconds: int = 30,
+    ) -> list[ConcreteChangeEvent]:
+        """Remove consecutive events that cancel each other out within a time window."""
+
+        filtered_events = []
+        i = 0
+
+        while i < len(events):
+            if i + 1 < len(events) and self._events_cancel_each_other(
+                events[i], events[i + 1], time_threshold_seconds
+            ):
+                # Skip both events
+                i += 2
+            else:
+                # Keep this event
+                filtered_events.append(events[i])
+                i += 1
+
+        return filtered_events
+
+    # NOTE This method conceptually belong to a more general ActivityLog class,
+    # not necessarily SuggestionActivityLog, see the note on the class
+    # definition
+    def _events_cancel_each_other(
+        self,
+        event1: ConcreteChangeEvent,
+        event2: ConcreteChangeEvent,
+        time_threshold_seconds: int,
+    ) -> bool:
+        """Check if two consecutive events cancel each other."""
+        # Same user, same suggestion, within time threshold
+        if (
+            event1.username != event2.username
+            or event1.suggestion_id != event2.suggestion_id
+            or (event2.timestamp - event1.timestamp).total_seconds()
+            > time_threshold_seconds
+        ):
+            return False
+
+        # Check for canceling pairs
+        if isinstance(event1, MaintainerChangeEvent) and isinstance(
+            event2, MaintainerChangeEvent
+        ):
+            return event1.maintainer["github_id"] == event2.maintainer[
+                "github_id"
+            ] and {event1.action, event2.action} == {
+                "maintainers.add",
+                "maintainers.remove",
+            }
+
+        if isinstance(event1, PackageChangeEvent) and isinstance(
+            event2, PackageChangeEvent
+        ):
+            return event1.package_attribute == event2.package_attribute and {
+                event1.action,
+                event2.action,
+            } == {"package.add", "package.remove"}
+
+        return False
+
     def get_dict(
         self, suggestion_ids: list[int | None]
     ) -> dict[int, list[dict[str, Any]]]:
@@ -201,11 +278,15 @@ class SuggestionActivityLog:
 
         raw_events = self.get_raw_events(suggestion_ids)
 
+        # Cancellation pass - remove events that cancel each other within a given time window (5 min by default)
+        filtered_events = self._remove_canceling_events(raw_events)
+
         grouped_activity_log: dict[
-            int, list[PackageChangeEvent | SuggestionChangeEvent]
+            int,
+            list[ConcreteChangeEvent],
         ] = {}
 
-        for event in raw_events:
+        for event in filtered_events:
             suggestion_id = event.suggestion_id
 
             if suggestion_id in grouped_activity_log:
@@ -218,7 +299,7 @@ class SuggestionActivityLog:
         folded_activity_log: dict[int, list[dict[str, Any]]] = {}
 
         for suggestion_id, events in grouped_activity_log.items():
-            suggestion_log: list[PackageChangeEvent | SuggestionChangeEvent] = []
+            suggestion_log: list[ConcreteChangeEvent] = []
 
             accumulator = None
             for event in events:
