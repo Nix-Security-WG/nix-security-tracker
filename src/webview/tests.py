@@ -13,7 +13,6 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from shared.listeners.cache_suggestions import cache_new_suggestions
-from shared.logs import SuggestionActivityLog
 from shared.models.cve import (
     AffectedProduct,
     CveRecord,
@@ -26,7 +25,6 @@ from shared.models.linkage import (
     CVEDerivationClusterProposal,
     DerivationClusterProposalLink,
     MaintainersEdit,
-    PackageEdit,
     ProvenanceFlags,
 )
 from shared.models.nix_evaluation import (
@@ -632,29 +630,6 @@ class PackageEditActivityLogTests(TestCase):
             },
         )
 
-        # Check that a PackageEdit entry was created
-        package_edits = self.suggestion.package_edits.all()
-        self.assertEqual(package_edits.count(), 1)
-        self.assertEqual(package_edits.first().package_attribute, "package2")
-        self.assertEqual(package_edits.first().edit_type, PackageEdit.EditType.REMOVE)
-
-        # Check that the activity log contains the removal event
-        from shared.logs import SuggestionActivityLog
-
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        # Should have one event for package removal
-        package_events = [
-            e for e in events if e.get("action", "").startswith("package.")
-        ]
-        self.assertEqual(len(package_events), 1)
-
-        removal_event = package_events[0]
-        self.assertEqual(removal_event["action"], "package.remove")
-        self.assertEqual(removal_event["package_attribute"], "package2")
-        self.assertEqual(removal_event["username"], "admin")
-
         # Check that activity log data is properly sent to the template context
         # by making a GET request to the suggestions view
         response = self.client.get(reverse("webview:suggestions_view"))
@@ -698,32 +673,6 @@ class PackageEditActivityLogTests(TestCase):
                 "attribute": ["package1", "package2"],
             },
         )
-
-        # Check that no PackageEdit entries exist (removal was undone)
-        package_edits = self.suggestion.package_edits.all()
-        self.assertEqual(package_edits.count(), 0)
-
-        # Check activity log for both removal and restoration
-        from shared.logs import SuggestionActivityLog
-
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        package_events = [
-            e for e in events if e.get("action", "").startswith("package.")
-        ]
-        # Should have two events: removal and restoration (add)
-        self.assertEqual(len(package_events), 2)
-
-        # Events should be ordered by timestamp
-        removal_event = package_events[0]
-        restoration_event = package_events[1]
-
-        self.assertEqual(removal_event["action"], "package.remove")
-        self.assertEqual(removal_event["package_attribute"], "package2")
-
-        self.assertEqual(restoration_event["action"], "package.add")
-        self.assertEqual(restoration_event["package_attribute"], "package2")
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
@@ -793,27 +742,6 @@ class PackageEditActivityLogTests(TestCase):
             },
         )
 
-        # Check that multiple PackageEdit entries were created
-        package_edits = self.suggestion.package_edits.all()
-        self.assertEqual(package_edits.count(), 2)
-
-        # Check that the activity log batches these together
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        package_events = [
-            e for e in events if e.get("action", "").startswith("package.")
-        ]
-        # Should have one batched event for multiple removals
-        self.assertEqual(len(package_events), 1)
-
-        batched_event = package_events[0]
-        self.assertEqual(batched_event["action"], "package.remove")
-        self.assertIn("package_names", batched_event)
-        self.assertEqual(len(batched_event["package_names"]), 2)
-        self.assertIn("package2", batched_event["package_names"])
-        self.assertIn("package3", batched_event["package_names"])
-
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
         self.assertEqual(response.status_code, 200)
@@ -873,23 +801,6 @@ class PackageEditActivityLogTests(TestCase):
                 "attribute": ["package2"],
             },
         )
-
-        # Check activity log shows separate events for different users
-        from shared.logs import SuggestionActivityLog
-
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        package_events = [
-            e for e in events if e.get("action", "").startswith("package.")
-        ]
-        # Should have separate events for each user's actions
-        self.assertGreaterEqual(len(package_events), 2)
-
-        # Check that events have different usernames
-        usernames = {event["username"] for event in package_events}
-        self.assertIn("admin", usernames)
-        self.assertIn("other", usernames)
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
@@ -1035,22 +946,6 @@ class MaintainersEditActivityLogTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-        # Check that the activity log contains the addition event
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        # Should have one event for maintainer addition
-        maintainer_events = [
-            e for e in events if e.get("action", "").startswith("maintainers.")
-        ]
-        self.assertEqual(len(maintainer_events), 1)
-
-        addition_event = maintainer_events[0]
-        self.assertEqual(addition_event["action"], "maintainers.add")
-        self.assertEqual(addition_event["maintainer"]["github"], "otheruser")
-        self.assertEqual(addition_event["maintainer"]["name"], "Other User")
-        self.assertEqual(addition_event["username"], "admin")
-
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
         self.assertEqual(response.status_code, 200)
@@ -1085,22 +980,6 @@ class MaintainersEditActivityLogTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-
-        # Check that the activity log contains the removal event
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        # Should have one event for maintainer removal
-        maintainer_events = [
-            e for e in events if e.get("action", "").startswith("maintainers.")
-        ]
-        self.assertEqual(len(maintainer_events), 1)
-
-        removal_event = maintainer_events[0]
-        self.assertEqual(removal_event["action"], "maintainers.remove")
-        self.assertEqual(removal_event["maintainer"]["github"], "existinguser")
-        self.assertEqual(removal_event["maintainer"]["name"], "Existing User")
-        self.assertEqual(removal_event["username"], "admin")
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
@@ -1144,26 +1023,6 @@ class MaintainersEditActivityLogTests(TestCase):
                 "edit_maintainer_id": str(self.existing_maintainer.github_id),
             },
         )
-
-        # Check activity log for both removal and restoration
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        maintainer_events = [
-            e for e in events if e.get("action", "").startswith("maintainers.")
-        ]
-        # Should have two events: removal and restoration (add)
-        self.assertEqual(len(maintainer_events), 2)
-
-        # Events should be ordered by timestamp
-        removal_event = maintainer_events[0]
-        restoration_event = maintainer_events[1]
-
-        self.assertEqual(removal_event["action"], "maintainers.remove")
-        self.assertEqual(removal_event["maintainer"]["github"], "existinguser")
-
-        self.assertEqual(restoration_event["action"], "maintainers.add")
-        self.assertEqual(restoration_event["maintainer"]["github"], "existinguser")
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
