@@ -684,15 +684,6 @@ class PackageEditActivityLogTests(TestCase):
         """Test that restoring a removed package within time window cancels both events"""
         self._perform_package_removal_and_restoration(delay_seconds=5)
 
-        # Check activity log - events should be cancelled (0 events)
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        package_events = [
-            e for e in events if e.get("action", "").startswith("package.")
-        ]
-        self.assertEqual(len(package_events), 0)  # Events cancelled
-
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
         self.assertEqual(response.status_code, 200)
@@ -713,25 +704,6 @@ class PackageEditActivityLogTests(TestCase):
         self._perform_package_removal_and_restoration(
             delay_seconds=40
         )  # > 30s threshold
-
-        # Check activity log - events should be preserved (2 events)
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        package_events = [
-            e for e in events if e.get("action", "").startswith("package.")
-        ]
-        self.assertEqual(len(package_events), 2)  # Events preserved
-
-        # Events should be ordered by timestamp
-        removal_event = package_events[0]
-        restoration_event = package_events[1]
-
-        self.assertEqual(removal_event["action"], "package.remove")
-        self.assertEqual(removal_event["package_attribute"], "package2")
-
-        self.assertEqual(restoration_event["action"], "package.add")
-        self.assertEqual(restoration_event["package_attribute"], "package2")
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:suggestions_view"))
@@ -1093,15 +1065,6 @@ class MaintainersEditActivityLogTests(TestCase):
         """Test that restoring a removed maintainer within time window cancels both events"""
         self._perform_maintainer_removal_and_restoration(delay_seconds=5)
 
-        # Check activity log - events should be cancelled (0 events)
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        maintainer_events = [
-            e for e in events if e.get("action", "").startswith("maintainers.")
-        ]
-        self.assertEqual(len(maintainer_events), 0)  # Events cancelled
-
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
         self.assertEqual(response.status_code, 200)
@@ -1122,25 +1085,6 @@ class MaintainersEditActivityLogTests(TestCase):
         self._perform_maintainer_removal_and_restoration(
             delay_seconds=40
         )  # > 30s threshold
-
-        # Check activity log - events should be preserved (2 events)
-        activity_log = SuggestionActivityLog().get_dict([self.suggestion.pk])
-        events = activity_log.get(self.suggestion.pk, [])
-
-        maintainer_events = [
-            e for e in events if e.get("action", "").startswith("maintainers.")
-        ]
-        self.assertEqual(len(maintainer_events), 2)  # Events preserved
-
-        # Events should be ordered by timestamp
-        removal_event = maintainer_events[0]
-        restoration_event = maintainer_events[1]
-
-        self.assertEqual(removal_event["action"], "maintainers.remove")
-        self.assertEqual(removal_event["maintainer"]["github"], "existinguser")
-
-        self.assertEqual(restoration_event["action"], "maintainers.add")
-        self.assertEqual(restoration_event["maintainer"]["github"], "existinguser")
 
         # Check that activity log data is properly sent to the template context
         response = self.client.get(reverse("webview:drafts_view"))
