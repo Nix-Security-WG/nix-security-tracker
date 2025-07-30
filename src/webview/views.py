@@ -11,7 +11,9 @@ from django.urls import reverse
 from shared.github import create_gh_issue, fetch_user_info
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import apply_package_edits, maintainers_list
-from shared.logs import SuggestionActivityLog
+from shared.logs.collections import EventCollection
+from shared.logs.folding import FoldedEventCollection
+from shared.logs.raw_events import EventFetcher
 from shared.models.cached import CachedSuggestions
 
 if typing.TYPE_CHECKING:
@@ -521,16 +523,13 @@ class SuggestionListView(ListView):
 
         context["status_filter"] = self.status_filter
 
-        suggestion_ids = [obj.proposal_id for obj in context["object_list"]]
-
-        grouped_activity_log = SuggestionActivityLog().get_dict(
-            suggestion_ids=suggestion_ids
-        )
-
+        fetcher = EventFetcher()
         for obj in context["object_list"]:
-            obj.activity_log = []
-            if obj.proposal_id in grouped_activity_log:
-                obj.activity_log = grouped_activity_log[obj.proposal_id]
+            raw_events = fetcher.fetch_suggestion_events(obj.proposal_id)
+            collection = EventCollection(raw_events)
+            filtered_collection = collection.remove_canceling_events()
+            folded_collection = FoldedEventCollection(filtered_collection)
+            obj.activity_log = folded_collection
 
         context["adjusted_elided_page_range"] = context[
             "paginator"
@@ -560,11 +559,14 @@ class SuggestionListView(ListView):
         new_status = request.POST.get("new_status")
         current_page = request.POST.get("page", "1")
         suggestion = get_object_or_404(CVEDerivationClusterProposal, id=suggestion_id)
-        activity_log = (
-            SuggestionActivityLog()
-            .get_dict(suggestion_ids=[suggestion.pk])
-            .get(suggestion.pk, [])
-        )
+
+        # Activity log
+        event_fetcher = EventFetcher()
+        raw_events = event_fetcher.fetch_suggestion_events(suggestion.pk)
+        collection = EventCollection(raw_events)
+        filtered_collection = collection.remove_canceling_events()
+        activity_log = FoldedEventCollection(filtered_collection)
+
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id
         )
