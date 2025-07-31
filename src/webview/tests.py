@@ -651,9 +651,9 @@ class PackageEditActivityLogTests(TestCase):
 
         # Verify the activity log entry matches what we expect
         log_entry = our_suggestion.activity_log[0]
-        self.assertEqual(log_entry["action"], "package.remove")
-        self.assertEqual(log_entry["package_attribute"], "package2")
-        self.assertEqual(log_entry["username"], "admin")
+        self.assertEqual(log_entry.action, "package.remove")
+        self.assertEqual(log_entry.package_names[0], "package2")
+        self.assertEqual(log_entry.username, "admin")
 
     def test_package_restoration_within_time_window_cancels_events(self) -> None:
         """Test that restoring a removed package within time window cancels both events"""
@@ -736,11 +736,11 @@ class PackageEditActivityLogTests(TestCase):
         log_removal = our_suggestion.activity_log[0]
         log_restoration = our_suggestion.activity_log[1]
 
-        self.assertEqual(log_removal["action"], "package.remove")
-        self.assertEqual(log_removal["package_attribute"], "package2")
+        self.assertEqual(log_removal.action, "package.remove")
+        self.assertEqual(log_removal.package_names[0], "package2")
 
-        self.assertEqual(log_restoration["action"], "package.add")
-        self.assertEqual(log_restoration["package_attribute"], "package2")
+        self.assertEqual(log_restoration.action, "package.add")
+        self.assertEqual(log_restoration.package_names[0], "package2")
 
     def test_multiple_package_edits_are_batched_in_activity_log(self) -> None:
         """Test that multiple package edits by the same user are batched together"""
@@ -802,11 +802,10 @@ class PackageEditActivityLogTests(TestCase):
 
         # Verify the batched activity log entry matches what we expect
         log_entry = our_suggestion.activity_log[0]
-        self.assertEqual(log_entry["action"], "package.remove")
-        self.assertIn("package_names", log_entry)
-        self.assertEqual(len(log_entry["package_names"]), 2)
-        self.assertIn("package2", log_entry["package_names"])
-        self.assertIn("package3", log_entry["package_names"])
+        self.assertEqual(log_entry.action, "package.remove")
+        self.assertEqual(len(log_entry.package_names), 2)
+        self.assertIn("package2", log_entry.package_names)
+        self.assertIn("package3", log_entry.package_names)
 
     def test_package_edits_by_different_users_not_batched(self) -> None:
         """Test that package edits by different users are not batched together"""
@@ -864,9 +863,9 @@ class PackageEditActivityLogTests(TestCase):
         context_package_events = [
             e
             for e in our_suggestion.activity_log
-            if e.get("action", "").startswith("package.")
+            if hasattr(e, "action") and e.action.startswith("package.")
         ]
-        context_usernames = {event["username"] for event in context_package_events}
+        context_usernames = {event.username for event in context_package_events}
         self.assertIn("admin", context_usernames)
         self.assertIn("other", context_usernames)
 
@@ -1006,9 +1005,9 @@ class MaintainersEditActivityLogTests(TestCase):
 
         # Verify the activity log entry matches what we expect
         log_entry = our_suggestion.activity_log[0]
-        self.assertEqual(log_entry["action"], "maintainers.add")
-        self.assertEqual(log_entry["maintainer"]["github"], "otheruser")
-        self.assertEqual(log_entry["username"], "admin")
+        self.assertEqual(log_entry.action, "maintainers.add")
+        self.assertEqual(log_entry.maintainers[0]["github"], "otheruser")
+        self.assertEqual(log_entry.username, "admin")
 
     def test_maintainer_removal_creates_activity_log_entry(self) -> None:
         """Test that removing a maintainer creates an activity log entry"""
@@ -1041,9 +1040,9 @@ class MaintainersEditActivityLogTests(TestCase):
 
         # Verify the activity log entry matches what we expect
         log_entry = our_suggestion.activity_log[0]
-        self.assertEqual(log_entry["action"], "maintainers.remove")
-        self.assertEqual(log_entry["maintainer"]["github"], "existinguser")
-        self.assertEqual(log_entry["username"], "admin")
+        self.assertEqual(log_entry.action, "maintainers.remove")
+        self.assertEqual(log_entry.maintainers[0]["github"], "existinguser")
+        self.assertEqual(log_entry.username, "admin")
 
     def test_maintainer_restoration_within_time_window_cancels_events(self) -> None:
         """Test that restoring a removed maintainer within time window cancels both events"""
@@ -1130,8 +1129,8 @@ class MaintainersEditActivityLogTests(TestCase):
         log_removal = our_suggestion.activity_log[0]
         log_restoration = our_suggestion.activity_log[1]
 
-        self.assertEqual(log_removal["action"], "maintainers.remove")
-        self.assertEqual(log_removal["maintainer"]["github"], "existinguser")
+        self.assertEqual(log_removal.action, "maintainers.remove")
+        self.assertEqual(log_removal.maintainers[0]["github"], "existinguser")
 
-        self.assertEqual(log_restoration["action"], "maintainers.add")
-        self.assertEqual(log_restoration["maintainer"]["github"], "existinguser")
+        self.assertEqual(log_restoration.action, "maintainers.add")
+        self.assertEqual(log_restoration.maintainers[0]["github"], "existinguser")
