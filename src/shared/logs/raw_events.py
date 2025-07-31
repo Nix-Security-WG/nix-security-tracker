@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Literal, TypedDict, cast
 
@@ -23,28 +24,33 @@ from shared.models import (
 )
 
 
-class RawEvent(BaseModel):
+class RawEvent(BaseModel, ABC):
     """Base class for raw events from the database."""
 
     suggestion_id: int
     timestamp: datetime
     username: str
 
+    @abstractmethod
     def is_canceled_by(
         self, other: "RawEvent", time_threshold_seconds: int = 30
     ) -> bool:
-        """Check if this event is canceled by another event."""
-        # Same user, same suggestion, within time threshold
-        if (
-            self.username != other.username
-            or self.suggestion_id != other.suggestion_id
-            or (other.timestamp - self.timestamp).total_seconds()
-            > time_threshold_seconds
-        ):
-            return False
+        """Check if this event is canceled by another event.
 
-        # Default implementation - subclasses can override for specific logic
-        return False
+        Must be implemented by subclasses to define specific cancellation logic.
+        """
+        pass
+
+    def _basic_cancellation_check(
+        self, other: "RawEvent", time_threshold_seconds: int = 30
+    ) -> bool:
+        """Helper method for common cancellation checks."""
+        return (
+            self.username == other.username
+            and self.suggestion_id == other.suggestion_id
+            and (other.timestamp - self.timestamp).total_seconds()
+            <= time_threshold_seconds
+        )
 
 
 class RawStatusEvent(RawEvent):
@@ -70,7 +76,7 @@ class RawPackageEvent(RawEvent):
         self, other: "RawEvent", time_threshold_seconds: int = 30
     ) -> bool:
         """Check if this package event is canceled by another package event."""
-        if not super().is_canceled_by(other, time_threshold_seconds):
+        if not self._basic_cancellation_check(other, time_threshold_seconds):
             return False
 
         if isinstance(other, RawPackageEvent):
@@ -100,7 +106,7 @@ class RawMaintainerEvent(RawEvent):
         self, other: "RawEvent", time_threshold_seconds: int = 30
     ) -> bool:
         """Check if this maintainer event is canceled by another maintainer event."""
-        if not super().is_canceled_by(other, time_threshold_seconds):
+        if not self._basic_cancellation_check(other, time_threshold_seconds):
             return False
 
         if isinstance(other, RawMaintainerEvent):
