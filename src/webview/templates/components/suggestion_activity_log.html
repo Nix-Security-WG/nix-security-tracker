@@ -8,7 +8,7 @@
 >
   <summary class="main-summary">
     <span class="title-when-closed">
-      {% with last_entry=activity_log|last_entry %}
+      {% with last_entry=activity_log|last %}
         <span class="activity-log-timestamp">
           updated {{ last_entry.timestamp|naturaltime }}
         </span>
@@ -38,7 +38,7 @@
             removed
           {% endif %}
           {% if log_entry.package_names|length == 1 %}
-            package <strong>{{ log_entry.package_attribute }}</strong>
+            package <strong>{{ log_entry.package_names.0 }}</strong>
           {% else %}
             <details class="package-summary">
               <summary class="package-summary-title">
@@ -53,13 +53,25 @@
           {% endif %}
         {% elif "maintainers." in log_entry.action %}
         {# Maintainers edit entry #}
-          {% if ".add" in log_entry.action %}
-            added
-          {% else %}
-            removed
-          {% endif %}
-          maintainer
-          <strong>@{{ log_entry.maintainer.github }}</strong>
+        {% if ".add" in log_entry.action %}
+          added
+        {% else %}
+          removed
+        {% endif %}
+        {% if log_entry.maintainers|length == 1 %}
+          maintainer <strong>@{{ log_entry.maintainers.0.github }}</strong>
+        {% else %}
+          <details class="maintainer-summary">
+            <summary class="maintainer-summary-title">
+              {{ log_entry.maintainers|length }} maintainers
+            </summary>
+            <ul class="maintainer-summary-listing">
+              {% for maintainer in log_entry.maintainers %}
+                <li>@{{ maintainer.github }}</li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
         {% else %}
         {# Status update entries #}
           {% if "accepted" in log_entry.status_value  %}

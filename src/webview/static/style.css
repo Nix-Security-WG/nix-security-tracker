@@ -1161,17 +1161,20 @@ button:hover {
   color: var(--automatic-suggestion);
 }
 
-.package-summary {
+.package-summary,
+.maintainer-summary {
   display: inline;
 }
 
-.package-summary-title {
+.package-summary-title,
+.maintainer-summary-title {
   list-style-type: none;
   cursor: pointer;
   text-decoration: underline;
 }
 
-.package-summary-listing {
+.package-summary-listing,
+.maintainer-summary-listing {
   padding-left: 1.5em;
 }
 
