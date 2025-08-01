@@ -23,11 +23,6 @@ For more instructions on how to use OpenTofu refer to the [upstream documentatio
 Since Hetzner Cloud doesn't support NixOS out of the box, the VM was initially spawned as a Debian host and then it was converted to NixOS as per the [provisioning NixOS via SSH tutorial](https://nix.dev/tutorials/nixos/provisioning-remote-machines).
 If in the future we need to create more VMs and do it in a declarative way, we can use [nixos-anywhere](https://github.com/nix-community/nixos-anywhere).
 
-## Deploying the Security Tracker
-
-Deployments happen automatically via GitHub Actions. Whenever a merge happens on the `main` branch, a GitHub Action runs that updates the staging deployment of the tracker (staging-tracker.security.nixos.org).
-Similarly, merges on the `production` branch get automatically applied to tracker.security.nixos.org.
-
 ## Secrets
 
 Secrets are managed using [Agenix](https://github.com/ryantm/agenix).

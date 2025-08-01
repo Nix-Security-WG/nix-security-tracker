@@ -275,7 +275,15 @@ manage regenerate_cached_issues
 
 ## Staging deployment
 
-See [infra/README.md](infra/README.md#Deploying-the-Security-Tracker).
+If you have your SSH keys set up on the staging environment (and can connect through IPv6), you can deploy the service with:
+
+```console
+./infra/deploy.sh
+```
+
+### Adding SSH keys
+
+Add your SSH keys to `./infra/configuration.nix` and let existing owners deploy them.
 
 ## Operators guidance
 
