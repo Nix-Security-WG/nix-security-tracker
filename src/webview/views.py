@@ -921,13 +921,9 @@ class AddMaintainerView(TemplateView):
                         }
                     )
                 elif edit_object.edit_type == MaintainersEdit.EditType.REMOVE:
-                    # TODO The maintainer was removed in an edit, normally this means it is displayed on the web UI with a restore button next to it. Should we restore it as if clicked on the button or return an error?
                     # NOTE An else would have sufficed but this is in case someday we have more than ADD and REMOVE edit types
-                    return self.render_to_response(
-                        {
-                            "error_msg": "This maintainer may be restored via the undo delete button",
-                        }
-                    )
+                    edit.delete()
+                    suggestion.save()
                 else:
                     logger.error("Unexpected maintainer edit status")
                     return HttpResponse(status=422)
