@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from shared.logs.raw_events import (
+from shared.logs.events import (
     Maintainer,
     RawEventType,
     RawMaintainerEvent,
@@ -44,9 +44,9 @@ class FoldedMaintainerEvent(FoldedEvent):
 FoldedEventType = FoldedStatusEvent | FoldedPackageEvent | FoldedMaintainerEvent
 
 
-def fold_events(sorted_events: list[RawEventType]) -> list[FoldedEventType]:
+def batch_events(sorted_events: list[RawEventType]) -> list[FoldedEventType]:
     """
-    Fold consecutive events of the same type from the same user into bulk operations.
+    Batch consecutive events of the same type from the same user into bulk operations.
     """
     folded_events = []
     accumulator = None

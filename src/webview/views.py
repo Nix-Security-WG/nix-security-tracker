@@ -11,9 +11,9 @@ from django.urls import reverse
 from shared.github import create_gh_issue, fetch_user_info
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import apply_package_edits, maintainers_list
-from shared.logs.collections import remove_canceling_events
-from shared.logs.fetch import fetch_suggestion_events
-from shared.logs.folding import fold_events
+from shared.logs.batches import batch_events
+from shared.logs.events import remove_canceling_events
+from shared.logs.fetchers import fetch_suggestion_events
 from shared.models.cached import CachedSuggestions
 
 if typing.TYPE_CHECKING:
@@ -526,7 +526,7 @@ class SuggestionListView(ListView):
         for obj in context["object_list"]:
             raw_events = fetch_suggestion_events(obj.proposal_id)
             filtered_collection = remove_canceling_events(raw_events, pre_sort=True)
-            folded_collection = fold_events(filtered_collection)
+            folded_collection = batch_events(filtered_collection)
             obj.activity_log = folded_collection
 
         context["adjusted_elided_page_range"] = context[
@@ -561,7 +561,7 @@ class SuggestionListView(ListView):
         # Activity log
         raw_events = fetch_suggestion_events(suggestion.pk)
         filtered_collection = remove_canceling_events(raw_events, pre_sort=True)
-        activity_log = fold_events(filtered_collection)
+        activity_log = batch_events(filtered_collection)
 
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id

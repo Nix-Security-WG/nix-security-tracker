@@ -14,7 +14,7 @@ from django.db.models.functions import Cast, Coalesce
 from django.forms.models import model_to_dict
 from pghistory.models import EventQuerySet
 
-from shared.logs.raw_events import (
+from shared.logs.events import (
     Maintainer,
     RawEventType,
     RawMaintainerEvent,

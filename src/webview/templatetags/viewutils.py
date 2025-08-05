@@ -7,8 +7,8 @@ from django.template.context import Context
 from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import parse_drv_name
-from shared.logs.folding import FoldedEventType
-from shared.logs.raw_events import Maintainer
+from shared.logs.batches import FoldedEventType
+from shared.logs.events import Maintainer
 from shared.models.cve import AffectedProduct
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
