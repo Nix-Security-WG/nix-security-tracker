@@ -9,6 +9,7 @@ from shared.logs.events import (
     RawMaintainerEvent,
     RawPackageEvent,
     RawStatusEvent,
+    sort_events_chronologically,
 )
 
 
@@ -44,14 +45,19 @@ class FoldedMaintainerEvent(FoldedEvent):
 FoldedEventType = FoldedStatusEvent | FoldedPackageEvent | FoldedMaintainerEvent
 
 
-def batch_events(sorted_events: list[RawEventType]) -> list[FoldedEventType]:
+def batch_events(
+    events: list[RawEventType], pre_sort: bool = False
+) -> list[FoldedEventType]:
     """
     Batch consecutive events of the same type from the same user into bulk operations.
+    Events must be sorted chronologically. Use the pre_sort flag if not.
     """
     folded_events = []
     accumulator = None
 
-    for event in sorted_events:
+    events = sort_events_chronologically(events) if pre_sort else events
+
+    for event in events:
         if isinstance(event, RawPackageEvent):
             if not accumulator:
                 # Start new package accumulator

@@ -117,6 +117,7 @@ def remove_canceling_events(
 ) -> list[RawEventType]:
     """
     Remove consecutive events that cancel each other out within a time window.
+    Events must be sorted chronologically. Use the pre_sort flag if not.
     """
     filtered_events = []
     i = 0
