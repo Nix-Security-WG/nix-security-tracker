@@ -9,9 +9,9 @@
       },
       "branch": "main",
       "submodules": false,
-      "revision": "531beac616433bac6f9e2a19feb8e99a22a66baf",
-      "url": "https://github.com/ryantm/agenix/archive/531beac616433bac6f9e2a19feb8e99a22a66baf.tar.gz",
-      "hash": "103slb8xy5sb68zxjjbb9d0svq8xz751a7yrg6vrz5rh4374bzgl"
+      "revision": "9edb1787864c4f59ae5074ad498b6272b3ec308d",
+      "url": "https://github.com/ryantm/agenix/archive/9edb1787864c4f59ae5074ad498b6272b3ec308d.tar.gz",
+      "hash": "06w2dxnf8qxwcmqvgyxnrrx62ca5x1cw3lminpgs112md17wa3rl"
     },
     "gitignore": {
       "type": "Git",
@@ -50,15 +50,15 @@
       },
       "branch": "main",
       "submodules": false,
-      "revision": "7ee3f5c95beda825b742580178f84034ec48aa9c",
-      "url": "https://github.com/nixos/infra/archive/7ee3f5c95beda825b742580178f84034ec48aa9c.tar.gz",
-      "hash": "0yws15x893v8fv0bcfwvzmklwvf0rm23k2v2y5zm0xm1qwr18hl1"
+      "revision": "5d020952f5b870ff323904035347cd768530617d",
+      "url": "https://github.com/nixos/infra/archive/5d020952f5b870ff323904035347cd768530617d.tar.gz",
+      "hash": "0pvyn1blyhdg0r2vk0lqb0wngyav5b9i739hiim47nbpmv5mx8bj"
     },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
-      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-25.11pre834687.6027c30c8e98/nixexprs.tar.xz",
-      "hash": "1if0s6pfvr9y2wgnk3qlfqjhpzqz4i7sjp50mh925841fladrbq5"
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-25.11pre842025.641d909c4a75/nixexprs.tar.xz",
+      "hash": "18v19r7qg2lfz90bvkf5b1sb97jd6xxcr69lrjgny3jf9pwk3p3q"
     },
     "pre-commit-hooks": {
       "type": "Git",
@@ -69,9 +69,9 @@
       },
       "branch": "master",
       "submodules": false,
-      "revision": "16ec914f6fb6f599ce988427d9d94efddf25fe6d",
-      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/16ec914f6fb6f599ce988427d9d94efddf25fe6d.tar.gz",
-      "hash": "065m86nm89vv29anqb0a8bp3y877q80nadsfqnjlvz70gnjfj9n2"
+      "revision": "9c52372878df6911f9afc1e2a1391f55e4dfc864",
+      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/9c52372878df6911f9afc1e2a1391f55e4dfc864.tar.gz",
+      "hash": "1w51bksfkzp7s7sr6d79lj6m493kikh0rim1qw953i9x8k8a1b3k"
     }
   },
   "version": 5
