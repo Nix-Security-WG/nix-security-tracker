@@ -25,7 +25,7 @@ class RawEvent(BaseModel, ABC):
     def precedes_close_related_event(
         self, other: "RawEvent", time_threshold_seconds: int = 30
     ) -> bool:
-        """Checks the event is followed by one related to the same suggestion by the same user within a give time window"""
+        """Checks if the event is followed by one related to the same suggestion by the same user within a given time window"""
         return (
             self.username == other.username
             and self.suggestion_id == other.suggestion_id
@@ -113,16 +113,16 @@ def sort_events_chronologically(events: list[RawEventType]) -> list[RawEventType
 
 
 def remove_canceling_events(
-    events: list[RawEventType], time_threshold_seconds: int = 30, pre_sort: bool = False
+    events: list[RawEventType], time_threshold_seconds: int = 30, sort: bool = False
 ) -> list[RawEventType]:
     """
     Remove consecutive events that cancel each other out within a time window.
-    Events must be sorted chronologically. Use the pre_sort flag if not.
+    Events must be sorted chronologically. Use the sort flag if not.
     """
     filtered_events = []
     i = 0
 
-    events = sort_events_chronologically(events) if pre_sort else events
+    events = sort_events_chronologically(events) if sort else events
 
     while i < len(events):
         if i + 1 < len(events) and events[i].is_canceled_by(

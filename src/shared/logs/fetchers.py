@@ -52,6 +52,9 @@ def _annotate_username(query: EventQuerySet) -> EventQuerySet:
     )
 
 
+# TODO In the future we may add other fetchers, for instance fetch all events
+# of a given user (for personal dashboard or admin panel) or all events
+# globally (for admin)
 def fetch_suggestion_events(suggestion_id: int) -> list[RawEventType]:
     """Fetch all raw events for a suggestion and return them sorted by timestamp."""
     all_events: list[RawEventType] = []

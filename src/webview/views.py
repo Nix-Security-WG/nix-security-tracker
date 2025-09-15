@@ -526,7 +526,7 @@ class SuggestionListView(ListView):
         for obj in context["object_list"]:
             raw_events = fetch_suggestion_events(obj.proposal_id)
             obj.activity_log = batch_events(
-                remove_canceling_events(raw_events, pre_sort=True)
+                remove_canceling_events(raw_events, sort=True)
             )
 
         context["adjusted_elided_page_range"] = context[
@@ -560,7 +560,7 @@ class SuggestionListView(ListView):
 
         # Activity log
         raw_events = fetch_suggestion_events(suggestion.pk)
-        activity_log = batch_events(remove_canceling_events(raw_events, pre_sort=True))
+        activity_log = batch_events(remove_canceling_events(raw_events, sort=True))
 
         cached_suggestion = get_object_or_404(
             CachedSuggestions, proposal_id=suggestion_id

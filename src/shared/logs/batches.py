@@ -1,3 +1,4 @@
+from abc import ABC
 from datetime import datetime
 from typing import Literal
 
@@ -13,7 +14,7 @@ from shared.logs.events import (
 )
 
 
-class FoldedEvent(BaseModel):
+class FoldedEvent(BaseModel, ABC):
     """Base class for folded events that can represent single or bulk operations."""
 
     suggestion_id: int
@@ -25,6 +26,8 @@ class FoldedStatusEvent(FoldedEvent):
     """A folded status change event (always singular)."""
 
     action: Literal["insert", "update"]
+    # TODO This should eventually be restricted to the few literal values a
+    # suggestion status can have
     status_value: str
 
 
@@ -46,29 +49,20 @@ FoldedEventType = FoldedStatusEvent | FoldedPackageEvent | FoldedMaintainerEvent
 
 
 def batch_events(
-    events: list[RawEventType], pre_sort: bool = False
+    events: list[RawEventType], sort: bool = False
 ) -> list[FoldedEventType]:
     """
     Batch consecutive events of the same type from the same user into bulk operations.
-    Events must be sorted chronologically. Use the pre_sort flag if not.
+    Events must be sorted chronologically. Use the sort flag if not.
     """
     folded_events = []
     accumulator = None
 
-    events = sort_events_chronologically(events) if pre_sort else events
+    events = sort_events_chronologically(events) if sort else events
 
     for event in events:
         if isinstance(event, RawPackageEvent):
-            if not accumulator:
-                # Start new package accumulator
-                accumulator = FoldedPackageEvent(
-                    suggestion_id=event.suggestion_id,
-                    timestamp=event.timestamp,
-                    username=event.username,
-                    action=event.action,
-                    package_names=[event.package_attribute],
-                )
-            elif (
+            if (
                 isinstance(accumulator, FoldedPackageEvent)
                 and event.action == accumulator.action
                 and event.username == accumulator.username
@@ -79,7 +73,8 @@ def batch_events(
                 accumulator.timestamp = event.timestamp
             else:
                 # End current accumulator, start new one
-                folded_events.append(accumulator)
+                if accumulator:
+                    folded_events.append(accumulator)
                 accumulator = FoldedPackageEvent(
                     suggestion_id=event.suggestion_id,
                     timestamp=event.timestamp,
@@ -89,16 +84,7 @@ def batch_events(
                 )
 
         elif isinstance(event, RawMaintainerEvent):
-            if not accumulator:
-                # Start new maintainer accumulator
-                accumulator = FoldedMaintainerEvent(
-                    suggestion_id=event.suggestion_id,
-                    timestamp=event.timestamp,
-                    username=event.username,
-                    action=event.action,
-                    maintainers=[event.maintainer],
-                )
-            elif (
+            if (
                 isinstance(accumulator, FoldedMaintainerEvent)
                 and event.action == accumulator.action
                 and event.username == accumulator.username
@@ -109,7 +95,8 @@ def batch_events(
                 accumulator.timestamp = event.timestamp
             else:
                 # End current accumulator, start new one
-                folded_events.append(accumulator)
+                if accumulator:
+                    folded_events.append(accumulator)
                 accumulator = FoldedMaintainerEvent(
                     suggestion_id=event.suggestion_id,
                     timestamp=event.timestamp,
@@ -136,7 +123,6 @@ def batch_events(
                     )
                 )
 
-    # Don't forget the final accumulator
     if accumulator:
         folded_events.append(accumulator)
 
