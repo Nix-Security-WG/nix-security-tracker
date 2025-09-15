@@ -54,6 +54,7 @@ class AffectedContext(TypedDict):
 class SuggestionActivityLog(TypedDict):
     suggestion: CVEDerivationClusterProposal
     activity_log: dict
+    oob_update: bool
 
 
 class MaintainerContext(TypedDict):
@@ -250,8 +251,13 @@ def affected_products(affected: list[AffectedProduct]) -> AffectedContext:
 def suggestion_activity_log(
     suggestion: CVEDerivationClusterProposal,
     activity_log: dict,
+    oob_update: bool = False,
 ) -> SuggestionActivityLog:
-    return {"suggestion": suggestion, "activity_log": activity_log}
+    return {
+        "suggestion": suggestion,
+        "activity_log": activity_log,
+        "oob_update": oob_update,
+    }
 
 
 @register.inclusion_tag("components/maintainers_list.html")

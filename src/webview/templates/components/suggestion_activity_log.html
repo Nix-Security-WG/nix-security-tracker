@@ -4,6 +4,7 @@
 {% if not activity_log|length_is:0 %}
 <details class="activity-log"
          id="suggestion-activity-log-{{suggestion.id}}"
+         {% if oob_update %}hx-swap-oob="true"{% endif %}
          data-relative=true
 >
   <summary class="main-summary">
