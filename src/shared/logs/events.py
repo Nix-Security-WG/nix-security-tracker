@@ -1,0 +1,138 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
+from typing import Literal, TypedDict
+
+from pydantic import BaseModel
+
+
+class RawEvent(BaseModel, ABC):
+    """Base class for raw events from the database."""
+
+    suggestion_id: int
+    timestamp: datetime
+    username: str
+
+    @abstractmethod
+    def is_canceled_by(
+        self, other: "RawEvent", time_threshold_seconds: int = 30
+    ) -> bool:
+        """Check if this event is canceled by another event.
+
+        Must be implemented by subclasses to define specific cancellation logic.
+        """
+        pass
+
+    def precedes_close_related_event(
+        self, other: "RawEvent", time_threshold_seconds: int = 30
+    ) -> bool:
+        """Checks if the event is followed by one related to the same suggestion by the same user within a given time window"""
+        return (
+            self.username == other.username
+            and self.suggestion_id == other.suggestion_id
+            and (other.timestamp - self.timestamp).total_seconds()
+            <= time_threshold_seconds
+        )
+
+
+class RawStatusEvent(RawEvent):
+    """Raw status change event."""
+
+    action: Literal["insert", "update"]
+    status_value: str
+
+    def is_canceled_by(
+        self, other: "RawEvent", time_threshold_seconds: int = 30
+    ) -> bool:
+        """Status events don't cancel each other."""
+        return False
+
+
+class RawPackageEvent(RawEvent):
+    """Raw package change event."""
+
+    action: Literal["package.add", "package.remove"]
+    package_attribute: str
+
+    def is_canceled_by(
+        self, other: "RawEvent", time_threshold_seconds: int = 30
+    ) -> bool:
+        """Check if this package event is canceled by another package event."""
+        if not self.precedes_close_related_event(other, time_threshold_seconds):
+            return False
+
+        if isinstance(other, RawPackageEvent):
+            return self.package_attribute == other.package_attribute and {
+                self.action,
+                other.action,
+            } == {"package.add", "package.remove"}
+
+        return False
+
+
+class Maintainer(TypedDict):
+    name: str
+    email: str | None
+    github: str
+    matrix: str | None
+    github_id: int
+
+
+class RawMaintainerEvent(RawEvent):
+    """Raw maintainer change event."""
+
+    action: Literal["maintainers.add", "maintainers.remove"]
+    maintainer: Maintainer
+
+    def is_canceled_by(
+        self, other: "RawEvent", time_threshold_seconds: int = 30
+    ) -> bool:
+        """Check if this maintainer event is canceled by another maintainer event."""
+        if not self.precedes_close_related_event(other, time_threshold_seconds):
+            return False
+
+        if isinstance(other, RawMaintainerEvent):
+            return self.maintainer["github_id"] == other.maintainer["github_id"] and {
+                self.action,
+                other.action,
+            } == {
+                "maintainers.add",
+                "maintainers.remove",
+            }
+
+        return False
+
+
+RawEventType = RawStatusEvent | RawPackageEvent | RawMaintainerEvent
+
+
+def sort_events_chronologically(events: list[RawEventType]) -> list[RawEventType]:
+    """
+    Sort a list of raw events chronologically by their timestamp.
+    """
+    return sorted(events, key=lambda event: event.timestamp)
+
+
+def remove_canceling_events(
+    events: list[RawEventType], time_threshold_seconds: int = 30, sort: bool = False
+) -> list[RawEventType]:
+    """
+    Remove consecutive events that cancel each other out within a time window.
+    Events must be sorted chronologically. Use the sort flag if not.
+    """
+    filtered_events = []
+    i = 0
+
+    events = sort_events_chronologically(events) if sort else events
+
+    while i < len(events):
+        if i + 1 < len(events) and events[i].is_canceled_by(
+            events[i + 1], time_threshold_seconds
+        ):
+            # Skip both events
+            i += 2
+        else:
+            # Keep this event
+            filtered_events.append(events[i])
+            i += 1
+
+    return filtered_events

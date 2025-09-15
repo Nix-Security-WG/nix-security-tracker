@@ -7,6 +7,8 @@ from django.template.context import Context
 from shared.auth import isadmin, ismaintainer
 from shared.listeners.cache_issues import CachedNixpkgsIssuePayload
 from shared.listeners.cache_suggestions import parse_drv_name
+from shared.logs.batches import FoldedEventType
+from shared.logs.events import Maintainer
 from shared.models.cve import AffectedProduct
 from shared.models.linkage import (
     CVEDerivationClusterProposal,
@@ -51,14 +53,6 @@ class AffectedContext(TypedDict):
 class SuggestionActivityLog(TypedDict):
     suggestion: CVEDerivationClusterProposal
     activity_log: dict
-
-
-class Maintainer(TypedDict):
-    name: str
-    email: str | None
-    github: str
-    matrix: str | None
-    github_id: int
 
 
 class MaintainerContext(TypedDict):
@@ -115,14 +109,6 @@ def iso(date: datetime.datetime) -> str:
 
 
 @register.filter
-def last_entry(log: list) -> Any | None:
-    try:
-        return next(reversed(log))
-    except StopIteration:
-        return None
-
-
-@register.filter
 def versioned_package_name(package_entry: dict[str, Any]) -> str:
     _, version = parse_drv_name(package_entry["name"])
     return f"pkgs.{package_entry['attribute']} {version}"
@@ -153,7 +139,7 @@ def suggestion(
     context: Context,
     suggestion: CVEDerivationClusterProposal,
     cached_suggestion: dict,
-    activity_log: dict,
+    activity_log: list[FoldedEventType],
 ) -> dict:
     return {
         "suggestion": suggestion,
