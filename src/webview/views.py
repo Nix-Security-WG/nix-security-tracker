@@ -819,12 +819,19 @@ class SelectableMaintainerView(TemplateView):
             )
             cached_suggestion.save()
 
-            return self.render_to_response(
+            # Generate activity log OOB response for HTMX update
+            activity_log_oob_html = get_activity_log_oob_response(suggestion)
+
+            # Render the selectable maintainer component with activity log update
+            maintainer_html = render_to_string(
+                "components/selectable_maintainer.html",
                 {
                     "maintainer": maintainer,
                     "deleted": deleted,
-                }
+                },
             )
+
+            return HttpResponse(maintainer_html + activity_log_oob_html)
 
 
 class AddMaintainerView(TemplateView):
@@ -950,4 +957,30 @@ class AddMaintainerView(TemplateView):
                     "oob_update": True,
                 },
             )
-            return HttpResponse(maintainers_list_html + maintainer_add_html)
+
+            # Generate activity log OOB response for HTMX update
+            activity_log_oob_html = get_activity_log_oob_response(suggestion)
+
+            return HttpResponse(
+                maintainers_list_html + maintainer_add_html + activity_log_oob_html
+            )
+
+
+def get_activity_log_oob_response(suggestion: CVEDerivationClusterProposal) -> str:
+    """
+    Generate HTMX out-of-band response for activity log updates.
+    Returns HTML string with hx-swap-oob attribute for updating the activity log.
+    """
+    # Fetch and process activity log events
+    raw_events = fetch_suggestion_events(suggestion.pk)
+    activity_log = batch_events(remove_canceling_events(raw_events, sort=True))
+
+    # Render the activity log component
+    return render_to_string(
+        "components/suggestion_activity_log.html",
+        {
+            "suggestion": suggestion,
+            "activity_log": activity_log,
+            "oob_update": True,
+        },
+    )
