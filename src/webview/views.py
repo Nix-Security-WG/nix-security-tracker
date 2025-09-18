@@ -577,11 +577,13 @@ class AddMaintainerView(TemplateView):
             # Try to fetch maintainer info from GitHub API and create if found
             gh_user = fetch_user_info(new_maintainer_github_handle)
             if gh_user:
-                maintainer = NixMaintainer.objects.create(
+                maintainer, created = NixMaintainer.objects.update_or_create(
                     github_id=gh_user["id"],
-                    github=gh_user["login"],
-                    name=gh_user.get("name"),
-                    email=gh_user.get("email"),
+                    defaults={
+                        "github": gh_user["login"],
+                        "name": gh_user.get("name"),
+                        "email": gh_user.get("email"),
+                    },
                 )
             else:
                 return self.render_to_response(
