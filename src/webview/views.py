@@ -681,11 +681,27 @@ class SuggestionListView(ListView):
             # Clicking on the undo button will return the original suggestion
             # tile again, so that the page looks like before the action.
             if undo_status_change:
+                # Fetch fresh activity log for undo status change
+                raw_events = fetch_suggestion_events(suggestion.pk)
+                fresh_activity_log = batch_events(
+                    remove_canceling_events(raw_events, sort=True)
+                )
+
                 snippet = render_to_string(
                     "components/suggestion.html",
-                    suggestion_view_context(),
+                    {
+                        "cached_suggestion": cached_suggestion.payload,
+                        "suggestion": suggestion,
+                        "activity_log": fresh_activity_log,
+                        "status_filter": self.status_filter,
+                        "user": request.user,
+                        # This only matters in a non-JS environment
+                        "page_obj": None,
+                        "csrf_token": get_token(request),
+                    },
                 )
-                return HttpResponse(snippet)
+                activity_log_oob_html = get_activity_log_oob_response(suggestion)
+                return HttpResponse(snippet + activity_log_oob_html)
             elif status_change:
                 if suggestion.status == "published":
                     if tracker_issue:
