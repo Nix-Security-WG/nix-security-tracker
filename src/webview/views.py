@@ -593,6 +593,7 @@ class SuggestionListView(ListView):
             }
 
         # We only have to modify derivations when they are editable
+        package_changes_made = False
         if not (
             self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
             or undo_status_change
@@ -604,6 +605,7 @@ class SuggestionListView(ListView):
             # Find packages that should be removed (no derivations selected)
             packages_to_remove = original_attributes - selected_attributes
             packages_to_restore = original_attributes & selected_attributes
+            package_changes_made = bool(packages_to_remove or packages_to_restore)
 
             with transaction.atomic():
                 # Apply removals
@@ -679,11 +681,27 @@ class SuggestionListView(ListView):
             # Clicking on the undo button will return the original suggestion
             # tile again, so that the page looks like before the action.
             if undo_status_change:
+                # Fetch fresh activity log for undo status change
+                raw_events = fetch_suggestion_events(suggestion.pk)
+                fresh_activity_log = batch_events(
+                    remove_canceling_events(raw_events, sort=True)
+                )
+
                 snippet = render_to_string(
                     "components/suggestion.html",
-                    suggestion_view_context(),
+                    {
+                        "cached_suggestion": cached_suggestion.payload,
+                        "suggestion": suggestion,
+                        "activity_log": fresh_activity_log,
+                        "status_filter": self.status_filter,
+                        "user": request.user,
+                        # This only matters in a non-JS environment
+                        "page_obj": None,
+                        "csrf_token": get_token(request),
+                    },
                 )
-                return HttpResponse(snippet)
+                activity_log_oob_html = get_activity_log_oob_response(suggestion)
+                return HttpResponse(snippet + activity_log_oob_html)
             elif status_change:
                 if suggestion.status == "published":
                     if tracker_issue:
@@ -707,6 +725,9 @@ class SuggestionListView(ListView):
                 return HttpResponse(snippet)
             else:
                 # A package was checked/unchecked and we hx-swap="none" on these.
+                if package_changes_made:
+                    activity_log_oob_html = get_activity_log_oob_response(suggestion)
+                    return HttpResponse(activity_log_oob_html)
                 return HttpResponse(status=200)
         else:
             # Just reload the page
@@ -819,12 +840,19 @@ class SelectableMaintainerView(TemplateView):
             )
             cached_suggestion.save()
 
-            return self.render_to_response(
+            # Generate activity log OOB response for HTMX update
+            activity_log_oob_html = get_activity_log_oob_response(suggestion)
+
+            # Render the selectable maintainer component with activity log update
+            maintainer_html = render_to_string(
+                "components/selectable_maintainer.html",
                 {
                     "maintainer": maintainer,
                     "deleted": deleted,
-                }
+                },
             )
+
+            return HttpResponse(maintainer_html + activity_log_oob_html)
 
 
 class AddMaintainerView(TemplateView):
@@ -950,4 +978,30 @@ class AddMaintainerView(TemplateView):
                     "oob_update": True,
                 },
             )
-            return HttpResponse(maintainers_list_html + maintainer_add_html)
+
+            # Generate activity log OOB response for HTMX update
+            activity_log_oob_html = get_activity_log_oob_response(suggestion)
+
+            return HttpResponse(
+                maintainers_list_html + maintainer_add_html + activity_log_oob_html
+            )
+
+
+def get_activity_log_oob_response(suggestion: CVEDerivationClusterProposal) -> str:
+    """
+    Generate HTMX out-of-band response for activity log updates.
+    Returns HTML string with hx-swap-oob attribute for updating the activity log.
+    """
+    # Fetch and process activity log events
+    raw_events = fetch_suggestion_events(suggestion.pk)
+    activity_log = batch_events(remove_canceling_events(raw_events, sort=True))
+
+    # Render the activity log component
+    return render_to_string(
+        "components/suggestion_activity_log.html",
+        {
+            "suggestion": suggestion,
+            "activity_log": activity_log,
+            "oob_update": True,
+        },
+    )
