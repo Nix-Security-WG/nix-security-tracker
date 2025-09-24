@@ -593,6 +593,7 @@ class SuggestionListView(ListView):
             }
 
         # We only have to modify derivations when they are editable
+        package_changes_made = False
         if not (
             self.status_filter == CVEDerivationClusterProposal.Status.REJECTED
             or undo_status_change
@@ -604,6 +605,7 @@ class SuggestionListView(ListView):
             # Find packages that should be removed (no derivations selected)
             packages_to_remove = original_attributes - selected_attributes
             packages_to_restore = original_attributes & selected_attributes
+            package_changes_made = bool(packages_to_remove or packages_to_restore)
 
             with transaction.atomic():
                 # Apply removals
@@ -707,6 +709,9 @@ class SuggestionListView(ListView):
                 return HttpResponse(snippet)
             else:
                 # A package was checked/unchecked and we hx-swap="none" on these.
+                if package_changes_made:
+                    activity_log_oob_html = get_activity_log_oob_response(suggestion)
+                    return HttpResponse(activity_log_oob_html)
                 return HttpResponse(status=200)
         else:
             # Just reload the page
