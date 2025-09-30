@@ -38,6 +38,10 @@
           {% else %}
             <span>{{user.username}}</span>
           {% endif %}
+          <a href="{% url 'webview:notifications:center' %}" class="notification-bell">
+            <span class="notification-icon">🔔</span>
+            Notifications
+          </a>
           <a href="{% url 'account_logout' %}">
             Logout
           </a>
