@@ -2,6 +2,7 @@
   --notification-unread-color: #3a79e0;
   --notification-light-grey: #eeeeee;
   --notification-dark-grey: #555555;
+  --notification-danger-color: #d31919;
 }
 
 .notification-list {
@@ -82,7 +83,7 @@
   font-weight: bold;
 }
 
-.notification-center-header .form {
+.notification-center-toolbar .form {
   display: contents;
 }
 
@@ -92,12 +93,26 @@
   font-weight: bold;
 }
 
-.notification-center-mark-all-read {
+.notification-center-toolbar {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+
+.notification-center-toolbar button {
   font-size: 0.8em;
   border: none;
   border-radius: 0.2em;
   padding: 0.4em 1em;
   cursor: pointer;
+}
+
+.notification-center-mark-all-read {
   background: var(--notification-unread-color);
+  color: white;
+}
+
+.notification-center-remove-all-read {
+  background: var(--notification-danger-color);
   color: white;
 }

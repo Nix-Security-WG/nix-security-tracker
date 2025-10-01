@@ -63,7 +63,7 @@ class ToggleNotificationReadView(LoginRequiredMixin, TemplateView):
 
 
 class MarkAllNotificationsReadView(LoginRequiredMixin, View):
-    """HTMX endpoint to mark all notifications as read."""
+    """Endpoint to mark all notifications as read."""
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Mark all user's notifications as read."""
@@ -80,3 +80,19 @@ class MarkAllNotificationsReadView(LoginRequiredMixin, View):
             page = request.POST.get("page", "1")
             url = reverse("webview:notifications:center")
             return redirect(f"{url}?page={page}")
+
+
+class RemoveAllReadNotificationsView(LoginRequiredMixin, View):
+    """Endpoint to remove all read notifications."""
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        """Remove all user's read notifications."""
+        Notification.objects.filter(user=request.user, is_read=True).delete()
+
+        # Let's redirect to first page as were we are might no longer exist
+        url = reverse("webview:notifications:center")
+        # Check if this is an HTMX request
+        if request.headers.get("HX-Request"):
+            return HttpResponse(headers={"HX-Redirect": url})
+        else:
+            return redirect(url)
