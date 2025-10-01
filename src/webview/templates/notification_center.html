@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<div class="notification-header">
+<header class="notification-center-header">
   <h1>Notification Center</h1>
   {% if notifications %}
     <form method="post" action="{% url 'webview:notifications:mark_all_read' %}" style="display: inline;">
@@ -14,20 +14,20 @@
         type="submit"
         hx-post="{% url 'webview:notifications:mark_all_read' %}"
         hx-swap="none"
-        class="mark-all-read-btn">
+        class="notification-center-mark-all-read">
         Mark all as read
       </button>
     </form>
   {% endif %}
-</div>
+</header>
 
-<div id="notification-list" class="page-width">
+<div class="notification-list" class="page-width">
   {% if notifications %}
     {% for notification in notifications %}
       {% notification notification page_obj.number %}
     {% endfor %}
   {% else %}
-    <div class="empty-state">
+    <div class="notification-list-empty">
       <h2>No notifications</h2>
       <p>You don't have any notifications yet.</p>
     </div>
