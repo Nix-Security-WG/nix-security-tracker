@@ -16,7 +16,7 @@ class NotificationCenterView(LoginRequiredMixin, ListView):
     template_name = "notification_center.html"
     model = Notification
     context_object_name = "notifications"
-    paginate_by = 2
+    paginate_by = 10
 
     def get_queryset(self) -> QuerySet[Notification]:
         """Return notifications for the current user, ordered by creation date."""
