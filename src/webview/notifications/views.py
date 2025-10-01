@@ -36,20 +36,20 @@ class NotificationCenterView(LoginRequiredMixin, ListView):
         return context
 
 
-class MarkNotificationReadView(LoginRequiredMixin, TemplateView):
-    """Mark a single notification as read - handles both HTMX and standard requests."""
+class ToggleNotificationReadView(LoginRequiredMixin, TemplateView):
+    """Toggle a single notification's read status - handles both HTMX and standard requests."""
 
     template_name = "components/notification.html"
 
     def post(self, request: HttpRequest, notification_id: int) -> HttpResponse:
-        """Mark a specific notification as read."""
+        """Toggle a specific notification's read status."""
         notification = get_object_or_404(
             Notification, id=notification_id, user=request.user
         )
 
-        if not notification.is_read:
-            notification.is_read = True
-            notification.save()
+        # Toggle the read status
+        notification.is_read = not notification.is_read
+        notification.save()
 
         # Check if this is an HTMX request
         if request.headers.get("HX-Request"):

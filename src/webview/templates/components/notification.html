@@ -3,29 +3,21 @@
     <h3 class="notification-title">{{ notification.title }}</h3>
     <div class="notification-meta">
       <time datetime="{{ notification.created_at|date }}" class="notification-date">{{ notification.created_at|date:"M d, Y H:i" }}</time>
-      {% if not notification.is_read %}
-        <form method="post" action="{% url 'webview:notifications:mark_read' notification.id %}">
-          {% csrf_token %}
-          {% if current_page %}
-            <!-- Preserve current page if we're in a paginated view in no-js mode -->
-            <input type="hidden" name="page" value="{{ current_page }}">
-          {% endif %}
-          <button 
-            type="submit"
-            hx-post="{% url 'webview:notifications:mark_read' notification.id %}"
-            hx-swap="outerHTML"
-            hx-target="closest .notification-item"
-            class="mark-read-btn notification-status">
-            Mark read
-          </button>
-        </form>
-      {% else %}
+      <form method="post" action="{% url 'webview:notifications:toggle_read' notification.id %}">
+        {% csrf_token %}
+        {% if current_page %}
+          <!-- Preserve current page if we're in a paginated view in no-js mode -->
+          <input type="hidden" name="page" value="{{ current_page }}">
+        {% endif %}
         <button 
-          type="button"
-          class="notification-status">
-          Mark unread
+          type="submit"
+          hx-post="{% url 'webview:notifications:toggle_read' notification.id %}"
+          hx-swap="outerHTML"
+          hx-target="closest .notification-item"
+          class="mark-read-btn notification-status">
+          Mark {%if not notification.is_read %}read{% else %}unread{% endif %}
         </button>
-      {% endif %}
+      </form>
     </div>
   </header>
   <div class="notification-content">
