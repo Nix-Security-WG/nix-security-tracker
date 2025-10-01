@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     MarkAllNotificationsReadView,
     NotificationCenterView,
+    RemoveAllReadNotificationsView,
     ToggleNotificationReadView,
 )
 
@@ -17,5 +18,10 @@ urlpatterns = [
     ),
     path(
         "mark-all-read/", MarkAllNotificationsReadView.as_view(), name="mark_all_read"
+    ),
+    path(
+        "remove-all-read/",
+        RemoveAllReadNotificationsView.as_view(),
+        name="remove_all_read",
     ),
 ]

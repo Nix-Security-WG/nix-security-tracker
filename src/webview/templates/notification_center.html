@@ -6,18 +6,32 @@
 <header class="notification-center-header">
   <h1>Notification Center</h1>
   {% if notifications %}
-    <form method="post" action="{% url 'webview:notifications:mark_all_read' %}" style="display: inline;">
-      {% csrf_token %}
-      <!-- Preserve current page in no-js mode -->
-      <input type="hidden" name="page" value="{{ page_obj.number }}">
-      <button 
-        type="submit"
-        hx-post="{% url 'webview:notifications:mark_all_read' %}"
-        hx-swap="none"
-        class="notification-center-mark-all-read">
-        Mark all as read
-      </button>
-    </form>
+    <div class="notification-center-toolbar">
+      <form method="post" action="{% url 'webview:notifications:mark_all_read' %}">
+        {% csrf_token %}
+        <!-- Preserve current page in no-js mode -->
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+        <button 
+          type="submit"
+          hx-post="{% url 'webview:notifications:mark_all_read' %}"
+          hx-swap="none"
+          class="notification-center-mark-all-read">
+          Mark all as read
+        </button>
+      </form>
+      <form method="post" action="{% url 'webview:notifications:remove_all_read' %}">
+        {% csrf_token %}
+        <!-- Preserve current page in no-js mode -->
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+        <button 
+          type="submit"
+          hx-post="{% url 'webview:notifications:remove_all_read' %}"
+          hx-swap="none"
+          class="notification-center-remove-all-read">
+          Remove read notifications
+        </button>
+      </form>
+    </div>
   {% endif %}
 </header>
 
@@ -28,8 +42,7 @@
     {% endfor %}
   {% else %}
     <div class="notification-list-empty">
-      <h2>No notifications</h2>
-      <p>You don't have any notifications yet.</p>
+      You don't have any notifications yet.
     </div>
   {% endif %}
 </div>
