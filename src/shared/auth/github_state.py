@@ -74,7 +74,7 @@ class GithubState:
                     )
                 continue
 
-            github_user_id = social.uid
+            github_user_id = int(social.uid)
 
             if github_user_id in gh_security_team_ids:
                 user.groups.add(self.security_group)

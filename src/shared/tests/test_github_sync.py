@@ -18,16 +18,16 @@ from shared.auth.github_webhook import handle_webhook
 # Mock classes
 class MockGithubUser:
     def __init__(self, id_value: str) -> None:
-        self.id: str = id_value
+        self.id: int = int(id_value)
 
 
 class MockGithubTeam:
     def __init__(self, id: int, user_ids: list[str]) -> None:
-        self.user_ids = user_ids
+        self.user_ids = [int(uid) for uid in user_ids]
         self.id = id
 
     def get_members(self) -> list[MockGithubUser]:
-        return [MockGithubUser(id_value=id) for id in self.user_ids]
+        return [MockGithubUser(id_value=str(id)) for id in self.user_ids]
 
     def has_in_members(self, named_user: MockGithubUser) -> bool:
         return named_user.id in self.user_ids
