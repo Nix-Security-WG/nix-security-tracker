@@ -52,7 +52,7 @@ from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, ListView, TemplateView
 
-from shared.auth import isadmin, ismaintainer
+from shared.auth import can_publish_github_issue
 from shared.models import (
     AffectedProduct,
     Container,
@@ -545,9 +545,7 @@ class SuggestionListView(ListView):
         return queryset
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not request.user or not (
-            isadmin(request.user) or ismaintainer(request.user)
-        ):
+        if not request.user or not can_publish_github_issue(request.user):
             return HttpResponseForbidden()
 
         # We want to provide graceful fallback for important workflows, when users have JavaScript disabled
@@ -723,9 +721,7 @@ class SelectableMaintainerView(TemplateView):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not request.user or not (
-            isadmin(request.user) or ismaintainer(request.user)
-        ):
+        if not request.user or not can_publish_github_issue(request.user):
             return HttpResponseForbidden()
 
         suggestion_id = request.POST.get("suggestion_id")
@@ -837,9 +833,7 @@ class AddMaintainerView(TemplateView):
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not request.user or not (
-            isadmin(request.user) or ismaintainer(request.user)
-        ):
+        if not request.user or not can_publish_github_issue(request.user):
             return HttpResponseForbidden()
 
         suggestion_id = request.POST.get("suggestion_id")
