@@ -90,6 +90,15 @@ class Settings(BaseSettings):
             This is used as a safety measure during development. Set to True in production.
             """
         )
+        GH_ISSUES_COMMITTERS_ONLY: bool = Field(
+            description="""
+            When set to True, only committers and admins can publish
+            suggestions to create GitHub issues. This also affects who can
+            create suggestions and add/remove maintainers.
+            Setting this to False, will also allow maintainers to create issues.
+            """,
+            default=True,
+        )
         GH_ORGANIZATION: str = Field(
             description="""
             The GitHub organisation from which to get team membership.
