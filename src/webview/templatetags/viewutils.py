@@ -86,6 +86,12 @@ class NotificationContext(TypedDict):
     current_page: (
         int | None
     )  # For no-js compatibility in multi-page notification center
+    new_unread_count: int | None  # For oob update of unread notifications counter
+
+
+class NotificationsBadgeContext(TypedDict):
+    count: int
+    oob_update: bool | None
 
 
 @register.filter
@@ -100,11 +106,24 @@ def getdrvname(drv: dict) -> str:
     return f"{name} {hash[:8]}"
 
 
-@register.inclusion_tag("components/notification.html")
+@register.inclusion_tag("notifications/components/notification.html")
 def notification(
-    notification: Notification, current_page: int | None = None
+    notification: Notification,
+    current_page: int | None = None,
+    new_unread_count: int | None = None,
 ) -> NotificationContext:
-    return {"notification": notification, "current_page": current_page}
+    return {
+        "notification": notification,
+        "current_page": current_page,
+        "new_unread_count": new_unread_count,
+    }
+
+
+@register.inclusion_tag("notifications/components/notifications_badge.html")
+def notifications_badge(
+    count: int, oob_update: bool | None = None
+) -> NotificationsBadgeContext:
+    return {"count": count, "oob_update": oob_update}
 
 
 @register.inclusion_tag("components/severity_badge.html")

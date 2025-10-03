@@ -1,4 +1,5 @@
 {% load static socialaccount %}
+{% load viewutils %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -30,7 +31,7 @@
         {% block auth %}
         {% if user.is_authenticated %}
         {% get_social_accounts user as accounts %}
-        <li>
+        <li class="user-corner">
           {% if accounts and "github" in accounts %}
             <a href="https://github.com/{{ accounts.github.0.extra_data.login }}"
                target="_blank">
@@ -39,10 +40,7 @@
           {% else %}
             <span>{{user.username}}</span>
           {% endif %}
-          <a href="{% url 'webview:notifications:center' %}" class="notification-bell">
-            <span class="notification-icon">🔔</span>
-            Notifications
-          </a>
+          {% notifications_badge user.profile.unread_notifications_count %}
           <a href="{% url 'account_logout' %}">
             Logout
           </a>

@@ -412,6 +412,12 @@ nav.header span {
   color: white;
 }
 
+.user-corner {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+
 .centered-inline-list ul {
   display: flex;
   justify-content: center;

@@ -26,13 +26,12 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             raise CommandError(f"User '{username}' does not exist")
 
-        count = Notification.objects.filter(user=user).count()
+        # Use manager method to clear all notifications and get count
+        count = Notification.objects.clear_all_for_user(user)
 
         if count == 0:
             self.stdout.write(f"No notifications found for user '{username}'")
             return
-
-        Notification.objects.filter(user=user).delete()
 
         self.stdout.write(
             self.style.SUCCESS(f"Cleared {count} notification(s) for user '{username}'")

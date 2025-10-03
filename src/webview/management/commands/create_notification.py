@@ -40,7 +40,8 @@ class Command(BaseCommand):
         except User.DoesNotExist:
             raise CommandError(f"User '{username}' does not exist")
 
-        notification = Notification.objects.create(
+        # Use manager method to create notification and update counter
+        notification = Notification.objects.create_for_user(
             user=user,
             title=title,
             message=message,

@@ -1,3 +1,7 @@
+{% load viewutils %}
+{% if new_unread_count %}
+{% notifications_badge count=new_unread_count oob_update=True %}
+{% endif %}
 <article class="notification-item {% if not notification.is_read %}notification-unread{% endif %}" id="notification-{{ notification.id }}">
   <header>
     <h3 class="notification-title">{{ notification.title }}</h3>

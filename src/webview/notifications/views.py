@@ -13,7 +13,7 @@ from webview.models import Notification
 class NotificationCenterView(LoginRequiredMixin, ListView):
     """Main notification center view showing user's notifications."""
 
-    template_name = "notification_center.html"
+    template_name = "notifications/notification_center.html"
     model = Notification
     context_object_name = "notifications"
     paginate_by = 10
@@ -39,22 +39,26 @@ class NotificationCenterView(LoginRequiredMixin, ListView):
 class ToggleNotificationReadView(LoginRequiredMixin, TemplateView):
     """Toggle a single notification's read status - handles both HTMX and standard requests."""
 
-    template_name = "components/notification.html"
+    template_name = "notifications/components/notification.html"
 
     def post(self, request: HttpRequest, notification_id: int) -> HttpResponse:
         """Toggle a specific notification's read status."""
+        # Use manager method to toggle and update counter
+        new_unread_count = Notification.objects.toggle_read_for_user(
+            request.user, notification_id
+        )
+
+        # Get the notification for template rendering
         notification = get_object_or_404(
             Notification, id=notification_id, user=request.user
         )
 
-        # Toggle the read status
-        notification.is_read = not notification.is_read
-        notification.save()
-
         # Check if this is an HTMX request
         if request.headers.get("HX-Request"):
             # Return the template with notification context
-            return self.render_to_response({"notification": notification})
+            return self.render_to_response(
+                {"notification": notification, "new_unread_count": new_unread_count}
+            )
         else:
             # For standard requests (no js): redirect back to the notification center on the right page
             page = request.POST.get("page", "1")
@@ -67,9 +71,8 @@ class MarkAllNotificationsReadView(LoginRequiredMixin, View):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Mark all user's notifications as read."""
-        Notification.objects.filter(user=request.user, is_read=False).update(
-            is_read=True
-        )
+        # Use manager method to mark all as read and update counter
+        Notification.objects.mark_all_read_for_user(request.user)
 
         # Check if this is an HTMX request
         if request.headers.get("HX-Request"):
@@ -87,7 +90,8 @@ class RemoveAllReadNotificationsView(LoginRequiredMixin, View):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         """Remove all user's read notifications."""
-        Notification.objects.filter(user=request.user, is_read=True).delete()
+        # Use manager method to clear read notifications
+        Notification.objects.clear_read_for_user(request.user)
 
         # Let's redirect to first page as were we are might no longer exist
         url = reverse("webview:notifications:center")
