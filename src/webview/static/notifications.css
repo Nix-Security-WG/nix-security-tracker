@@ -116,3 +116,37 @@
   background: var(--notification-danger-color);
   color: white;
 }
+
+#notifications-badge {
+  display: block;
+  height: 2em;
+  padding-left: 1.5em;
+  background-size: contain;
+  background-position: left;
+  background-repeat: no-repeat;
+}
+
+.notifications-badge-none {
+  background-image: url("/static/bell-normal.svg");
+}
+
+.notifications-badge-alert {
+  background-image: url("/static/bell-ringing.svg");
+}
+
+.notifications-badge-count {
+  border-radius: 50%;
+  background-color: red;
+  color: white;
+  font-weight: bold;
+  width: 1.8em;
+  height: 1.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+}
+
+.notifications-badge-none > .notifications-badge-count {
+  visibility: hidden;
+}
