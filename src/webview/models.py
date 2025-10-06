@@ -53,7 +53,7 @@ class NotificationManager(models.Manager):
         return notification
 
     def mark_read_for_user(self, user: User, notification_id: int) -> bool:
-        """Mark a specific notification as read and update counter. Returns True if status changed."""
+        """Mark a specific notification as read and update counter."""
         try:
             notification = self.get(id=notification_id, user=user)
             if not notification.is_read:
@@ -88,7 +88,7 @@ class NotificationManager(models.Manager):
         except self.model.DoesNotExist:
             return False
 
-    def toggle_read_for_user(self, user: User, notification_id: int) -> int:
+    def toggle_read_for_user(self, user: User, notification_id: int) -> int | None:
         """Toggle a notification's read status and update counter. Returns the new unread counter."""
         try:
             notification = self.get(id=notification_id, user=user)
@@ -97,23 +97,21 @@ class NotificationManager(models.Manager):
             notification.save(update_fields=["is_read"])
 
             # Update counter based on the change
-            new_is_read = old_is_read
+            profile = user.profile
             if old_is_read and not notification.is_read:
                 # Was read, now unread - increment
-                profile = user.profile
-                new_is_read = profile.unread_notifications_count + 1
-                profile.unread_notifications_count = new_is_read
+                profile.unread_notifications_count += 1
                 profile.save(update_fields=["unread_notifications_count"])
             elif not old_is_read and notification.is_read:
                 # Was unread, now read - decrement
-                profile = user.profile
-                new_is_read = profile.unread_notifications_count - 1
-                profile.unread_notifications_count = new_is_read
+                profile.unread_notifications_count = max(
+                    0, profile.unread_notifications_count - 1
+                )
                 profile.save(update_fields=["unread_notifications_count"])
 
-            return new_is_read
+            return profile.unread_notifications_count
         except self.model.DoesNotExist:
-            return False
+            return None
 
     def mark_all_read_for_user(self, user: User) -> int:
         """Mark all notifications as read for a user and reset counter. Returns count of notifications marked."""
