@@ -18,3 +18,14 @@ def ismaintainer(user: Any) -> bool:
     return NixMaintainer.objects.filter(
         github_id=user.socialaccount_set.get(provider="github").uid
     ).exists()
+
+
+def can_publish_github_issue(user: Any) -> bool:
+    if isadmin(user):
+        return True
+
+    else:
+        if settings.GH_ISSUES_COMMITTERS_ONLY:
+            return iscommitter(user)
+        else:
+            return ismaintainer(user)
