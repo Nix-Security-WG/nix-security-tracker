@@ -37,7 +37,6 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
 1.  Create a new or select an existing GitHub organisation to associate with the Nixpkgs security tracker.
 
     We're using <https://github.com/Nix-Security-WG> for development.
-
     - In the **Settings** tab under **Personal access tokens**, ensure that personal access tokens are allowed.
     - In the **Teams** tab, ensure there are at two teams for mapping user permissions.
       They will correspond to [`nixpkgs-committers`](https://github.com/orgs/nixos/teams/nixpkgs-committers) and [`security`](https://github.com/orgs/nixos/teams/security).
@@ -49,10 +48,8 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
 
     We're using <https://github.com/apps/sectracker-testing> for local development and <https://github.com/apps/sectracker-demo> for the public demo deployment.
     [Register a new GitHub application](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) if needed.
-
     - In **Personal access tokens** approve the request under **Pending requests** if approval is required
     - In **GitHub Apps**, go to **Configure** and then **App settings** (top row). Under **Permissions & events** (side panel):
-
       - In **Repository Permissions** select **Administration (read-only)**, **Issues (read and write)**, and **(Metadata: read-only)**.
       - In **Organization Permissions** select **Administration (read-only)** and **(Members: read-only)**.
 
@@ -73,7 +70,6 @@ python3 -c 'import secrets; print(secrets.token_hex(100))' > .credentials/SECRET
       <details><summary>If the account that shows up is your Developer Account</summary>
 
       In the application settings / **Advanced**
-
       - **Transfer ownership of this GitHub App** to the organisation account.
 
       </details>
