@@ -1,13 +1,10 @@
 name: Dry activations
 on:
-  # Run them only once the checks are done.
-  workflow_run:
-    workflows: ["Builds"]
-    types:
-      - completed
-  # Dry activations can theoretically perform side-effects if the user write evil code.
-  # They are TRUSTED workflows.
-  pull_request_target:
+  # Only run dry activate when things are merged
+  push:
+    branches:
+      - main
+      - production
 jobs:
   # Prepare staging for a deployment by doing the copy closure.
   # Once the PR lands, it will be deployed by the deployment workflow.
