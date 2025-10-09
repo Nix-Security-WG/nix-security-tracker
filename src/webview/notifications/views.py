@@ -19,7 +19,7 @@ class NotificationCenterView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self) -> QuerySet[Notification]:
-        """Return notifications for the current user, ordered by creation date."""
+        """Return notifications for the current user, in descending order by creation date."""
         return Notification.objects.filter(user=self.request.user).order_by(
             "-created_at"
         )

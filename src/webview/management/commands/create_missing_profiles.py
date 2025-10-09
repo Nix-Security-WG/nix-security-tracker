@@ -25,7 +25,7 @@ class Command(BaseCommand):
             try:
                 user = User.objects.get(username=username)
                 users = [user]
-                self.stdout.write(f"Checking profile for user '{username}'")
+                self.stdout.write(f"Creating missing profile for user '{username}'")
             except User.DoesNotExist:
                 self.stdout.write(self.style.ERROR(f"User '{username}' does not exist"))
                 return
