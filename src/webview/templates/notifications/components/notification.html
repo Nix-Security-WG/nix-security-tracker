@@ -1,0 +1,30 @@
+{% load viewutils %}
+{% if new_unread_count is not None %}
+{% notifications_badge count=new_unread_count oob_update=True %}
+{% endif %}
+<article class="notification-item {% if not notification.is_read %}notification-unread{% endif %}" id="notification-{{ notification.id }}">
+  <header>
+    <h3 class="notification-title">{{ notification.title }}</h3>
+    <div class="notification-meta">
+      <time datetime="{{ notification.created_at|date }}" class="notification-date">{{ notification.created_at|date:"M d, Y H:i" }}</time>
+      <form method="post" action="{% url 'webview:notifications:toggle_read' notification.id %}">
+        {% csrf_token %}
+        {% if current_page %}
+          <!-- Preserve current page if we're in a paginated view in no-js mode -->
+          <input type="hidden" name="page" value="{{ current_page }}">
+        {% endif %}
+        <button 
+          type="submit"
+          hx-post="{% url 'webview:notifications:toggle_read' notification.id %}"
+          hx-swap="outerHTML"
+          hx-target="closest .notification-item"
+          class="mark-read-btn notification-status">
+          Mark {%if not notification.is_read %}read{% else %}unread{% endif %}
+        </button>
+      </form>
+    </div>
+  </header>
+  <div class="notification-content">
+    {{ notification.message|linebreaks }}
+  </div>
+</article>

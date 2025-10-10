@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load viewutils %}
+
+{% block content %}
+
+<header class="notification-center-header">
+  <h1>Notification Center</h1>
+  {% if notifications %}
+    <div class="notification-center-toolbar">
+      <form method="post" action="{% url 'webview:notifications:mark_all_read' %}">
+        {% csrf_token %}
+        <!-- Preserve current page in no-js mode -->
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+        <button 
+          type="submit"
+          hx-post="{% url 'webview:notifications:mark_all_read' %}"
+          hx-swap="none"
+          class="notification-center-mark-all-read">
+          Mark all as read
+        </button>
+      </form>
+      <form method="post" action="{% url 'webview:notifications:remove_all_read' %}">
+        {% csrf_token %}
+        <!-- Preserve current page in no-js mode -->
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+        <button 
+          type="submit"
+          hx-post="{% url 'webview:notifications:remove_all_read' %}"
+          hx-swap="none"
+          class="notification-center-remove-all-read">
+          Remove read notifications
+        </button>
+      </form>
+    </div>
+  {% endif %}
+</header>
+
+<div class="notification-list" class="page-width">
+  {% if notifications %}
+    {% for notification in notifications %}
+      {% notification notification page_obj.number %}
+    {% endfor %}
+  {% else %}
+    <div class="notification-list-empty">
+      You don't have any notifications yet.
+    </div>
+  {% endif %}
+</div>
+
+{% endblock content %}

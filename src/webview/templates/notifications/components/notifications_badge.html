@@ -1,0 +1,10 @@
+<a
+  href="{% url 'webview:notifications:center' %}"
+  id="notifications-badge"
+  {% if oob_update %}hx-swap-oob="true"{% endif %}
+  class="{% if count > 0 %}notifications-badge-alert{% else %}notifications-badge-none{% endif %}"
+>
+  <div class="notifications-badge-count">
+    {{ count }}
+  </div>
+</a>
