@@ -1,0 +1,37 @@
+{% load viewutils %}
+<div class="package-subscriptions">
+
+  <h2>Packages</h2>
+
+  <!-- Error messages specific to package subscriptions -->
+  {% if error_message %}
+    <div class="message">{{ error_message }}</div>
+  {% endif %}
+
+  <!-- Add new subscription form -->
+  <form method="post" action="{% url 'webview:subscriptions:add' %}" hx-post="{% url 'webview:subscriptions:add' %}" hx-target="closest .package-subscriptions" hx-swap="outerHTML" class="subscribe-form">
+    {% csrf_token %}
+    <input type="text" name="package_name" placeholder="Package name" required class="package-input">
+    <button type="submit" class="subscribe-btn">Subscribe</button>
+  </form>
+
+  <!-- Subscriptions list -->
+    {% if package_subscriptions %}
+      <ul class="packages-list">
+      {% for package in package_subscriptions %}
+        <li class="subscription-item">
+          <form method="post" action="{% url 'webview:subscriptions:remove' %}" style="display: inline;" hx-post="{% url 'webview:subscriptions:remove' %}" hx-target="#package-subscriptions-container" hx-swap="innerHTML" hx-confirm="Are you sure you want to unsubscribe from {{ package }}?">
+            {% csrf_token %}
+            <input type="hidden" name="package_name" value="{{ package }}">
+            <button type="submit" class="unsubscribe-btn">Unsubscribe</button>
+          </form>
+          <div class="package-name">{{ package }}</div>
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <div class="subscriptions-list-empty">
+        You haven't subscribed to any packages yet.
+      </div>
+    {% endif %}
+</div>
