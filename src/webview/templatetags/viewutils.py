@@ -95,6 +95,11 @@ class NotificationsBadgeContext(TypedDict):
     oob_update: bool | None
 
 
+class PackageSubscriptionsContext(TypedDict):
+    package_subscriptions: list[str]
+    error_message: str | None
+
+
 @register.filter
 def getitem(dictionary: dict, key: str) -> Any | None:
     return dictionary.get(key)
@@ -105,6 +110,17 @@ def getdrvname(drv: dict) -> str:
     hash = drv["drv_path"].split("-")[0].split("/")[-1]
     name = drv["drv_name"]
     return f"{name} {hash[:8]}"
+
+
+@register.inclusion_tag("subscriptions/components/packages.html")
+def package_subscriptions(
+    package_subscriptions: list[str],
+    error_message: str | None = None,
+) -> PackageSubscriptionsContext:
+    return {
+        "package_subscriptions": package_subscriptions,
+        "error_message": error_message,
+    }
 
 
 @register.inclusion_tag("notifications/components/notification.html")

@@ -1,0 +1,86 @@
+:root {
+  --subscription-error-color: #d31919;
+  --subscription-subscribe-color: #48a564;
+  --subscription-unsubscribe-color: #d31919;
+}
+
+.subscriptions-navbar-icon {
+  display: block;
+  height: 2em;
+  padding-left: 1.5em;
+  background-size: contain;
+  background-position: left;
+  background-repeat: no-repeat;
+  background-image: url("/static/eye.svg");
+}
+
+.subscriptions-center-message,
+.package-subscriptions .message {
+  background: var(--subscription-error-color);
+  color: white;
+  font-weight: bold;
+  padding: 0.5em;
+  margin: 0.5em;
+  border-radius: 0.2em;
+}
+
+.subscription-center-header > h1 {
+  margin: 1em 0;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.package-subscriptions h2 {
+  margin: 0.5em 0;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.package-subscriptions .subscribe-form {
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0.2em;
+}
+
+.package-subscriptions .subscribe-form input {
+  flex-basis: 20rem;
+  padding: 0.2em;
+}
+
+.package-subscriptions button {
+  font-size: 0.8em;
+  border: none;
+  border-radius: 0.2em;
+  padding: 0.4em 1em;
+  cursor: pointer;
+}
+
+.package-subscriptions .subscribe-btn {
+  background: var(--subscription-subscribe-color);
+  color: white;
+}
+
+.package-subscriptions .unsubscribe-btn {
+  background: #eee;
+  color: var(--subscription-unsubscribe-color);
+  font-weight: bold;
+}
+
+.package-subscriptions ul.packages-list {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  list-style-type: none;
+}
+
+.package-subscriptions ul.packages-list li {
+  display: flex;
+  gap: 0.2em;
+}
+
+.package-subscriptions ul.packages-list li .package-name {
+  padding: 0.2em;
+  font-weight: bold;
+}

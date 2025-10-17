@@ -2,11 +2,10 @@
 from typing import Any
 
 from django.contrib.auth.models import User
+from django.contrib.postgres import fields
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
-from shared.models import NixpkgsIssue
 
 
 class Profile(models.Model):
@@ -16,8 +15,13 @@ class Profile(models.Model):
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    subscriptions = models.ManyToManyField(NixpkgsIssue, related_name="subscribers")
     unread_notifications_count = models.PositiveIntegerField(default=0)
+    package_subscriptions = fields.ArrayField(
+        models.CharField(max_length=255),
+        default=list,
+        blank=True,
+        help_text="Package attribute names this user has subscribed to (e.g., 'firefox', 'chromium')",
+    )
 
     def recalculate_unread_notifications_count(self) -> None:
         """Recalculate and update the unread notifications count from the database."""
