@@ -1,0 +1,340 @@
+from allauth.socialaccount.models import SocialAccount
+from django.contrib.auth.models import User
+from django.test import Client, TestCase
+from django.urls import reverse
+
+from shared.models.nix_evaluation import (
+    NixChannel,
+    NixDerivation,
+    NixDerivationMeta,
+    NixEvaluation,
+    NixMaintainer,
+)
+
+
+class SubscriptionTests(TestCase):
+    def setUp(self) -> None:
+        # Create test user with social account
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.user.is_staff = True
+        self.user.save()
+
+        SocialAccount.objects.get_or_create(
+            user=self.user,
+            provider="github",
+            uid="123456",
+            extra_data={"login": "testuser"},
+        )
+
+        self.client = Client()
+        self.client.login(username="testuser", password="testpass")
+
+        # Create test NixDerivation data for package validation
+        self.maintainer = NixMaintainer.objects.create(
+            github_id=123,
+            github="testmaintainer",
+            name="Test Maintainer",
+            email="test@example.com",
+        )
+        self.meta = NixDerivationMeta.objects.create(
+            description="Test package",
+            insecure=False,
+            available=True,
+            broken=False,
+            unfree=False,
+            unsupported=False,
+        )
+        self.meta.maintainers.add(self.maintainer)
+
+        self.evaluation = NixEvaluation.objects.create(
+            channel=NixChannel.objects.create(
+                staging_branch="release-24.05",
+                channel_branch="nixos-24.05",
+                head_sha1_commit="deadbeef",
+                state=NixChannel.ChannelState.STABLE,
+                release_version="24.05",
+                repository="https://github.com/NixOS/nixpkgs",
+            ),
+            commit_sha1="deadbeef",
+            state=NixEvaluation.EvaluationState.COMPLETED,
+        )
+
+        # Create valid packages that can be subscribed to
+        self.valid_package1 = NixDerivation.objects.create(
+            attribute="firefox",
+            derivation_path="/nix/store/firefox.drv",
+            name="firefox-120.0",
+            metadata=self.meta,
+            system="x86_64-linux",
+            parent_evaluation=self.evaluation,
+        )
+
+        # Create separate metadata for chromium
+        self.meta2 = NixDerivationMeta.objects.create(
+            description="Test chromium package",
+            insecure=False,
+            available=True,
+            broken=False,
+            unfree=False,
+            unsupported=False,
+        )
+        self.meta2.maintainers.add(self.maintainer)
+
+        self.valid_package2 = NixDerivation.objects.create(
+            attribute="chromium",
+            derivation_path="/nix/store/chromium.drv",
+            name="chromium-119.0",
+            metadata=self.meta2,
+            system="x86_64-linux",
+            parent_evaluation=self.evaluation,
+        )
+
+    def test_user_subscribes_to_valid_package_success(self) -> None:
+        """Test successful subscription to an existing package"""
+        url = reverse("webview:subscriptions:add")
+        response = self.client.post(url, {"package_name": "firefox"})
+
+        # Should redirect for non-HTMX request
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("subscriptions", response.url)
+
+        # Follow redirect and check subscription center context
+        response = self.client.get(response.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify subscription appears in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertIn("firefox", response.context["package_subscriptions"])
+
+    def test_user_subscribes_to_invalid_package_fails(self) -> None:
+        """Test subscription fails for non-existent package"""
+        url = reverse("webview:subscriptions:add")
+        response = self.client.post(url, {"package_name": "nonexistent-package"})
+
+        # Should redirect for non-HTMX request
+        self.assertEqual(response.status_code, 302)
+
+        # Follow redirect and check for error message and context
+        response = self.client.get(response.url)
+        self.assertEqual(response.status_code, 200)
+
+        # Check that error message is in Django messages
+        messages = list(response.context["messages"])
+        self.assertTrue(any("does not exist" in str(message) for message in messages))
+
+        # Verify no invalid subscription in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertEqual(response.context["package_subscriptions"], [])
+
+    def test_user_subscribes_to_valid_package_success_htmx(self) -> None:
+        """Test successful subscription to an existing package via HTMX"""
+        url = reverse("webview:subscriptions:add")
+        response = self.client.post(
+            url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true"
+        )
+
+        # Should return 200 with component template for HTMX request
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Verify subscription appears in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertIn("firefox", response.context["package_subscriptions"])
+
+        # Should not have error message
+        self.assertNotIn("error_message", response.context)
+
+    def test_user_subscribes_to_invalid_package_fails_htmx(self) -> None:
+        """Test subscription fails for non-existent package via HTMX"""
+        url = reverse("webview:subscriptions:add")
+        response = self.client.post(
+            url, {"package_name": "nonexistent-package"}, HTTP_HX_REQUEST="true"
+        )
+
+        # Should return 200 with component template for HTMX request
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Check that error message is in context
+        self.assertIn("error_message", response.context)
+        self.assertIn("does not exist", response.context["error_message"])
+
+        # Verify no invalid subscription in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertNotIn(
+            "nonexistent-package", response.context["package_subscriptions"]
+        )
+
+    def test_user_subscribes_to_empty_package_name_fails_htmx(self) -> None:
+        """Test subscription fails for empty package name via HTMX"""
+        url = reverse("webview:subscriptions:add")
+        response = self.client.post(url, {"package_name": ""}, HTTP_HX_REQUEST="true")
+
+        # Should return 200 with component template for HTMX request
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Check that error message is in context
+        self.assertIn("error_message", response.context)
+        self.assertIn("cannot be empty", response.context["error_message"])
+
+        # Verify no subscriptions in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertEqual(response.context["package_subscriptions"], [])
+
+    def test_user_cannot_subscribe_to_same_package_twice_htmx(self) -> None:
+        """Test duplicate subscription prevention via HTMX"""
+        url = reverse("webview:subscriptions:add")
+
+        # First subscription should succeed
+        response = self.client.post(
+            url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("firefox", response.context["package_subscriptions"])
+
+        # Second subscription to same package should fail
+        response = self.client.post(
+            url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true"
+        )
+
+        # Should return 200 with component template
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Check that error message is in context
+        self.assertIn("error_message", response.context)
+        self.assertIn("already subscribed", response.context["error_message"])
+
+        # Verify firefox still appears only once in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertIn("firefox", response.context["package_subscriptions"])
+
+    def test_user_unsubscribes_from_package_success_htmx(self) -> None:
+        """Test successful unsubscription via HTMX"""
+        # First subscribe to a package via HTMX
+        add_url = reverse("webview:subscriptions:add")
+        self.client.post(add_url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true")
+
+        # Now unsubscribe via HTMX
+        remove_url = reverse("webview:subscriptions:remove")
+        response = self.client.post(
+            remove_url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true"
+        )
+
+        # Should return 200 with component template for HTMX request
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Verify subscription was removed from context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertNotIn("firefox", response.context["package_subscriptions"])
+        self.assertEqual(response.context["package_subscriptions"], [])
+
+        # Should not have error message
+        self.assertNotIn("error_message", response.context)
+
+    def test_user_cannot_unsubscribe_from_non_subscribed_package_htmx(self) -> None:
+        """Test unsubscription fails for packages not subscribed to via HTMX"""
+        url = reverse("webview:subscriptions:remove")
+        response = self.client.post(
+            url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true"
+        )
+
+        # Should return 200 with component template for HTMX request
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Check that error message is in context
+        self.assertIn("error_message", response.context)
+        self.assertIn("not subscribed", response.context["error_message"])
+
+        # Verify empty subscriptions in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertEqual(response.context["package_subscriptions"], [])
+
+    def test_subscription_center_shows_user_subscriptions(self) -> None:
+        """Test that the center displays user's current subscriptions"""
+        # First add some subscriptions via HTMX
+        add_url = reverse("webview:subscriptions:add")
+        self.client.post(add_url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true")
+
+        # Add second package
+        self.client.post(add_url, {"package_name": "chromium"}, HTTP_HX_REQUEST="true")
+
+        # Check subscription center shows both subscriptions
+        response = self.client.get(reverse("webview:subscriptions:center"))
+        self.assertEqual(response.status_code, 200)
+
+        # Check context contains both subscriptions
+        self.assertIn("package_subscriptions", response.context)
+        subscriptions = response.context["package_subscriptions"]
+        self.assertIn("firefox", subscriptions)
+        self.assertIn("chromium", subscriptions)
+        self.assertEqual(len(subscriptions), 2)
+
+    def test_subscription_center_shows_empty_state(self) -> None:
+        """Test empty state when user has no subscriptions"""
+        response = self.client.get(reverse("webview:subscriptions:center"))
+        self.assertEqual(response.status_code, 200)
+
+        # Check context shows empty subscriptions
+        self.assertIn("package_subscriptions", response.context)
+        self.assertEqual(response.context["package_subscriptions"], [])
+
+    def test_subscription_center_requires_login(self) -> None:
+        """Test that subscription center redirects when not logged in"""
+        # Logout the user
+        self.client.logout()
+
+        response = self.client.get(reverse("webview:subscriptions:center"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+        # Test add endpoint also requires login
+        response = self.client.post(
+            reverse("webview:subscriptions:add"), {"package_name": "firefox"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+        # Test remove endpoint also requires login
+        response = self.client.post(
+            reverse("webview:subscriptions:remove"), {"package_name": "firefox"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+        # Test HTMX requests also require login
+        response = self.client.post(
+            reverse("webview:subscriptions:add"),
+            {"package_name": "firefox"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+        response = self.client.post(
+            reverse("webview:subscriptions:remove"),
+            {"package_name": "firefox"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+
+    def test_user_unsubscribes_from_empty_package_name_fails_htmx(self) -> None:
+        """Test unsubscription fails for empty package name via HTMX"""
+        url = reverse("webview:subscriptions:remove")
+        response = self.client.post(url, {"package_name": ""}, HTTP_HX_REQUEST="true")
+
+        # Should return 200 with component template for HTMX request
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/components/packages.html")
+
+        # Check that error message is in context
+        self.assertIn("error_message", response.context)
+        self.assertIn("required", response.context["error_message"])
+
+        # Verify empty subscriptions in context
+        self.assertIn("package_subscriptions", response.context)
+        self.assertEqual(response.context["package_subscriptions"], [])
