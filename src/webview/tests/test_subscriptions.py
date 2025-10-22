@@ -3,6 +3,17 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from shared.listeners.automatic_linkage import build_new_links
+from shared.listeners.notify_users import create_package_subscription_notifications
+from shared.models.cve import (
+    AffectedProduct,
+    CveRecord,
+    Description,
+    Metric,
+    Organization,
+    Version,
+)
+from shared.models.linkage import CVEDerivationClusterProposal
 from shared.models.nix_evaluation import (
     NixChannel,
     NixDerivation,
@@ -338,3 +349,54 @@ class SubscriptionTests(TestCase):
         # Verify empty subscriptions in context
         self.assertIn("package_subscriptions", response.context)
         self.assertEqual(response.context["package_subscriptions"], [])
+
+    def test_user_receives_notification_for_subscribed_package_suggestion(self) -> None:
+        """Test that users receive notifications when suggestions affect their subscribed packages"""
+        # User subscribes to firefox package
+        add_url = reverse("webview:subscriptions:add")
+        self.client.post(add_url, {"package_name": "firefox"}, HTTP_HX_REQUEST="true")
+
+        # Create CVE and container - this should trigger automatic linkage and then notifications
+        assigner = Organization.objects.create(uuid=1, short_name="test_org")
+        cve_record = CveRecord.objects.create(
+            cve_id="CVE-2025-0001",
+            assigner=assigner,
+        )
+
+        description = Description.objects.create(value="Test firefox vulnerability")
+        metric = Metric.objects.create(format="cvssV3_1", raw_cvss_json={})
+        affected_product = AffectedProduct.objects.create(package_name="firefox")
+        affected_product.versions.add(
+            Version.objects.create(status=Version.Status.AFFECTED, version="120.0")
+        )
+
+        container = cve_record.container.create(
+            provider=assigner,
+            title="Firefox Security Issue",
+        )
+
+        container.affected.set([affected_product])
+        container.descriptions.set([description])
+        container.metrics.set([metric])
+
+        # Trigger the linkage and notification system manually since pgpubsub triggers won't work in tests
+        linkage_created = build_new_links(container)
+
+        if linkage_created:
+            # Get the created proposal and trigger notifications
+            suggestion = CVEDerivationClusterProposal.objects.get(cve=cve_record)
+            create_package_subscription_notifications(suggestion)
+
+        # Verify notification appears in notification center context
+        response = self.client.get(reverse("webview:notifications:center"))
+        self.assertEqual(response.status_code, 200)
+
+        # Check that notification appears in context
+        notifications = response.context["notifications"]
+        self.assertEqual(len(notifications), 1)
+
+        notification = notifications[0]
+        self.assertEqual(notification.user, self.user)
+        self.assertIn("firefox", notification.title)
+        self.assertIn("CVE-2025-0001", notification.message)
+        self.assertFalse(notification.is_read)  # Should be unread initially
