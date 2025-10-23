@@ -400,3 +400,78 @@ class SubscriptionTests(TestCase):
         self.assertIn("firefox", notification.title)
         self.assertIn("CVE-2025-0001", notification.message)
         self.assertFalse(notification.is_read)  # Should be unread initially
+
+    def test_package_subscription_page_shows_valid_package(self) -> None:
+        """Test that the package subscription page displays correctly for valid packages"""
+        url = reverse(
+            "webview:subscriptions:package", kwargs={"package_name": "firefox"}
+        )
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/package_subscription.html")
+
+        # Check context
+        self.assertEqual(response.context["package_name"], "firefox")
+        self.assertTrue(response.context["package_exists"])
+        self.assertFalse(response.context["is_subscribed"])
+        self.assertIsNone(response.context["error_message"])
+
+    def test_package_subscription_page_shows_invalid_package(self) -> None:
+        """Test that the package subscription page shows error for invalid packages"""
+        url = reverse(
+            "webview:subscriptions:package", kwargs={"package_name": "nonexistent"}
+        )
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "subscriptions/package_subscription.html")
+
+        # Check context
+        self.assertEqual(response.context["package_name"], "nonexistent")
+        self.assertFalse(response.context["package_exists"])
+        self.assertFalse(response.context["is_subscribed"])
+        self.assertIsNotNone(response.context["error_message"])
+        self.assertIn("does not exist", response.context["error_message"])
+
+    def test_package_subscription_page_subscribe_action(self) -> None:
+        """Test subscribing to a package via the package subscription page"""
+        url = reverse(
+            "webview:subscriptions:package", kwargs={"package_name": "firefox"}
+        )
+        response = self.client.post(url, {"action": "subscribe"})
+
+        # Should redirect back to the same page
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("firefox", response.url)
+
+        # Follow redirect and check subscription status
+        response = self.client.get(response.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["is_subscribed"])
+
+    def test_package_subscription_page_unsubscribe_action(self) -> None:
+        """Test unsubscribing from a package via the package subscription page"""
+        # First subscribe to the package
+        self.user.profile.package_subscriptions.append("firefox")
+        self.user.profile.save(update_fields=["package_subscriptions"])
+
+        url = reverse(
+            "webview:subscriptions:package", kwargs={"package_name": "firefox"}
+        )
+
+        # Verify initially subscribed
+        response = self.client.get(url)
+        self.assertTrue(response.context["is_subscribed"])
+
+        # Unsubscribe
+        response = self.client.post(url, {"action": "unsubscribe"})
+
+        # Should redirect back to the same page
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("firefox", response.url)
+
+        # Follow redirect and check subscription status
+        response = self.client.get(response.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["is_subscribed"])

@@ -1,6 +1,7 @@
 :root {
   --subscription-error-color: #d31919;
   --subscription-subscribe-color: #48a564;
+  --subscription-subscribe-background-color: #d9fce3;
   --subscription-unsubscribe-color: #d31919;
 }
 
@@ -83,4 +84,103 @@
 .package-subscriptions ul.packages-list li .package-name {
   padding: 0.2em;
   font-weight: bold;
+}
+
+/* Individual package subscription pages */
+
+.package-subscription header {
+  display: flex;
+  flex-direction: column;
+  gap: 0em;
+  margin: 1em 0;
+}
+
+.package-subscription header h1 {
+  margin: 0;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.package-subscription .package-not-found {
+  background: var(--subscription-error-color);
+  color: white;
+  padding: 2em;
+  margin: 2em;
+  border-radius: 0.2em;
+}
+
+.package-subscription .package-not-found h2 {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.package-subscription .package-detail {
+  padding: 2em;
+  margin: 2em;
+  border-radius: 0.2em;
+  border: 1px solid var(--grey);
+}
+
+.package-subscription .package-detail h2 {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.package-subscription .subscription-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2em;
+  padding: 1em 2em;
+  border-radius: 0.2em;
+}
+
+.package-subscription .subscription-panel.subscribed {
+  background: var(--subscription-subscribe-background-color);
+}
+
+.package-subscription .subscription-panel.unsubscribed {
+  background: #eee;
+}
+
+.package-subscription .subscription-panel button {
+  border: none;
+  border-radius: 0.2em;
+  padding: 0.4em 1em;
+  cursor: pointer;
+}
+
+.package-subscription .subscribed button {
+  color: var(--subscription-unsubscribe-color);
+  background: white;
+  border: solid 1px var(--subscription-unsubscribe-color);
+  font-weight: bold;
+}
+
+.package-subscription .unsubscribed button {
+  background: var(--subscription-subscribe-color);
+  color: white;
+  font-weight: bold;
+}
+
+.package-subscription .subscription-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1em;
+  font-weight: bold;
+}
+
+.package-subscription .subscription-status .status-icon {
+  font-size: 3em;
+}
+
+.package-subscription .subscribed .subscription-status {
+  color: var(--subscription-subscribe-color);
+}
+
+.package-subscription .unsubscribed .subscription-status {
+  color: #777;
 }

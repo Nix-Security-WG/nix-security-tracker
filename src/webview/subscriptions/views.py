@@ -139,3 +139,89 @@ class RemoveSubscriptionView(LoginRequiredMixin, TemplateView):
             # Without javascript, we use Django messages for the errors
             messages.error(request, error_message)
             return redirect(reverse("webview:subscriptions:center"))
+
+
+class PackageSubscriptionView(LoginRequiredMixin, TemplateView):
+    """Display a package subscription page for a specific package."""
+
+    template_name = "subscriptions/package_subscription.html"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        package_name = kwargs.get("package_name", "").strip()
+
+        # Validate package exists
+        is_valid, error_message = validate_package_exists(package_name)
+        context["package_name"] = package_name
+        context["package_exists"] = is_valid
+        context["error_message"] = error_message if not is_valid else None
+
+        # Check if user is subscribed to this package
+        if is_valid and hasattr(self.request.user, "profile"):
+            context["is_subscribed"] = (
+                package_name in self.request.user.profile.package_subscriptions
+            )
+        else:
+            context["is_subscribed"] = False
+
+        return context
+
+    def post(self, request: HttpRequest, **kwargs: Any) -> HttpResponse:
+        """Handle subscribe/unsubscribe actions for a specific package."""
+        package_name = kwargs.get("package_name", "").strip()
+        action = request.POST.get("action", "")
+
+        # Validate package exists
+        is_valid, error_message = validate_package_exists(package_name)
+        if not is_valid:
+            return self._handle_error(request, package_name, error_message)
+
+        profile = request.user.profile
+
+        if action == "subscribe":
+            # Check if already subscribed
+            if package_name in profile.package_subscriptions:
+                return self._handle_error(
+                    request,
+                    package_name,
+                    f"You are already subscribed to '{package_name}'.",
+                )
+
+            # Add subscription
+            profile.package_subscriptions.append(package_name)
+            profile.package_subscriptions.sort()
+            profile.save(update_fields=["package_subscriptions"])
+
+        elif action == "unsubscribe":
+            # Check if subscribed
+            if package_name not in profile.package_subscriptions:
+                return self._handle_error(
+                    request,
+                    package_name,
+                    f"You are not subscribed to '{package_name}'.",
+                )
+
+            # Remove subscription
+            profile.package_subscriptions.remove(package_name)
+            profile.save(update_fields=["package_subscriptions"])
+
+        else:
+            return self._handle_error(request, package_name, "Invalid action.")
+
+        # Redirect back to the same page to show updated state
+        return redirect(
+            reverse(
+                "webview:subscriptions:package", kwargs={"package_name": package_name}
+            )
+        )
+
+    def _handle_error(
+        self, request: HttpRequest, package_name: str, error_message: str
+    ) -> HttpResponse:
+        """Handle error responses for the package subscription page."""
+        messages.error(request, error_message)
+        return redirect(
+            reverse(
+                "webview:subscriptions:package", kwargs={"package_name": package_name}
+            )
+        )

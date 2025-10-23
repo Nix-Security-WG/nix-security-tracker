@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load viewutils %}
+
+{% block content %}
+
+<div class="package-subscription">
+
+  <header>
+    <a href="{% url 'webview:subscriptions:center' %}" class="back-link">← Subscription Center</a>
+    <h1>Package Subscription</h1>
+  </header>
+
+  <!-- Show Django messages -->
+  {% if messages %}
+    {% for message in messages %}
+      <div class="package-subscription-message">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not package_exists %}
+
+    <div class="package-not-found">
+      <h2>Package Not Found</h2>
+      <div>Package "{{ package_name }}" could not be found.</div>
+    </div>
+
+  {% else %}
+    <div class="package-detail">
+      <h2>{{ package_name }}</h2>
+      <p>Subscribe to receive notifications about security alerts suggestions that may affect this package.</p>
+      <div class="subscription-panel {% if is_subscribed %}subscribed{% else %}unsubscribed{% endif %}">
+        <div class="subscription-status">
+          <div class="status-icon">{% if is_subscribed %}✓{% else %}✕{% endif %}</div>
+          <div class="status-text">You are {% if not is_subscribed %}not{% endif %} subscribed to this package</div>
+        </div>
+        <form method="post" class="subscription-form">
+          {% csrf_token %}
+          {% if is_subscribed %}
+            <input type="hidden" name="action" value="unsubscribe">
+            <button type="submit">Unsubscribe</button>
+          {% else %}
+            <input type="hidden" name="action" value="subscribe">
+            <button type="submit">Subscribe</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock content %}
