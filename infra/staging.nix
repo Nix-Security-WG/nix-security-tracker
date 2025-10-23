@@ -7,7 +7,41 @@ let
   sectracker = import ../. { inherit pkgs; };
 in
 {
-  imports = [ sectracker.module ];
+  imports = [
+    sectracker.module
+    ./configuration.nix
+  ];
+
+  networking.hostName = "sectracker-staging";
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
+  };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/boot";
+    fsType = "ext4";
+  };
+  swapDevices = [ { device = "/dev/disk/by-label/swap"; } ];
+
+  systemd.network.networks."10-wan" = {
+    matchConfig.MACAddress = "96:00:03:d9:7c:85";
+    address = [
+      "188.245.41.195/32"
+      "2a01:4f8:1c1b:b87b::1/64"
+    ];
+    routes = [
+      # create default routes for both IPv6 and IPv4
+      { Gateway = "fe80::1"; }
+      # or when the gateway is not on the same network
+      {
+        Gateway = "172.31.1.1";
+        GatewayOnLink = true;
+      }
+    ];
+    # make the routes on this interface a dependency for network-online.target
+    linkConfig.RequiredForOnline = "routable";
+  };
 
   nixpkgs.overlays = sectracker.overlays;
   services = {
@@ -54,7 +88,7 @@ in
   services.web-security-tracker = {
     enable = true;
     production = true;
-    domain = "tracker.security.nixos.org";
+    domain = "tracker-staging.security.nixos.org";
     env = {
       SHOW_DEMO_DISCLAIMER = true;
       SYNC_GITHUB_STATE_AT_STARTUP = true;
@@ -82,12 +116,12 @@ in
   };
 
   age.secrets = {
-    django-secret-key.file = ./secrets/django-secret-key.age;
-    gh-client.file = ./secrets/gh-client.age;
-    gh-secret.file = ./secrets/gh-secret.age;
-    gh-webhook-secret.file = ./secrets/gh-webhook-secret.age;
-    gh-app-private-key.file = ./secrets/nixpkgs-security-tracker.2024-12-09.private-key.pem.age;
-    gh-app-installation-id.file = ./secrets/gh-app-installation-id.age;
+    django-secret-key.file = ./secrets/staging-django-secret-key.age;
+    gh-client.file = ./secrets/staging-gh-client.age;
+    gh-secret.file = ./secrets/staging-gh-secret.age;
+    gh-webhook-secret.file = ./secrets/staging-gh-webhook-secret.age;
+    gh-app-private-key.file = ./secrets/staging-nixpkgs-security-tracker.2024-12-09.private-key.pem.age;
+    gh-app-installation-id.file = ./secrets/staging-gh-app-installation-id.age;
   };
 
   nix.optimise.automatic = true;
