@@ -7,7 +7,39 @@ let
   sectracker = import ../. { inherit pkgs; };
 in
 {
-  imports = [ sectracker.module ];
+  imports = [
+    sectracker.module
+    ./configuration.nix
+  ];
+  networking.hostName = "sectracker";
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-partlabel/disk-main-root";
+    fsType = "ext4";
+  };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-partlabel/disk-main-ESP";
+    fsType = "vfat";
+  };
+
+  systemd.network.networks."10-wan" = {
+    matchConfig.MACAddress = "96:00:04:64:8e:77";
+    address = [
+      "91.99.31.214/32"
+      "2a01:4f8:1c1b:6921::1/64"
+    ];
+    routes = [
+      # create default routes for both IPv6 and IPv4
+      { Gateway = "fe80::1"; }
+      # or when the gateway is not on the same network
+      {
+        Gateway = "172.31.1.1";
+        GatewayOnLink = true;
+      }
+    ];
+    # make the routes on this interface a dependency for network-online.target
+    linkConfig.RequiredForOnline = "routable";
+  };
 
   nixpkgs.overlays = sectracker.overlays;
   services = {
@@ -56,18 +88,14 @@ in
     production = true;
     domain = "tracker.security.nixos.org";
     env = {
-      SHOW_DEMO_DISCLAIMER = true;
       SYNC_GITHUB_STATE_AT_STARTUP = true;
       # set to `true` when going live
       GH_ISSUES_PING_MAINTAINERS = false;
-      # set to `NixOS` when going live
-      GH_ORGANIZATION = "Nix-Security-WG";
-      # set to `nixpkgs` when going live
-      GH_ISSUES_REPO = "sectracker-testing";
-      # set to `security` when going live
-      GH_SECURITY_TEAM = "sectracker-testing-security";
-      # set to `nixpkgs-committers` when going live
-      GH_COMMITTERS_TEAM = "sectracker-testing-committers";
+      GH_ORGANIZATION = "nixos";
+      GH_ISSUES_REPO = "nixpkgs";
+      GH_SECURITY_TEAM = "security";
+      GH_COMMITTERS_TEAM = "nixpkgs-committers";
+      GH_ISSUES_COMMITTERS_ONLY = true;
     };
 
     secrets = {
@@ -86,7 +114,7 @@ in
     gh-client.file = ./secrets/gh-client.age;
     gh-secret.file = ./secrets/gh-secret.age;
     gh-webhook-secret.file = ./secrets/gh-webhook-secret.age;
-    gh-app-private-key.file = ./secrets/nixpkgs-security-tracker.2024-12-09.private-key.pem.age;
+    gh-app-private-key.file = ./secrets/nixpkgs-security-tracker.private-key.pem.age;
     gh-app-installation-id.file = ./secrets/gh-app-installation-id.age;
   };
 
