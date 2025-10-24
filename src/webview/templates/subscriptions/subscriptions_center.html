@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load viewutils %}
+
+{% block content %}
+
+<header class="subscription-center-header">
+  <h1>Subscriptions</h1>
+</header>
+
+<!-- Show Django messages for non-JS fallback -->
+{% if messages %}
+  {% for message in messages %}
+    <div class="subscriptions-center-message">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div id="package-subscriptions-container">
+  {% package_subscriptions package_subscriptions %}
+</div>
+
+{% endblock content %}

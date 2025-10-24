@@ -304,6 +304,7 @@ class NixDerivation(models.Model):
     class Meta:  # type: ignore[override]
         indexes = [
             BTreeIndex(fields=["name"]),
+            BTreeIndex(fields=["attribute"]),
             GinIndex(fields=["search_vector"]),
         ]
 
