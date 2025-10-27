@@ -9,9 +9,9 @@
       },
       "branch": "main",
       "submodules": false,
-      "revision": "9edb1787864c4f59ae5074ad498b6272b3ec308d",
-      "url": "https://github.com/ryantm/agenix/archive/9edb1787864c4f59ae5074ad498b6272b3ec308d.tar.gz",
-      "hash": "06w2dxnf8qxwcmqvgyxnrrx62ca5x1cw3lminpgs112md17wa3rl"
+      "revision": "2f0f812f69f3eb4140157fe15e12739adf82e32a",
+      "url": "https://github.com/ryantm/agenix/archive/2f0f812f69f3eb4140157fe15e12739adf82e32a.tar.gz",
+      "hash": "1d4m7hsq727q7ndjqmgyl8vkbkqjwps962ygmv2mcc5dbqzgn963"
     },
     "gitignore": {
       "type": "Git",
@@ -36,10 +36,10 @@
       "version_upper_bound": null,
       "release_prefix": null,
       "submodules": false,
-      "version": "v2.0.7",
-      "revision": "2b83121f2702556010e01fca6f364645d1849548",
+      "version": "v2.0.8",
+      "revision": "cf6609d4546f366d7931d984072ecf5071bf334f",
       "url": null,
-      "hash": "0w6jcc923kqaxa35x09ik56v70kjqrv13n0xfwbzhnh4mq158p2x"
+      "hash": "0n2flf02xz883x05g6da0an1h5j00msvmb1i5za98i1i97fmfw44"
     },
     "infra": {
       "type": "Git",
@@ -50,15 +50,15 @@
       },
       "branch": "main",
       "submodules": false,
-      "revision": "de2058a26ce59f303fed4a2ccc0e6af3eee01f08",
-      "url": "https://github.com/nixos/infra/archive/de2058a26ce59f303fed4a2ccc0e6af3eee01f08.tar.gz",
-      "hash": "1lrzirnara0gbb3q453dqk0npnwznx11b0pb5z03ymgq12clpkr4"
+      "revision": "0ea73773d6aa0578e74d615cae8860033c1bd4b0",
+      "url": "https://github.com/nixos/infra/archive/0ea73773d6aa0578e74d615cae8860033c1bd4b0.tar.gz",
+      "hash": "0rm2k19rl7wlgsrsn8aic2d5nam0l301kkh71cki0vsla74q01aa"
     },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",
-      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-25.11pre861040.6d7ec06d6868/nixexprs.tar.xz",
-      "hash": "08f1n0a92c8vs702vkfm24s5bw4c2p8vq9smssj9a49mk4nfp35p"
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-25.11pre883899.02f2cb8e0feb/nixexprs.tar.xz",
+      "hash": "0k4n6f873a4ls1mff6wck6z31kglgg8irwc5s3xsprrwbxdv7p58"
     },
     "pre-commit-hooks": {
       "type": "Git",
@@ -69,9 +69,9 @@
       },
       "branch": "master",
       "submodules": false,
-      "revision": "b084b2c2b6bc23e83bbfe583b03664eb0b18c411",
-      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/b084b2c2b6bc23e83bbfe583b03664eb0b18c411.tar.gz",
-      "hash": "15gpjaj9lngrkxnxlkfpgabhhcizfzv0lmkzyrxcpp83cbrc17ml"
+      "revision": "ca5b894d3e3e151ffc1db040b6ce4dcc75d31c37",
+      "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/ca5b894d3e3e151ffc1db040b6ce4dcc75d31c37.tar.gz",
+      "hash": "11r45r45qcfv77rx024mqpra2yixnc5g248kp7rmccq09vll1y85"
     }
   },
   "version": 5
