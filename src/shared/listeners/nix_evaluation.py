@@ -117,7 +117,7 @@ async def realtime_batch_process_attributes(
 
 
 async def drain_lines(
-    stream: asyncio.StreamReader, timeout: float = 0.25, max_batch_window: int = 10_000
+    stream: asyncio.StreamReader, timeout: float = 3.5, max_batch_window: int = 75_000
 ) -> AsyncGenerator[list[bytes]]:
     """
     This utility will perform an opportunistic line draining
