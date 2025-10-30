@@ -12,6 +12,7 @@ import pgpubsub
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.db.models import Avg
+from django.utils import timezone
 
 from shared.channels import NixEvaluationChannel
 from shared.evaluation import (
@@ -177,7 +178,8 @@ async def evaluation_entrypoint(
     # Atomically update the state to prevent anyone going over the
     # specified concurrency.
     await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
-        state=NixEvaluation.EvaluationState.IN_PROGRESS
+        state=NixEvaluation.EvaluationState.IN_PROGRESS,
+        updated_at=timezone.now(),
     )
     repo = GitRepo(settings.LOCAL_NIXPKGS_CHECKOUT)
     start = time.time()
@@ -230,6 +232,7 @@ async def evaluation_entrypoint(
                     await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
                         state=NixEvaluation.EvaluationState.FAILED,
                         elapsed=elapsed,
+                        updated_at=timezone.now(),
                     )
                 else:
                     logger.info(
@@ -240,6 +243,7 @@ async def evaluation_entrypoint(
                     await NixEvaluation.objects.filter(id=evaluation.pk).aupdate(
                         state=NixEvaluation.EvaluationState.COMPLETED,
                         elapsed=elapsed,
+                        updated_at=timezone.now(),
                     )
     except Exception as e:
         elapsed = time.time() - start
@@ -251,6 +255,7 @@ async def evaluation_entrypoint(
             state=NixEvaluation.EvaluationState.CRASHED,
             elapsed=elapsed,
             failure_reason=str(e),
+            updated_at=timezone.now(),
         )
 
 
