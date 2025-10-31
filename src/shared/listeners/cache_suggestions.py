@@ -8,7 +8,7 @@ from typing import Any
 import pgpubsub
 from django.db.models import Prefetch
 
-from shared.channels import CVEDerivationClusterProposalChannel
+from shared.channels import CVEDerivationClusterProposalCacheChannel
 from shared.models import NixDerivation, NixMaintainer
 from shared.models.cached import CachedSuggestions
 from shared.models.cve import AffectedProduct, Metric, Version
@@ -170,7 +170,7 @@ def cache_new_suggestions(suggestion: CVEDerivationClusterProposal) -> None:
 #         CachedSuggestions.objects.filter(pk=new.pk).delete()
 
 
-@pgpubsub.post_insert_listener(CVEDerivationClusterProposalChannel)
+@pgpubsub.post_insert_listener(CVEDerivationClusterProposalCacheChannel)
 def cache_new_suggestions_following_new_container(
     old: CVEDerivationClusterProposal, new: CVEDerivationClusterProposal
 ) -> None:

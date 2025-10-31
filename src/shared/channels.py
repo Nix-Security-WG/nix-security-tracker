@@ -40,12 +40,22 @@ class ContainerChannel(TriggerChannel):
     lock_notifications = True
 
 
+# We have two channels for CVEDerivationClusterProposal for two usages:
+# 1. Caching suggestions: this operation is idempotent and performance sensitive so we disable locking on this channel
+# 2. Notifying subscribed users of activity on their packages: this operation is not performance sensitive and we don't want duplicate notifications so we enable locking on this channel
 @dataclass
-class CVEDerivationClusterProposalChannel(TriggerChannel):
+class CVEDerivationClusterProposalCacheChannel(TriggerChannel):
     model = CVEDerivationClusterProposal
     # We don't need to lock notifications.
     # If we are caching twice the same proposal, we will just replace it.
     lock_notifications = False
+
+
+@dataclass
+class CVEDerivationClusterProposalNotificationChannel(TriggerChannel):
+    model = CVEDerivationClusterProposal
+    # We don't want to trigger user notifications more than once
+    lock_notifications = True
 
 
 @dataclass

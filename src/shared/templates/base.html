@@ -11,6 +11,7 @@
 
     <link rel="stylesheet" type="text/css" href="/static/style.css" />
     <link rel="stylesheet" type="text/css" href="/static/notifications.css" />
+    <link rel="stylesheet" type="text/css" href="/static/subscriptions.css" />
 
     {% block extra_head %}{% endblock extra_head %}
   </head>
@@ -40,6 +41,11 @@
           {% else %}
             <span>{{user.username}}</span>
           {% endif %}
+          <a
+            href="{% url 'webview:subscriptions:center' %}"
+            class="subscriptions-navbar-icon"
+          >
+          </a>
           {% notifications_badge user.profile.unread_notifications_count %}
           <a href="{% url 'account_logout' %}">
             Logout
