@@ -3,7 +3,7 @@ import logging
 import pgpubsub
 from django.contrib.auth.models import User
 
-from shared.channels import CVEDerivationClusterProposalChannel
+from shared.channels import CVEDerivationClusterProposalNotificationChannel
 from shared.models.linkage import CVEDerivationClusterProposal
 from webview.models import Notification
 
@@ -61,7 +61,7 @@ def create_package_subscription_notifications(
             logger.error(f"Failed to create notification for user {user.username}: {e}")
 
 
-@pgpubsub.post_insert_listener(CVEDerivationClusterProposalChannel)
+@pgpubsub.post_insert_listener(CVEDerivationClusterProposalNotificationChannel)
 def notify_subscribed_users_following_suggestion_insert(
     old: CVEDerivationClusterProposal, new: CVEDerivationClusterProposal
 ) -> None:
